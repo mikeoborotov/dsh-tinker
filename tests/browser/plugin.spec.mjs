@@ -41,7 +41,7 @@ test('workspace appearance reset and disposal restore native UI',async({page})=>
 });
 test('menu is added only after its own workspace trigger; UI responds to keyboard',async({page})=>{
  await page.locator('#menu-anchor').click();
- await page.evaluate(()=>{const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<button role="menuitem">Rename</button><button role="menuitem">Delete</button>';document.body.append(m);});
+ await page.evaluate(()=>{const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete</span></button></div></div>';document.body.append(m);});
  await expect(page.getByRole('menuitem',{name:'Appearance'})).toBeVisible();
  await page.getByRole('menuitem',{name:'Appearance'}).click();await expect(page.getByRole('dialog')).toBeVisible();
  await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -64,6 +64,15 @@ test('unsupported workspace markup is left unchanged',async({page})=>{
  await page.evaluate(()=>{const row=document.createElement('div');row.setAttribute('role','treeitem');row.dataset.rowKey='workspace:changed';row.innerHTML='<button>Changed UI</button>';document.body.append(row);});
  await expect(page.locator('[data-row-key="workspace:changed"]')).toHaveText('Changed UI');
  await expect(page.locator('[data-row-key="workspace:changed"] [data-wsp-owned]')).toHaveCount(0);
+});
+
+test('global plugin effect applies workspace icons above prompt independently of model logos',async({page})=>{
+ await page.evaluate(()=>{const root=document.createElement('div');root.setAttribute('data-conversation-content','');root.setAttribute('data-conversation-session','s1');root.innerHTML='<div><button id="hero-workspace" aria-haspopup="menu" aria-expanded="false"><svg/><span>Infra</span><svg class="chevron"/></button><div data-slot="conversation.hero.workspace"></div></div>';document.body.append(root);});
+ await page.locator('#wsp-workspace').selectOption('w1');await page.getByRole('button',{name:'emoji',exact:true}).click();await page.locator('#wsp-emoji').fill('🏠');await page.getByRole('button',{name:'save',exact:true}).click();
+ await expect(page.locator('#hero-workspace .wsp-workspace-picker-icon')).toHaveText('🏠');await expect(page.locator('.wsp-workspace-icon')).toHaveText('🏠');
+ await page.getByRole('switch',{name:'composer',exact:true}).click();await expect(page.locator('#hero-workspace .wsp-workspace-picker-icon')).toHaveText('🏠');
+ await page.getByRole('switch',{name:'workspaces',exact:true}).click();await expect(page.locator('#hero-workspace .wsp-workspace-picker-icon')).toHaveCount(0);await expect(page.locator('#hero-workspace>svg').first()).not.toHaveCSS('display','none');
+ await page.evaluate(()=>window.fixture.dispose());await expect(page.locator('[data-wsp-owned]')).toHaveCount(0);
 });
 
 test('composer feature switch also removes logos from the open model list',async({page})=>{

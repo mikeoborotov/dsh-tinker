@@ -231,6 +231,41 @@ function findComposerTarget(scopes) {
   return null;
 }
 
+// src/appearance-menu.js
+var BRUSH = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"/></svg>';
+function insertAppearanceItem(menu, id, label, onClick) {
+  const doc = menu.ownerDocument;
+  const buttons = [...menu.querySelectorAll('button[role="menuitem"]')].filter((b) => b.closest('[role="menu"]') === menu);
+  if (buttons.length !== 2) return null;
+  const [rename, remove] = buttons;
+  const iconTemplate = rename.querySelector(":scope > span:has(> svg)");
+  const labelTemplate = [...rename.children].find((el) => el.tagName === "SPAN" && el !== iconTemplate);
+  const wrapped = rename.parentElement !== menu && rename.parentElement?.parentElement === remove.parentElement?.parentElement;
+  if (!iconTemplate || !labelTemplate || !wrapped || rename.parentElement === remove.parentElement) return null;
+  const wrapper = doc.createElement("div");
+  wrapper.className = rename.parentElement.className;
+  wrapper.setAttribute("data-wsp-owned", "");
+  wrapper.dataset.wspMenuWrapper = id;
+  const button = doc.createElement("button");
+  button.type = "button";
+  button.setAttribute("role", "menuitem");
+  button.setAttribute("data-wsp-owned", "");
+  button.dataset.wspMenu = id;
+  button.className = rename.className;
+  const icon = doc.createElement("span");
+  icon.className = iconTemplate.className;
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = BRUSH;
+  const text = doc.createElement("span");
+  text.className = labelTemplate.className;
+  text.textContent = label;
+  button.append(icon, text);
+  button.addEventListener("click", onClick);
+  wrapper.append(button);
+  remove.parentElement.before(wrapper);
+  return button;
+}
+
 // src/adapters.js
 var OWNED = "data-wsp-owned";
 var rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
@@ -353,14 +388,7 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       return buttons.length === 2 && el.getBoundingClientRect().height > 0;
     });
     if (!menu || menu.querySelector("[data-wsp-menu]")) return;
-    const button = doc.createElement("button");
-    button.type = "button";
-    button.setAttribute("role", "menuitem");
-    button.setAttribute(OWNED, "");
-    button.dataset.wspMenu = id;
-    button.className = "wsp-menu-item";
-    button.textContent = t("appearance");
-    button.addEventListener("click", (e) => {
+    insertAppearanceItem(menu, id, t("appearance"), (e) => {
       e.stopPropagation();
       if (anchor.isConnected) anchor.click();
       pendingMenu = null;
@@ -368,7 +396,6 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
         if (!disposed) onEdit(id, anchor);
       });
     });
-    menu.append(button);
   }
   function scan() {
     const state = preferences.getSnapshot();
@@ -386,7 +413,7 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       else scanSession(row, state);
     }
     if (!state.features.workspaces) {
-      for (const button of doc.querySelectorAll("[data-wsp-menu]")) button.remove();
+      for (const wrapper of doc.querySelectorAll("[data-wsp-menu-wrapper]")) wrapper.remove();
     }
     scanMenu(state);
   }
@@ -434,7 +461,7 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       restorations.clear();
       for (const icon of sessionIcons.values()) icon.remove();
       sessionIcons.clear();
-      for (const button of doc.querySelectorAll("[data-wsp-menu]")) button.remove();
+      for (const wrapper of doc.querySelectorAll("[data-wsp-menu-wrapper]")) wrapper.remove();
       queue.length = 0;
       pendingMenu = null;
     }
@@ -605,15 +632,176 @@ function attachModelMenuIcons(marker, directory) {
   };
 }
 
+// src/workspace-picker.js
+var OWNED2 = "data-wsp-owned";
+var SLOT = '[data-slot="conversation.hero.workspace"]';
+function createWorkspacePickerAdapter({ document: doc, preferences, workspaces, defaultName = () => "Default workspace" }) {
+  const displayTitle = (workspace) => workspace.title === "default-workspace" ? defaultName() : workspace.title;
+  const win = doc.defaultView, records = /* @__PURE__ */ new Map(), pending = /* @__PURE__ */ new Map(), expanded = /* @__PURE__ */ new Map();
+  let knownMenus = new Set(doc.querySelectorAll('[role="menu"]'));
+  let disposed = false, frame = 0, opening = null, activeMenu = null;
+  function schedule() {
+    if (!disposed && !frame) frame = win.requestAnimationFrame(() => {
+      frame = 0;
+      scan();
+    });
+  }
+  function restore(target) {
+    const record = records.get(target);
+    if (!record) return;
+    record.icon.remove();
+    if (record.original.style.display === "none") record.original.style.display = record.display;
+    records.delete(target);
+  }
+  function decorate(target, original, id, menu = false) {
+    const appearance = preferences.getSnapshot().features.workspaces && preferences.appearance(id);
+    let record = records.get(target);
+    if (record && (record.original !== original || record.icon.parentElement !== target)) {
+      restore(target);
+      record = null;
+    }
+    if (!appearance || !original) {
+      restore(target);
+      return;
+    }
+    if (!record) {
+      const icon = doc.createElement("span");
+      icon.className = "wsp-icon wsp-workspace-picker-icon" + (menu ? " wsp-workspace-picker-menu-icon" : "");
+      icon.setAttribute(OWNED2, "");
+      icon.setAttribute("aria-hidden", "true");
+      record = { original, display: original.style.display, icon, signature: "" };
+      records.set(target, record);
+      original.before(icon);
+    }
+    original.style.display = "none";
+    const signature = JSON.stringify(appearance);
+    if (record.signature !== signature) {
+      fillAppearance(record.icon, appearance);
+      record.signature = signature;
+    }
+  }
+  function owners() {
+    return [...doc.querySelectorAll(SLOT)].map((slot) => {
+      const root = slot.closest("[data-conversation-content]");
+      const trigger = slot.parentElement?.querySelector(':scope > button[aria-haspopup="menu"][aria-expanded]');
+      const original = trigger?.querySelector(":scope > svg");
+      const label = trigger?.querySelector(":scope > span:not([" + OWNED2 + "])");
+      if (!root || !trigger || !original || !label || trigger.querySelectorAll(":scope > svg").length !== 2) return null;
+      return { root, trigger, original, label };
+    }).filter(Boolean);
+  }
+  function menuRows(menu, items) {
+    const viewport = menu.querySelector(':scope > div[role="presentation"]');
+    if (!viewport) return null;
+    const buttons = [...viewport.querySelectorAll('button[role="menuitem"]')].filter((b) => b.closest('[role="menu"]') === menu);
+    if (!items.length || buttons.length !== items.length) return null;
+    const rows2 = buttons.map((button, index) => {
+      const icon = button.querySelector(":scope > span:has(> svg)");
+      const label = [...button.children].find((el) => el.tagName === "SPAN" && el !== icon);
+      const original = icon?.querySelector(":scope > svg");
+      if (!original || !label || label.textContent !== displayTitle(items[index])) return null;
+      return { button, icon, original, id: items[index].workspaceId };
+    });
+    return rows2.every(Boolean) ? rows2 : null;
+  }
+  function scan() {
+    const snapshot = workspaces.list.getSnapshot();
+    const items = snapshot?.phase === "ready" ? snapshot.items : [], live = /* @__PURE__ */ new Set();
+    const currentOwners = owners();
+    const newlyOpened = currentOwners.filter((o) => expanded.get(o.trigger) === false && o.trigger.getAttribute("aria-expanded") === "true");
+    if (!opening && newlyOpened.length === 1) opening = { owner: newlyOpened[0], existing: knownMenus };
+    for (const owner of currentOwners) {
+      expanded.set(owner.trigger, owner.trigger.getAttribute("aria-expanded") === "true");
+      const { root, trigger, original, label } = owner, sessionId = root.getAttribute("data-conversation-session");
+      const matches = sessionId ? items.filter((w) => w.sessionIds?.includes(sessionId)) : [];
+      const workspace = matches.length === 1 ? matches[0] : null;
+      const transition = pending.get(root);
+      if (transition && (workspace?.workspaceId === transition.id || sessionId !== transition.sessionId)) pending.delete(root);
+      const id = !pending.has(root) && workspace && label.textContent === displayTitle(workspace) ? workspace.workspaceId : null;
+      decorate(trigger, original, id);
+      live.add(trigger);
+    }
+    for (const root of pending.keys()) if (!root.isConnected) pending.delete(root);
+    if (opening && (!opening.owner.trigger.isConnected || opening.owner.trigger.getAttribute("aria-expanded") === "false")) opening = null;
+    if (opening) {
+      const candidates = [...doc.querySelectorAll('[role="menu"]')].filter((m) => !opening.existing.has(m) && m.getBoundingClientRect().height > 0);
+      const valid = candidates.map((menu) => ({ menu, rows: menuRows(menu, items) })).filter((m) => m.rows);
+      if (valid.length === 1) activeMenu = { ...valid[0], owner: opening.owner };
+    }
+    if (activeMenu) {
+      const { menu, owner } = activeMenu;
+      const rows2 = menu.isConnected && owner.trigger.isConnected && owner.trigger.getAttribute("aria-expanded") === "true" ? menuRows(menu, items) : null;
+      if (!rows2) activeMenu = null;
+      else {
+        activeMenu.rows = rows2;
+        for (const row of rows2) {
+          decorate(row.icon, row.original, row.id, true);
+          live.add(row.icon);
+        }
+      }
+    }
+    for (const target of records.keys()) if (!live.has(target) || !target.isConnected) restore(target);
+    for (const trigger of expanded.keys()) if (!trigger.isConnected) expanded.delete(trigger);
+    knownMenus = new Set(doc.querySelectorAll('[role="menu"]'));
+  }
+  function onClick(event) {
+    const button = event.target instanceof win.Element ? event.target.closest("button") : null;
+    if (!button) return;
+    const owner = owners().find((o) => o.trigger === button);
+    if (owner) {
+      opening = { owner, existing: new Set(doc.querySelectorAll('[role="menu"]')) };
+      activeMenu = null;
+      schedule();
+      return;
+    }
+    if (activeMenu) {
+      const snapshot = workspaces.list.getSnapshot();
+      const rows2 = snapshot?.phase === "ready" ? menuRows(activeMenu.menu, snapshot.items) : null;
+      const row = rows2?.find((r) => r.button === button);
+      if (row && !button.disabled) {
+        const { root, trigger } = activeMenu.owner;
+        pending.set(root, { id: row.id, sessionId: root.getAttribute("data-conversation-session") });
+        restore(trigger);
+        opening = activeMenu = null;
+        schedule();
+      }
+    }
+  }
+  const observer = new win.MutationObserver((changes) => {
+    if (changes.some((r) => {
+      const element = r.target instanceof win.Element ? r.target : r.target.parentElement;
+      if (element?.closest("[" + OWNED2 + "]")) return false;
+      return r.type !== "childList" || [...r.addedNodes, ...r.removedNodes].some((n) => !(n instanceof win.Element && n.hasAttribute(OWNED2)));
+    })) schedule();
+  });
+  observer.observe(doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["aria-expanded", "data-conversation-session", "data-slot"] });
+  const unsub = [preferences.subscribe(schedule), workspaces.list.subscribe(schedule)];
+  doc.addEventListener("click", onClick, true);
+  scan();
+  return { dispose() {
+    disposed = true;
+    observer.disconnect();
+    win.cancelAnimationFrame(frame);
+    unsub.forEach((fn) => fn());
+    doc.removeEventListener("click", onClick, true);
+    for (const target of records.keys()) restore(target);
+    pending.clear();
+    expanded.clear();
+    knownMenus.clear();
+    opening = activeMenu = null;
+  } };
+}
+
 // src/styles.js
 var CSS = `
 .wsp-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;line-height:1;font-size:17px;pointer-events:none;color:inherit}
 .wsp-icon svg,.wsp-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .wsp-composer-icon{width:16px;height:16px;flex-basis:16px}
 .wsp-model-menu-icon{width:16px;height:16px;flex-basis:16px}
-.wsp-session-icon{margin-right:6px}
-.wsp-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;border-radius:6px;cursor:pointer}
-.wsp-menu-item:hover,.wsp-menu-item:focus-visible{background:var(--dsw-alias-bg-overlay);outline:2px solid var(--dsw-alias-border-l4);outline-offset:-2px}
+.wsp-workspace-picker-icon{width:16px;height:16px;flex-basis:16px;font-size:16px}
+.wsp-workspace-picker-menu-icon{width:100%;height:100%;flex-basis:auto;font-size:14px}
+/* RC.2 has no row gap; the title adds 4px after our 6px margin. Move only the glyph. */
+.wsp-session-icon{margin-right:6px;transform:translateX(5px)}
 .wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.5;max-width:580px}
 .wsp-panel *{box-sizing:border-box}
 .wsp-panel h2{font-size:18px;font-weight:600;margin:0 0 16px}
@@ -890,6 +1078,7 @@ function apply(ctx) {
       adapter.dispose();
     };
   });
+  ctx.effect(() => createWorkspacePickerAdapter({ document, preferences: prefs, workspaces: ctx.workspaces, defaultName: () => locale.bind("workspace")("workspace.defaultName") }).dispose);
   function Overlay(props) {
     const { target } = useStore(ui);
     return target ? /* @__PURE__ */ import_react.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;

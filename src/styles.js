@@ -3,9 +3,10 @@ export const CSS = `
 .wsp-icon svg,.wsp-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .wsp-composer-icon{width:16px;height:16px;flex-basis:16px}
 .wsp-model-menu-icon{width:16px;height:16px;flex-basis:16px}
-.wsp-session-icon{margin-right:6px}
-.wsp-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;border-radius:6px;cursor:pointer}
-.wsp-menu-item:hover,.wsp-menu-item:focus-visible{background:var(--dsw-alias-bg-overlay);outline:2px solid var(--dsw-alias-border-l4);outline-offset:-2px}
+.wsp-workspace-picker-icon{width:16px;height:16px;flex-basis:16px;font-size:16px}
+.wsp-workspace-picker-menu-icon{width:100%;height:100%;flex-basis:auto;font-size:14px}
+/* RC.2 has no row gap; the title adds 4px after our 6px margin. Move only the glyph. */
+.wsp-session-icon{margin-right:6px;transform:translateX(5px)}
 .wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.5;max-width:580px}
 .wsp-panel *{box-sizing:border-box}
 .wsp-panel h2{font-size:18px;font-weight:600;margin:0 0 16px}

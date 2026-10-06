@@ -3,6 +3,7 @@ import { createPreferences, createStore } from './store.js';
 import { ICONS, ICON_IDS, PALETTE, fillAppearance } from './icons.js';
 import { createDOMAdapter, attachComposerIcon } from './adapters.js';
 import { attachModelMenuIcons } from './model-menu.js';
+import { createWorkspacePickerAdapter } from './workspace-picker.js';
 import { CSS } from './styles.js';
 import { dictionaries } from './locales.js';
 
@@ -141,6 +142,7 @@ export function apply(ctx) {
     const unsubscribe = ctx.on('connection/reset', () => adapter.reconnect());
     return () => { unsubscribe(); adapter.dispose(); };
   });
+  ctx.effect(() => createWorkspacePickerAdapter({ document, preferences: prefs, workspaces: ctx.workspaces, defaultName: () => locale.bind('workspace')('workspace.defaultName') }).dispose);
   function Overlay(props) {
     const { target } = useStore(ui);
     return target ? <AppearanceDialog key={target.id} target={target} prefs={prefs} ui={ui} workspaces={ctx.workspaces} t={props.t} lang={props.lang} /> : null;

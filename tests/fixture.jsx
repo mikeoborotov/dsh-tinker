@@ -5,7 +5,7 @@ import { ICON_IDS, vendorOf } from '../src/icons.js';
 import { apply } from '../src/client.jsx';
 const selection = { provider:'deepseek-account',model:'deepseek-v4.1-flash' };
 const sessions = createStore({byId:{s1:{projectionValues:{modelSelection:{next:selection}}}, s2:{} }});
-const workspaceState = createStore({items:[{workspaceId:'w1',title:'Infra'}],phase:'ready'});
+const workspaceState = createStore({items:[{workspaceId:'w1',title:'Infra',sessionIds:['s1']}],phase:'ready'});
 // Real DSH uses a class-backed snapshot; methods require their receiver.
 const workspaces = new (class { constructor(){this.state=workspaceState;} getSnapshot(){return this.state.getSnapshot();} subscribe(fn){return this.state.subscribe(fn);} })();
 const directory = createStore({current:selection,groups:[{id:'deepseek-account',name:'DeepSeek',models:[{id:selection.model,name:'Flash'}]},{id:'openai-codex',name:'ChatGPT',models:[{id:'sol',name:'Sol'}]}]});

@@ -1,5 +1,6 @@
 import { fillAppearance, markSVG, selectionOf, vendorName } from './icons.js';
 import { composerBoundary, findComposerTarget } from './composer-target.js';
+import { insertAppearanceItem } from './appearance-menu.js';
 
 const OWNED = 'data-wsp-owned';
 const rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
@@ -79,17 +80,13 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
       return buttons.length === 2 && el.getBoundingClientRect().height > 0;
     });
     if (!menu || menu.querySelector('[data-wsp-menu]')) return;
-    const button = doc.createElement('button');
-    button.type = 'button'; button.setAttribute('role', 'menuitem'); button.setAttribute(OWNED, ''); button.dataset.wspMenu = id;
-    button.className = 'wsp-menu-item'; button.textContent = t('appearance');
-    button.addEventListener('click', e => {
+    insertAppearanceItem(menu, id, t('appearance'), e => {
       e.stopPropagation();
       // Let the native owner close its menu and restore focus first.
       if (anchor.isConnected) anchor.click();
       pendingMenu = null;
       win.queueMicrotask(() => { if (!disposed) onEdit(id, anchor); });
     });
-    menu.append(button);
   }
   function scan() {
     const state = preferences.getSnapshot();
@@ -99,7 +96,7 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
     for (const row of doc.querySelectorAll(rows)) {
       if (row.getAttribute('data-row-key').startsWith('workspace:')) scanWorkspace(row, state); else scanSession(row, state);
     }
-    if (!state.features.workspaces) { for (const button of doc.querySelectorAll('[data-wsp-menu]')) button.remove(); }
+    if (!state.features.workspaces) { for (const wrapper of doc.querySelectorAll('[data-wsp-menu-wrapper]')) wrapper.remove(); }
     scanMenu(state);
   }
   function onClick(event) {
@@ -133,7 +130,7 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
       for (const fn of unsub) fn(); doc.removeEventListener('click', onClick, true); doc.removeEventListener('scroll', schedule, true);
       for (const record of restorations.values()) restore(record); restorations.clear();
       for (const icon of sessionIcons.values()) icon.remove(); sessionIcons.clear();
-      for (const button of doc.querySelectorAll('[data-wsp-menu]')) button.remove();
+      for (const wrapper of doc.querySelectorAll('[data-wsp-menu-wrapper]')) wrapper.remove();
       queue.length = 0; pendingMenu = null;
     },
   };
