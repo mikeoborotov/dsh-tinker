@@ -215,6 +215,22 @@ function fillAppearance(element, appearance) {
   }
 }
 
+// src/composer-target.js
+function composerBoundary(marker) {
+  const scopes = [];
+  for (let el = marker.parentElement, depth = 0; el && depth < 4; el = el.parentElement, depth++) scopes.push(el);
+  return { scopes, boundary: scopes.at(-1) };
+}
+function findComposerTarget(scopes) {
+  for (const scope of scopes) {
+    const codex = scope.querySelectorAll('button.codexModelSelectTrigger[aria-haspopup="menu"][title]');
+    if (codex.length === 1 && codex[0].querySelector(":scope > .codexModelSelectLabel")) return { trigger: codex[0], kind: "codex" };
+    const native = scope.querySelectorAll('button[aria-haspopup="menu"][aria-busy][title]');
+    if (native.length === 1 && native[0].querySelector(":scope > svg")) return { trigger: native[0], kind: "native" };
+  }
+  return null;
+}
+
 // src/adapters.js
 var OWNED = "data-wsp-owned";
 var rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
@@ -426,10 +442,7 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
 }
 function attachComposerIcon(marker, selection) {
   const doc = marker.ownerDocument, win = doc.defaultView;
-  const scopes = [];
-  let parent = marker.parentElement;
-  for (let depth = 0; parent && depth < 4; depth++, parent = parent.parentElement) scopes.push(parent);
-  const boundary = scopes.at(-1);
+  const { scopes, boundary } = composerBoundary(marker);
   let attached = null, disposed = false;
   function restore() {
     if (!attached) return;
@@ -437,20 +450,9 @@ function attachComposerIcon(marker, selection) {
     if (attached.original && attached.original.style.display === "none") attached.original.style.display = attached.display;
     attached = null;
   }
-  function findTarget() {
-    for (const scope of scopes) {
-      const codex = scope.querySelectorAll('button.codexModelSelectTrigger[aria-haspopup="menu"][title]');
-      if (codex.length === 1 && codex[0].querySelector(":scope > .codexModelSelectLabel"))
-        return { trigger: codex[0], kind: "codex" };
-      const native = scope.querySelectorAll('button[aria-haspopup="menu"][aria-busy][title]');
-      if (native.length === 1 && native[0].querySelector(":scope > svg"))
-        return { trigger: native[0], kind: "native" };
-    }
-    return null;
-  }
   function update() {
     if (disposed) return;
-    const target = findTarget();
+    const target = findComposerTarget(scopes);
     if (!target) {
       restore();
       return;
@@ -488,11 +490,127 @@ function attachComposerIcon(marker, selection) {
   };
 }
 
+// src/model-menu.js
+function normalize(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ");
+}
+function modelLabel(button, kind) {
+  if (kind === "codex") return normalize(button.querySelector(".codexModelSelectOptionName")?.textContent);
+  return normalize(button.getAttribute("title"));
+}
+function matchingSelection(groups, label) {
+  const matches = groups.flatMap((group) => (group.models ?? []).filter((model) => normalize(model.name) === label).map((model) => ({ provider: group.id, model: model.id })));
+  if (!matches.length) return null;
+  const vendors = new Set(matches.map(vendorOf));
+  return vendors.size === 1 ? matches[0] : null;
+}
+function providerGroups(section, menu, kind, groups) {
+  const headingId = section.getAttribute("aria-labelledby");
+  if (kind === "codex" && menu.id.endsWith("-menu")) {
+    const ownerId = menu.id.slice(0, -5);
+    return groups.filter((group) => headingId === `${ownerId}-${group.id}`);
+  }
+  const heading = section.querySelector(":scope > [data-menu-group-heading]");
+  const name = normalize(heading?.textContent);
+  const named = groups.filter((group) => normalize(group.name) === name || group.id === name);
+  return named.length ? named : groups;
+}
+function ownedMutation(record, win) {
+  if (record.target instanceof win.Element && record.target.closest("[data-wsp-owned]")) return true;
+  if (record.type !== "childList") return false;
+  const changes = [...record.addedNodes, ...record.removedNodes];
+  return changes.length > 0 && changes.every((node) => node instanceof win.Element && node.hasAttribute("data-wsp-owned"));
+}
+function attachModelMenuIcons(marker, directory) {
+  const doc = marker.ownerDocument, win = doc.defaultView;
+  const { scopes, boundary } = composerBoundary(marker), icons = /* @__PURE__ */ new Map();
+  let disposed = false, frame = 0, observedMenu = null;
+  function schedule() {
+    if (!disposed && !frame) frame = win.requestAnimationFrame(() => {
+      frame = 0;
+      update();
+    });
+  }
+  const menuObserver = new win.MutationObserver((records) => {
+    if (records.some((r) => !ownedMutation(r, win))) schedule();
+  });
+  const portalObserver = new win.MutationObserver(schedule);
+  function update() {
+    if (disposed) return;
+    const owner = findComposerTarget(scopes);
+    const open = owner?.trigger.getAttribute("aria-expanded") === "true";
+    const id = owner?.trigger.getAttribute("aria-controls");
+    const menu = open && id ? doc.getElementById(id) : null;
+    portalObserver.disconnect();
+    if (open && id && !menu) portalObserver.observe(doc.body, { childList: true });
+    if (menu !== observedMenu) {
+      menuObserver.disconnect();
+      observedMenu = menu;
+      if (menu) menuObserver.observe(menu, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["title", "aria-labelledby", "hidden"] });
+    }
+    const seen = /* @__PURE__ */ new Set();
+    if (menu && menu.getAttribute("role") && !menu.hidden) {
+      const groups = directory.getSnapshot().groups ?? [];
+      const selector = owner.kind === "codex" ? 'section.codexModelSelectGroup[role="group"]' : 'section[data-menu-group][role="group"]';
+      for (const section of menu.querySelectorAll(selector)) {
+        if (section.hidden) continue;
+        const candidates = providerGroups(section, menu, owner.kind, groups);
+        const buttons = owner.kind === "codex" ? section.querySelectorAll(':scope > button.codexModelSelectOption[role="menuitemradio"]') : section.querySelectorAll(':scope > button[role="menuitemradio"][title]');
+        for (const button of buttons) {
+          if (button.hidden) continue;
+          const label = modelLabel(button, owner.kind);
+          if (!label) continue;
+          const selection = matchingSelection(candidates, label), signature = JSON.stringify(selection);
+          let record = icons.get(button);
+          if (!record || record.icon.parentElement !== button) {
+            record?.icon.remove();
+            const icon = doc.createElement("span");
+            icon.className = "wsp-icon wsp-model-menu-icon";
+            icon.setAttribute("data-wsp-owned", "");
+            icon.setAttribute("aria-hidden", "true");
+            button.insertBefore(icon, button.firstChild);
+            record = { icon, signature: void 0 };
+            icons.set(button, record);
+          }
+          if (record.signature !== signature) {
+            record.icon.innerHTML = markSVG(selection);
+            record.icon.dataset.vendor = vendorName(selection);
+            record.signature = signature;
+          }
+          seen.add(button);
+        }
+      }
+    }
+    for (const [button, record] of icons) if (!seen.has(button)) {
+      record.icon.remove();
+      icons.delete(button);
+    }
+  }
+  const scopeObserver = new win.MutationObserver((records) => {
+    if (records.some((r) => !ownedMutation(r, win))) schedule();
+  });
+  if (boundary) scopeObserver.observe(boundary, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-expanded", "aria-controls"] });
+  const unsubscribe = directory.subscribe(schedule);
+  update();
+  return () => {
+    disposed = true;
+    win.cancelAnimationFrame(frame);
+    unsubscribe();
+    scopeObserver.disconnect();
+    menuObserver.disconnect();
+    portalObserver.disconnect();
+    for (const record of icons.values()) record.icon.remove();
+    icons.clear();
+    observedMenu = null;
+  };
+}
+
 // src/styles.js
 var CSS = `
 .wsp-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;line-height:1;font-size:17px;pointer-events:none;color:inherit}
 .wsp-icon svg,.wsp-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .wsp-composer-icon{width:16px;height:16px;flex-basis:16px}
+.wsp-model-menu-icon{width:16px;height:16px;flex-basis:16px}
 .wsp-session-icon{margin-right:6px}
 .wsp-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;border-radius:6px;cursor:pointer}
 .wsp-menu-item:hover,.wsp-menu-item:focus-visible{background:var(--dsw-alias-bg-overlay);outline:2px solid var(--dsw-alias-border-l4);outline-offset:-2px}
@@ -546,7 +664,7 @@ var en = {
   reset: "Default folder",
   loading: "Loading...",
   workspaces: "Workspace icons and appearance menu",
-  composer: "Model logo in the selector",
+  composer: "Model logos in the selector and list",
   sessions: "Model logos beside chats",
   on: "On",
   off: "Off",
@@ -582,7 +700,7 @@ var ru = {
   reset: "\u041E\u0431\u044B\u0447\u043D\u0430\u044F \u043F\u0430\u043F\u043A\u0430",
   loading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430...",
   workspaces: "\u0418\u043A\u043E\u043D\u043A\u0438 \u0438 \u043C\u0435\u043D\u044E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F Workspaces",
-  composer: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F \u043C\u043E\u0434\u0435\u043B\u0438 \u0432 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u0435",
+  composer: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0432 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u0435 \u0438 \u0441\u043F\u0438\u0441\u043A\u0435",
   sessions: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0440\u044F\u0434\u043E\u043C \u0441 \u0447\u0430\u0442\u0430\u043C\u0438",
   on: "\u0412\u043A\u043B.",
   off: "\u0412\u044B\u043A\u043B.",
@@ -790,6 +908,10 @@ function apply(ctx) {
       if (!marker.current || !settings.features.composer) return;
       return attachComposerIcon(marker.current, state.pending ?? state.current);
     }, [state.current, state.pending, settings.features.composer]);
+    (0, import_react.useLayoutEffect)(() => {
+      if (!marker.current || !settings.features.composer) return;
+      return attachModelMenuIcons(marker.current, directory);
+    }, [directory, settings.features.composer]);
     return /* @__PURE__ */ import_react.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "workspace-plus-dialog", order: 90, locale: NS }, Overlay));

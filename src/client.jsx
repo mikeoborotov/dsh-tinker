@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useSy
 import { createPreferences, createStore } from './store.js';
 import { ICONS, ICON_IDS, PALETTE, fillAppearance } from './icons.js';
 import { createDOMAdapter, attachComposerIcon } from './adapters.js';
+import { attachModelMenuIcons } from './model-menu.js';
 import { CSS } from './styles.js';
 import { dictionaries } from './locales.js';
 
@@ -154,6 +155,10 @@ export function apply(ctx) {
       if (!marker.current || !settings.features.composer) return;
       return attachComposerIcon(marker.current, state.pending ?? state.current);
     }, [state.current, state.pending, settings.features.composer]);
+    useLayoutEffect(() => {
+      if (!marker.current || !settings.features.composer) return;
+      return attachModelMenuIcons(marker.current, directory);
+    }, [directory, settings.features.composer]);
     // The slot gives a scoped lifecycle and shared ModelDirectory. Discovery does not register a second picker.
     return <span ref={marker} data-wsp-owned="" style={{ display: 'none' }} />;
   }

@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-plus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Workspace appearance and model logos for DeepSeek Harness",
   "type": "module",
   "license": "MIT",

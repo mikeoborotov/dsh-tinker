@@ -8,7 +8,7 @@ const sessions = createStore({byId:{s1:{projectionValues:{modelSelection:{next:s
 const workspaceState = createStore({items:[{workspaceId:'w1',title:'Infra'}],phase:'ready'});
 // Real DSH uses a class-backed snapshot; methods require their receiver.
 const workspaces = new (class { constructor(){this.state=workspaceState;} getSnapshot(){return this.state.getSnapshot();} subscribe(fn){return this.state.subscribe(fn);} })();
-const directory = createStore({current:selection});
+const directory = createStore({current:selection,groups:[{id:'deepseek-account',name:'DeepSeek',models:[{id:selection.model,name:'Flash'}]},{id:'openai-codex',name:'ChatGPT',models:[{id:'sol',name:'Sol'}]}]});
 const effects=[], roots=[];
 const rendered = new Map();
 let refreshes=0;
@@ -27,7 +27,7 @@ const ctx={
 };
 window.fixture={
  mount(){apply(ctx);},
- change(selection){ directory.set({current:selection});sessions.set(s=>({...s,byId:{...s.byId,s1:{projectionValues:{modelSelection:{next:selection}}}}}));},
+ change(selection){ directory.set({...directory.getSnapshot(),current:selection});sessions.set(s=>({...s,byId:{...s.byId,s1:{projectionValues:{modelSelection:{next:selection}}}}}));},
  dispose(){for(const r of roots)r.unmount();for(const fn of effects.reverse())fn();},
  prefs:()=>createPreferences(localStorage,ICON_IDS), vendorOf,
  rerenderSettings(){const {root,Component}=rendered.get('settings.section');root.render(<Component t={ctx.locale.bind()} />);},

@@ -65,3 +65,12 @@ test('unsupported workspace markup is left unchanged',async({page})=>{
  await expect(page.locator('[data-row-key="workspace:changed"]')).toHaveText('Changed UI');
  await expect(page.locator('[data-row-key="workspace:changed"] [data-wsp-owned]')).toHaveCount(0);
 });
+
+test('composer feature switch also removes logos from the open model list',async({page})=>{
+ await page.locator('#toolbar button').evaluate(el=>{el.setAttribute('aria-expanded','true');el.setAttribute('aria-controls','fixture-menu');});
+ await page.evaluate(()=>{const m=document.createElement('div');m.id='fixture-menu';m.setAttribute('role','menu');m.innerHTML='<section role="group" data-menu-group><div data-menu-group-heading>ChatGPT</div><button role="menuitemradio" title="Sol"><span>Sol</span></button></section>';document.body.append(m);});
+ await expect(page.locator('.wsp-model-menu-icon')).toHaveAttribute('data-vendor','OpenAI');
+ await page.getByRole('switch',{name:'composer',exact:true}).click();await expect(page.locator('.wsp-model-menu-icon')).toHaveCount(0);
+ await page.getByRole('switch',{name:'composer',exact:true}).click();await expect(page.locator('.wsp-model-menu-icon')).toHaveCount(1);
+ await page.evaluate(()=>window.fixture.dispose());await expect(page.locator('[data-wsp-owned]')).toHaveCount(0);
+});

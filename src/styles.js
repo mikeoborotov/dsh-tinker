@@ -2,6 +2,7 @@ export const CSS = `
 .wsp-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;line-height:1;font-size:17px;pointer-events:none;color:inherit}
 .wsp-icon svg,.wsp-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .wsp-composer-icon{width:16px;height:16px;flex-basis:16px}
+.wsp-model-menu-icon{width:16px;height:16px;flex-basis:16px}
 .wsp-session-icon{margin-right:6px}
 .wsp-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;border-radius:6px;cursor:pointer}
 .wsp-menu-item:hover,.wsp-menu-item:focus-visible{background:var(--dsw-alias-bg-overlay);outline:2px solid var(--dsw-alias-border-l4);outline-offset:-2px}

@@ -1,4 +1,5 @@
 import { fillAppearance, markSVG, selectionOf, vendorName } from './icons.js';
+import { composerBoundary, findComposerTarget } from './composer-target.js';
 
 const OWNED = 'data-wsp-owned';
 const rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
@@ -142,10 +143,7 @@ export function attachComposerIcon(marker, selection) {
   const doc = marker.ownerDocument, win = doc.defaultView;
   // Both native RC.2 and Codex Subscription 2.5.2 use the same model slot.
   // Inspect only this composer toolbar; never match unrelated menu buttons by their caption.
-  const scopes = [];
-  let parent = marker.parentElement;
-  for (let depth = 0; parent && depth < 4; depth++, parent = parent.parentElement) scopes.push(parent);
-  const boundary = scopes.at(-1);
+  const { scopes, boundary } = composerBoundary(marker);
   let attached = null, disposed = false;
   function restore() {
     if (!attached) return;
@@ -153,20 +151,9 @@ export function attachComposerIcon(marker, selection) {
     if (attached.original && attached.original.style.display === 'none') attached.original.style.display = attached.display;
     attached = null;
   }
-  function findTarget() {
-    for (const scope of scopes) {
-      const codex = scope.querySelectorAll('button.codexModelSelectTrigger[aria-haspopup="menu"][title]');
-      if (codex.length === 1 && codex[0].querySelector(':scope > .codexModelSelectLabel'))
-        return { trigger: codex[0], kind: 'codex' };
-      const native = scope.querySelectorAll('button[aria-haspopup="menu"][aria-busy][title]');
-      if (native.length === 1 && native[0].querySelector(':scope > svg'))
-        return { trigger: native[0], kind: 'native' };
-    }
-    return null;
-  }
   function update() {
     if (disposed) return;
-    const target = findTarget();
+    const target = findComposerTarget(scopes);
     if (!target) { restore(); return; }
     if (attached?.trigger === target.trigger && attached.icons.every(icon => icon.parentElement === target.trigger)
       && (!attached.original || attached.original.parentElement === target.trigger)) return;
