@@ -140,20 +140,56 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
 
 export function attachComposerIcon(marker, selection) {
   const doc = marker.ownerDocument, win = doc.defaultView;
-  // RC.2: native model root and input.right entries share one toolbar. Limit discovery to this marker's toolbar.
-  let scope = marker.parentElement, trigger;
-  for (let depth = 0; scope && depth < 4; depth++, scope = scope.parentElement) {
-    const candidates = scope.querySelectorAll('button[aria-haspopup="menu"][aria-busy][title]');
-    if (candidates.length === 1) { trigger = candidates[0]; break; }
+  // Both native RC.2 and Codex Subscription 2.5.2 use the same model slot.
+  // Inspect only this composer toolbar; never match unrelated menu buttons by their caption.
+  const scopes = [];
+  let parent = marker.parentElement;
+  for (let depth = 0; parent && depth < 4; depth++, parent = parent.parentElement) scopes.push(parent);
+  const boundary = scopes.at(-1);
+  let attached = null, disposed = false;
+  function restore() {
+    if (!attached) return;
+    for (const icon of attached.icons) icon.remove();
+    if (attached.original && attached.original.style.display === 'none') attached.original.style.display = attached.display;
+    attached = null;
   }
-  const original = trigger?.querySelector(':scope > svg');
-  if (!trigger || !original) return () => {};
-  const icon = doc.createElement('span'); icon.className = 'wsp-icon wsp-composer-icon'; icon.setAttribute(OWNED, ''); icon.setAttribute('aria-hidden', 'true');
-  icon.innerHTML = markSVG(selection);
-  const display = original.style.display;
-  // Mirror the host compact-mode variable; replacing its existing icon must not add width on wide screens.
-  icon.style.display = 'var(--dsh-composer-model-icon-display, none)';
-  const captionIcon = icon.cloneNode(true); captionIcon.style.display = 'var(--dsh-composer-model-text-display, inline-flex)';
-  original.style.display = 'none'; trigger.insertBefore(icon, original); trigger.insertBefore(captionIcon, original);
-  return () => { icon.remove(); captionIcon.remove(); if (original.style.display === 'none') original.style.display = display; };
+  function findTarget() {
+    for (const scope of scopes) {
+      const codex = scope.querySelectorAll('button.codexModelSelectTrigger[aria-haspopup="menu"][title]');
+      if (codex.length === 1 && codex[0].querySelector(':scope > .codexModelSelectLabel'))
+        return { trigger: codex[0], kind: 'codex' };
+      const native = scope.querySelectorAll('button[aria-haspopup="menu"][aria-busy][title]');
+      if (native.length === 1 && native[0].querySelector(':scope > svg'))
+        return { trigger: native[0], kind: 'native' };
+    }
+    return null;
+  }
+  function update() {
+    if (disposed) return;
+    const target = findTarget();
+    if (!target) { restore(); return; }
+    if (attached?.trigger === target.trigger && attached.icons.every(icon => icon.parentElement === target.trigger)
+      && (!attached.original || attached.original.parentElement === target.trigger)) return;
+    restore();
+    const { trigger, kind } = target;
+    const icon = doc.createElement('span'); icon.className = 'wsp-icon wsp-composer-icon'; icon.setAttribute(OWNED, ''); icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = markSVG(selection);
+    if (kind === 'codex') {
+      // This picker has no leading model glyph. Its first SVG is the CHEVRON (or optional fast-mode bolt).
+      // Add a logo without hiding either existing indicator.
+      icon.style.display = 'inline-flex'; trigger.insertBefore(icon, trigger.firstChild);
+      attached = { trigger, original: null, icons: [icon] };
+    } else {
+      const original = trigger.querySelector(':scope > svg'), display = original.style.display;
+      icon.style.display = 'var(--dsh-composer-model-icon-display, none)';
+      const captionIcon = icon.cloneNode(true); captionIcon.style.display = 'var(--dsh-composer-model-text-display, inline-flex)';
+      original.style.display = 'none'; trigger.insertBefore(icon, original); trigger.insertBefore(captionIcon, original);
+      attached = { trigger, original, display, icons: [icon, captionIcon] };
+    }
+  }
+  // A later slot occupant or React replacement can mount after our marker. Observe that lifecycle locally.
+  const observer = new win.MutationObserver(update);
+  if (boundary) observer.observe(boundary, { childList: true, subtree: true });
+  update();
+  return () => { disposed = true; observer.disconnect(); restore(); };
 }

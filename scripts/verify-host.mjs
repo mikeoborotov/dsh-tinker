@@ -7,7 +7,7 @@ const errors=[];page.on('pageerror',e=>errors.push(e.stack));
 try {
  await page.addLocatorHandler(page.getByRole('button',{name:'Continue',exact:true}),async locator=>locator.click());
  await page.addLocatorHandler(page.getByRole('button',{name:'Configure later',exact:true}),async locator=>locator.click());
- await page.goto(process.argv[2]); await page.waitForTimeout(1500);
+ await page.goto((process.argv[2] ?? process.env.DSH_TEST_URL)); await page.waitForTimeout(1500);
  await page.locator('[data-row-key^="workspace:"]').first().waitFor();
  const workspace=page.locator('[data-row-key^="workspace:"]').first();
  await workspace.hover();await workspace.locator('button').first().click();
