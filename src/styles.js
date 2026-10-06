@@ -21,18 +21,51 @@ export const CSS = `
 .wsp-panel input[type=text],.wsp-panel select{width:100%}
 .wsp-panel input[type=color]{width:44px;height:36px;padding:3px;cursor:pointer}
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.wsp-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-.wsp-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;margin:12px 0}
-.wsp-grid button{padding:9px;display:flex;justify-content:center;align-items:center}
-.wsp-palette button{width:28px;height:28px;padding:0;border-radius:50%;background:var(--wsp-art-color)}
-.wsp-palette button:hover{background:var(--wsp-art-color)}
-.wsp-panel .wsp-palette button[aria-pressed=true]{background:var(--wsp-art-color);outline:2px solid var(--dsw-alias-label-primary);outline-offset:2px}
-.wsp-preview{display:flex;align-items:center;gap:12px;padding:12px 0}
-.wsp-preview .wsp-icon{width:30px;height:30px;flex-basis:30px;font-size:28px}
-.wsp-mask{position:fixed;inset:0;background:var(--dsw-alias-bg-mask-1);display:flex;align-items:center;justify-content:center;pointer-events:auto;padding:24px;z-index:100}
-.wsp-dialog{background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l3);border-radius:16px;padding:24px;width:540px;max-width:100%;max-height:calc(100vh - 48px);overflow:auto;box-shadow:0 16px 48px var(--dsw-alias-bg-mask-2)}
+/* Modal, its header/X and footer Buttons come from the host's public native primitives.
+   Never put wsp-panel on that shell: its broad settings selectors override native controls. */
+.wsp-appearance-dialog{width:min(540px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-appearance-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-appearance-body{display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:22px}
+.wsp-appearance-body *{box-sizing:border-box}
+.wsp-kind-tabs{display:flex;gap:4px;align-self:flex-start;padding:3px;background:var(--dsw-alias-bg-layer-1);border-radius:var(--dsw-radius-md)}
+.wsp-kind-tabs button[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l4)}
+/* Native Workspace Rename uses this raw-input shape, not the smaller public Input. */
+.wsp-appearance-input{width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;outline:none}
+.wsp-appearance-input:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
+.wsp-appearance-input::placeholder{color:var(--dsw-alias-label-tertiary)}
+.wsp-appearance-input option{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+.wsp-field-label{display:block;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.wsp-color-section{display:flex;flex-direction:column;gap:6px}
+.wsp-appearance-palette{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:4px 2px}
+.wsp-appearance-palette .wsp-color-swatch{width:28px;height:28px;padding:0;border-radius:50%;corner-shape:round;background:var(--wsp-art-color)}
+.wsp-appearance-palette .wsp-color-swatch:hover:not(:disabled){background:var(--wsp-art-color)}
+.wsp-color-swatch[aria-pressed=true]{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
+.wsp-custom-color{width:28px;height:28px;padding:0;border:1px solid var(--dsw-alias-border-l4);border-radius:50%;corner-shape:round;background:transparent;cursor:pointer;overflow:hidden}
+.wsp-custom-color::-webkit-color-swatch-wrapper{padding:0}
+.wsp-custom-color::-webkit-color-swatch{border:0;border-radius:50%}
+.wsp-custom-color::-moz-color-swatch{border:0;border-radius:50%}
+.wsp-choice-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;max-height:226px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.wsp-choice-grid .wsp-choice{height:40px;min-width:0;width:100%;padding:0}
+.wsp-choice[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l4)}
+.wsp-choice .wsp-icon{width:22px;height:22px;flex-basis:22px}
+.wsp-emoji-choice{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:25px}
+.wsp-results-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wsp-help{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
+.wsp-preview-section{display:flex;flex-direction:column;gap:6px}
+.wsp-list-preview{display:flex;align-items:center;height:34px;gap:6px;padding:0 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-sidebar-fill);font-size:14px;line-height:20px}
+.wsp-list-preview>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsp-list-preview .wsp-icon{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.wsp-advanced{border-top:.5px solid var(--dsw-alias-border-l3);padding-top:10px}
+.wsp-advanced summary{cursor:pointer;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.wsp-advanced .wsp-field-label{margin:12px 0 4px}
+.wsp-advanced .wsp-help{margin:8px 0}
+.wsp-reset-action{margin-right:auto}
+.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;min-height:188px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
+.wsp-image-dropzone.wsp-is-dragging{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
+.wsp-drop-title{font-size:16px;line-height:24px}
+.wsp-hidden-file{display:none}
 .wsp-error{color:var(--dsw-alias-state-error-primary);margin:10px 0}
 .wsp-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .wsp-toggle button{min-width:60px}
-@media(max-width:480px){.wsp-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-mask{padding:12px}.wsp-dialog{padding:16px}}
+@media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;

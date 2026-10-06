@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { build } from 'esbuild';
-import { readFile } from 'node:fs/promises';
+import { buildFixture } from '../build-fixture.mjs';
 let fixture;
-test.beforeAll(async()=>{ fixture=(await build({entryPoints:['tests/fixture.jsx'],bundle:true,format:'iife',platform:'browser',write:false})).outputFiles[0].text; });
+test.beforeAll(async()=>{ fixture=await buildFixture(); });
+async function mount(page) {
+ await page.addStyleTag({content:fixture.css});await page.addScriptTag({content:fixture.js});await page.evaluate(()=>window.fixture.mount());
+}
 test.beforeEach(async({page})=>{
  await page.route('http://fixture.test/**',r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><body>
  <div data-row-key="workspace:w1" role="treeitem"><span><svg width="18" height="18"><path/></svg></span><span><svg/></span><span>Infra</span><span><button id="menu-anchor">...</button><button>New</button></span></div>
@@ -11,7 +13,7 @@ test.beforeEach(async({page})=>{
  <div id="toolbar"><div><button aria-haspopup="menu" aria-busy="false" title="Model"><svg width="16" height="16"><path/></svg><span>Model</span></button></div><div id="marker"></div></div>
  <div id="overlay"></div><div id="settings"></div>
  </body></html>`}));
- await page.goto('http://fixture.test/');await page.addScriptTag({content:fixture});await page.evaluate(()=>window.fixture.mount());
+ await page.goto('http://fixture.test/');await mount(page);
 });
 test('routed models and subscription aliases resolve by lab',async({page})=>{
  const values=await page.evaluate(()=>[['openai-codex','sol'],['openrouter','anthropic/claude'],['openrouter','deepseek/deepseek-v4.1'],['unknown','mystery']].map(([provider,model])=>window.fixture.vendorOf({provider,model})));
@@ -31,7 +33,7 @@ test('selected model changes both places immediately, native status remains',asy
 test('workspace appearance reset and disposal restore native UI',async({page})=>{
  await page.evaluate(()=>window.fixture.prefs().save('w1','infra',{kind:'emoji',emoji:'💻'}));
  // A fresh preference object writes durable data; the running instance receives a storage event on other windows, tested on restart here.
- await page.reload();await page.addScriptTag({content:fixture});await page.evaluate(()=>window.fixture.mount());
+ await page.reload();await mount(page);
  await expect(page.locator('.wsp-workspace-icon')).toHaveText('💻');
  await page.evaluate(()=>window.fixture.dispose());
  await expect(page.locator('[data-wsp-owned]')).toHaveCount(0);

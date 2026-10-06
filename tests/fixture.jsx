@@ -11,9 +11,11 @@ const workspaces = new (class { constructor(){this.state=workspaceState;} getSna
 const directory = createStore({current:selection,groups:[{id:'deepseek-account',name:'DeepSeek',models:[{id:selection.model,name:'Flash'}]},{id:'openai-codex',name:'ChatGPT',models:[{id:'sol',name:'Sol'}]}]});
 const effects=[], roots=[];
 const rendered = new Map();
-let refreshes=0;
+let refreshes=0, language='legacy';
+const localeTables={};
+const translate=()=>key=>language==='legacy'?({appearance:'Appearance'}[key]??key):(localeTables.workspacePlus?.[language]?.[key]??key);
 const ctx={
- locale:{register:()=>()=>{},bind:()=>key=>({appearance:'Appearance'}[key]??key)},
+ locale:{register(name,tables){localeTables[name]=tables;return()=>{delete localeTables[name];};},bind:translate},
  effect(fn){const dispose=fn();if(typeof dispose==='function')effects.push(dispose);},
  on(){return ()=>{};},
  sessions:{list:sessions,refreshProjections:async id=>{refreshes++;sessions.set(s=>({...s,byId:{...s.byId,[id]:{projectionValues:{modelSelection:{next:{provider:'openai-codex',model:'sol'}}}}}}));}},
@@ -32,4 +34,6 @@ window.fixture={
  prefs:()=>createPreferences(localStorage,ICON_IDS), vendorOf,
  rerenderSettings(){const {root,Component}=rendered.get('settings.section');root.render(<Component t={ctx.locale.bind()} />);},
  refreshes:()=>refreshes,
+ setLanguage(value){language=value;for(const {root,Component,options} of rendered.values())root.render(<Component {...options.inject?.('s1')} t={ctx.locale.bind()} lang={language} />);},
+ setWorkspaces(items){workspaceState.set({items,phase:'ready'});},
 };

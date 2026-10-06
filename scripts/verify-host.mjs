@@ -13,7 +13,7 @@ try {
  await workspace.hover();await workspace.locator('button').first().click();
  console.log('MENU',await page.locator('[role="menu"]').allTextContents());
  await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
- await expect(page.getByRole('dialog',{name:/Appearance/})).toBeVisible();
+ await expect(page.getByRole('dialog',{name:/Change workspace appearance/})).toBeVisible();
  await mkdir('test-results',{recursive:true}); await page.screenshot({path:'test-results/host-dialog-light.png'});
  await page.evaluate(()=>document.body.setAttribute('data-ds-dark-theme',''));await page.screenshot({path:'test-results/host-dialog-dark.png'});await page.evaluate(()=>document.body.removeAttribute('data-ds-dark-theme'));
  await page.getByRole('button',{name:'code',exact:true}).click();
@@ -24,11 +24,11 @@ try {
  await mkdir('test-results',{recursive:true});await page.screenshot({path:'test-results/host-icons.png'});
  await page.reload(); await page.waitForTimeout(1000); await expect(workspace.locator('.wsp-workspace-icon')).toBeVisible();
  await workspace.hover();await workspace.locator('button').first().click();await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
- await page.getByRole('button',{name:'Emoji',exact:true}).click();await page.getByRole('textbox',{name:'Emoji',exact:true}).fill('💻');await page.getByRole('button',{name:'Save',exact:true}).click();
+ await page.getByRole('button',{name:'Emoji',exact:true}).click();await page.locator('#wsp-emoji').fill('💻');await page.getByRole('button',{name:'Save',exact:true}).click();
  await expect(workspace.locator('.wsp-workspace-icon')).toHaveText('💻');
  await workspace.hover();await workspace.locator('button').first().click();await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
  await page.getByRole('button',{name:'Image',exact:true}).click();
- await page.getByLabel('Upload image',{exact:true}).setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64')});
+ await page.locator('#wsp-upload').setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64')});
  await page.getByRole('button',{name:'Save',exact:true}).click();await expect(workspace.locator('.wsp-workspace-icon img')).toBeVisible();
  await workspace.hover();await workspace.locator('button').first().click();await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
  await page.getByRole('button',{name:'Default folder',exact:true}).click();await expect(workspace.locator('.wsp-workspace-icon')).toHaveCount(0);
@@ -36,7 +36,7 @@ try {
  await page.getByRole('button',{name:'Workspace Plus',exact:true}).click();
  await expect(page.getByRole('switch',{name:'Model logos beside chats'})).toBeVisible();
  await page.getByRole('switch',{name:'Model logos beside chats'}).click();await expect(page.locator('.wsp-session-icon')).toHaveCount(0);
- await page.locator('#wsp-workspace').selectOption(await workspace.getAttribute('data-row-key').then(key=>key.slice(10)));await expect(page.getByRole('dialog',{name:/Appearance/})).toBeVisible();
+ await page.locator('#wsp-workspace').selectOption(await workspace.getAttribute('data-row-key').then(key=>key.slice(10)));await expect(page.getByRole('dialog',{name:/Change workspace appearance/})).toBeVisible();
  await page.keyboard.press('Escape');
  console.log('HOST_ERRORS',errors);
  console.log('HOST_SMOKE_OK: actual RC.2 loader, workspace menu, icon/emoji/image, reload, reset');

@@ -1,0 +1,3 @@
+# Preserve byte-pinned upstream fixtures and reproducible catalog data on every OS.
+tests/native-rc2/** -text
+src/emoji-data.json -text
