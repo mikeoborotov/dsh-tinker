@@ -2,11 +2,15 @@
 
 ## Provider marks
 
-The selected SVG path data in `src/provider-marks.json` is taken from
-[dsh-model-vendor-badge](https://github.com/Townrain/dsh-model-vendor-badge),
-`src/client/official-icons.generated.ts` (retrieved 2026-10-06). Its generator
-attributes the source to OpenCode provider-icons/sprite.svg. Brand marks remain
-their respective owners' trademarks; this project is not endorsed by them.
+Except for Qwen, the selected SVG path data in [provider-marks.json](<src/provider-marks.json>)
+is taken from [dsh-model-vendor-badge](https://github.com/Townrain/dsh-model-vendor-badge),
+[official-icons.generated.ts at commit 95d10fef24f0f3415e69233581755043e0f1a458](https://github.com/Townrain/dsh-model-vendor-badge/blob/95d10fef24f0f3415e69233581755043e0f1a458/src/client/official-icons.generated.ts).
+The original seven marks were retrieved 2026-10-06; `zhipuai` and `minimax` were
+added from the same pinned collection 2026-10-07. Only the original viewBox/path
+attributes are copied. Its generator attributes the source to OpenCode
+provider-icons/sprite.svg. The [pinned MIT license](https://github.com/Townrain/dsh-model-vendor-badge/blob/95d10fef24f0f3415e69233581755043e0f1a458/LICENSE)
+is reproduced below. Brand marks remain their respective owners' trademarks;
+this project is not endorsed by them.
 
 MIT License
 
@@ -29,6 +33,73 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Underlying OpenCode provider marks
+
+The collection above identifies [OpenCode](https://github.com/anomalyco/opencode) as its
+underlying SVG source. The added Zhipu AI and MiniMax viewBox/path data independently
+matches the immutable [provider sprite at ecc4916b5a9608c30e6dd58a67f2137b594407ca](https://github.com/anomalyco/opencode/blob/ecc4916b5a9608c30e6dd58a67f2137b594407ca/packages/ui/src/components/provider-icons/sprite.svg),
+verified 2026-10-07. This is a verified matching upstream snapshot, not a claim about
+which upstream revision the intermediate collection originally copied.
+The underlying [MIT license at the same commit](https://github.com/anomalyco/opencode/blob/ecc4916b5a9608c30e6dd58a67f2137b594407ca/LICENSE)
+is reproduced in addition to the intermediate copyright notice.
+
+```text
+MIT License
+
+Copyright (c) 2025 opencode
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Qwen provider mark
+
+The Qwen monochrome viewBox/path data in [provider-marks.json](<src/provider-marks.json>)
+is copied from [LobeHub Icons Qwen Mono at commit d832e82925e4cb01164d5b357ad7685853a0b3f8](https://github.com/lobehub/lobe-icons/blob/d832e82925e4cb01164d5b357ad7685853a0b3f8/src/Qwen/components/Mono.tsx),
+retrieved 2026-10-07. The source SVG's even-odd fill rule is preserved on its path;
+no React component, dependency, remote image, or runtime download is included.
+The [pinned MIT license](https://github.com/lobehub/lobe-icons/blob/d832e82925e4cb01164d5b357ad7685853a0b3f8/LICENSE)
+is reproduced below. The mark remains its owner's trademark, not an endorsement.
+
+```text
+MIT License
+
+Copyright (c) 2023 LobeHub
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## Appearance menu brush
 

@@ -31,7 +31,7 @@ test('selected model changes both places immediately, native status remains',asy
  expect(await page.evaluate(()=>window.fixture.refreshes())).toBe(1);
 });
 test('workspace appearance reset and disposal restore native UI',async({page})=>{
- await page.evaluate(()=>window.fixture.prefs().save('w1','infra',{kind:'emoji',emoji:'💻'}));
+ await page.evaluate(()=>window.fixture.prefs().save('w1',{kind:'emoji',emoji:'💻'}));
  // A fresh preference object writes durable data; the running instance receives a storage event on other windows, tested on restart here.
  await page.reload();await mount(page);
  await expect(page.locator('.wsp-workspace-icon')).toHaveText('💻');

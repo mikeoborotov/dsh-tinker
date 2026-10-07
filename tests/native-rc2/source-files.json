@@ -129,6 +129,120 @@
       "source": "https://raw.githubusercontent.com/lukeed/clsx/925494cf31bcd97d3337aacd34e659e80cae7fe2/license",
       "bytes": 1104,
       "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Menu.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Menu.tsx",
+      "bytes": 26643,
+      "sha256": "6a1acc8cc2310d036471b42a7a047a803c0e0629ba46810836bcf4f7c786d4b1"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/StateDot.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/StateDot.tsx",
+      "bytes": 2595,
+      "sha256": "14d6b7f12754319403630d6b8afea8743b9005e1a0e05f2c892771a5c4eeb877"
+    },
+    {
+      "path": "packages/client/ui-sidebar/src/client/SidebarRoot.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-sidebar/src/client/SidebarRoot.tsx",
+      "bytes": 13583,
+      "sha256": "51d95e300ed74cdfdeb2c7f7daa8b32324af95071787c0e6d3905b450c9e4951"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/overlay-top-margin.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/overlay-top-margin.ts",
+      "bytes": 683,
+      "sha256": "511166e7ccb03981ac498dc80459c5bc53a1455c48ebca1bdb8264c292d113f6"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/pointer-grace.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/pointer-grace.ts",
+      "bytes": 1534,
+      "sha256": "cba1529e052cf3ea09fd3851990219e2b80d61fa4b3d35da490f28ba9f9965c6"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/ShortcutKeys.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/ShortcutKeys.tsx",
+      "bytes": 875,
+      "sha256": "9a79d439af8196f373bb064470ab2c8d38ca5746257a806fd798389929a8f751"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/MenuSurface.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/MenuSurface.tsx",
+      "bytes": 2215,
+      "sha256": "1e9b1f476305d4076b23b42fd08b63f9429b8e1f646c06ebc39d8ded5de7fdbf"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Menu.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Menu.module.css",
+      "bytes": 6491,
+      "sha256": "77265cc046078c060ca2f5b700b31c77f024a32e1834ebd3a0fc8b4562c7134a"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/StateDot.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/StateDot.module.css",
+      "bytes": 2448,
+      "sha256": "ad4603fd7a499dcc3b672dc87663f6c73302a8cedaf4a9859db0abdb9144bee8"
+    },
+    {
+      "path": "packages/client/ui-sidebar/src/client/SidebarRoot.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-sidebar/src/client/SidebarRoot.module.css",
+      "bytes": 16396,
+      "sha256": "798a151927c143ae9b7c2e52090cb7d2a4ed967e5701e7fdd2b4bb4a330d3f82"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/ShortcutKeys.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/ShortcutKeys.module.css",
+      "bytes": 800,
+      "sha256": "ffa9624099dafb8dfe3e76c57fe26a523cb7943fa5bedd31d3c67e16e3351139"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/MenuSurface.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/MenuSurface.module.css",
+      "bytes": 1188,
+      "sha256": "6230cfabdb5294b5cf174bc79842a9596f6aee6cd76a8cd5e183c67279bca9ae"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Tooltip.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Tooltip.tsx",
+      "bytes": 12507,
+      "sha256": "0f3542a97da788032ad89bc46bcdcb5b9d021917a472ee3dffbab0145a870dd0"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/FishLogo.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/FishLogo.tsx",
+      "bytes": 4486,
+      "sha256": "284e14941ee40ecb3473f424866a2f9370fb28ecdb8e5f1bbd8b1af295e5ddeb"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/darwin-desktop.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/darwin-desktop.ts",
+      "bytes": 474,
+      "sha256": "a615f274a2b171b503a35889ffbc6208587bbce777bdbf6c5e738736c1849073"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/useDismissOnOutsidePointer.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/useDismissOnOutsidePointer.ts",
+      "bytes": 1371,
+      "sha256": "c7e05b448eeade540b7c6623a5c60401a63d09589bb27a573760ae5defbb4644"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Tooltip.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Tooltip.module.css",
+      "bytes": 1688,
+      "sha256": "d1f3aa2d804d18f234a12b7219498fd1823ce8cc207a4da3778fa414bca97678"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Toast.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Toast.tsx",
+      "bytes": 4576,
+      "sha256": "85ed92693c910decadb38f095764bbdb3a1c6992b60bf63dedabdbebccd309b6"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Toast.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Toast.module.css",
+      "bytes": 2824,
+      "sha256": "74cab625e372a6cdaff92fa468b7d59bc037212d738e476ea0f8d485e4f8dbcb"
     }
   ]
 }

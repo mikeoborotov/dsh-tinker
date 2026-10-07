@@ -31,7 +31,8 @@ try {
  await page.locator('#wsp-upload').setInputFiles({name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64')});
  await page.getByRole('button',{name:'Save',exact:true}).click();await expect(workspace.locator('.wsp-workspace-icon img')).toBeVisible();
  await workspace.hover();await workspace.locator('button').first().click();await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
- await page.getByRole('button',{name:'Default folder',exact:true}).click();await expect(workspace.locator('.wsp-workspace-icon')).toHaveCount(0);
+ await page.getByRole('button',{name:'Restore default',exact:true}).click();await expect(workspace.locator('.wsp-workspace-icon img')).toBeVisible();
+ await page.getByRole('button',{name:'Save',exact:true}).click();await expect(workspace.locator('.wsp-workspace-icon')).toHaveCount(0);
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  await page.getByRole('button',{name:'Workspace Plus',exact:true}).click();
  await expect(page.getByRole('switch',{name:'Model logos beside chats'})).toBeVisible();

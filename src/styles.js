@@ -55,10 +55,7 @@ export const CSS = `
 .wsp-list-preview{display:flex;align-items:center;height:34px;gap:6px;padding:0 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-sidebar-fill);font-size:14px;line-height:20px}
 .wsp-list-preview>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-list-preview .wsp-icon{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
-.wsp-advanced{border-top:.5px solid var(--dsw-alias-border-l3);padding-top:10px}
-.wsp-advanced summary{cursor:pointer;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
-.wsp-advanced .wsp-field-label{margin:12px 0 4px}
-.wsp-advanced .wsp-help{margin:8px 0}
+.wsp-list-preview .wsp-native-folder{width:16px;height:16px;flex-basis:16px;color:var(--dsw-alias-label-secondary)}
 .wsp-reset-action{margin-right:auto}
 .wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;min-height:188px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
 .wsp-image-dropzone.wsp-is-dragging{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}

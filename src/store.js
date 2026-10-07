@@ -1,6 +1,8 @@
+// Keep the v1 key so existing installations are migrated in place exactly once.
 export const STORAGE_KEY = 'dsh-workspace-plus:v1';
-export const DEFAULT_FEATURES = { workspaces: true, composer: true, sessions: true };
-export const MAX_PROFILE_BYTES = 2 * 1024 * 1024;
+export const LEGACY_BACKUP_KEY = STORAGE_KEY + ':legacy-backup';
+export const DEFAULT_FEATURES = Object.freeze({ workspaces: true, composer: true, sessions: true, unread: true, branding: true });
+export const MAX_SETTINGS_BYTES = 2 * 1024 * 1024;
 export const MAX_IMAGE_LENGTH = 180000;
 
 export function createStore(initial) {
@@ -33,78 +35,118 @@ export function validateAppearance(value, iconIds) {
   throw new Error('Invalid icon, emoji, color or image');
 }
 
-export function validateProfile(input, iconIds, portable = false) {
-  if (!input || input.version !== 1) throw new Error('Unsupported settings version');
-  if (!input.profiles || typeof input.profiles !== 'object' || Array.isArray(input.profiles)) throw new Error('Invalid profiles');
-  if (Object.keys(input.profiles).length > 100) throw new Error('Too many profiles');
-  const profiles = Object.create(null);
-  for (const [alias, appearance] of Object.entries(input.profiles)) {
-    if (!alias.trim() || alias.length > 80 || ['__proto__', 'prototype', 'constructor'].includes(alias)) throw new Error('Invalid profile name');
-    profiles[alias] = validateAppearance(appearance, iconIds);
-  }
-  const bindings = Object.create(null);
-  if (!portable) {
-    for (const [id, alias] of Object.entries(input.bindings ?? {})) {
-      if (id.length <= 200 && Object.hasOwn(profiles, alias)) bindings[id] = alias;
-    }
-  }
+const isRecord = value => value && typeof value === 'object' && !Array.isArray(value);
+function validateId(id) {
+  if (!id.trim() || id.length > 200 || ['__proto__', 'prototype', 'constructor'].includes(id)) throw new Error('Invalid workspace ID');
+}
+function featuresOf(input) {
   const features = { ...DEFAULT_FEATURES };
-  for (const key of Object.keys(features)) if (typeof input.features?.[key] === 'boolean') features[key] = input.features[key];
-  return { version: 1, profiles, bindings, features };
+  for (const key of Object.keys(features)) if (typeof input?.[key] === 'boolean') features[key] = input[key];
+  return Object.freeze(features);
+}
+
+export function validateSettings(input, iconIds) {
+  if (!input || input.version !== 2) throw new Error('Unsupported settings version');
+  if (!isRecord(input.appearances)) throw new Error('Invalid workspace appearances');
+  // Never silently discard legacy fields in an incorrectly labelled v2 document.
+  if (Object.hasOwn(input, 'profiles') || Object.hasOwn(input, 'bindings')) throw new Error('Legacy fields require version 1 migration');
+  const appearances = Object.create(null);
+  for (const [id, appearance] of Object.entries(input.appearances)) {
+    validateId(id);
+    appearances[id] = Object.freeze(validateAppearance(appearance, iconIds));
+  }
+  return { version: 2, appearances: Object.freeze(appearances), features: featuresOf(input.features) };
+}
+
+// This parser is only used at the backwards-read boundary, never as a current operating mechanism.
+function migrateLegacy(input, iconIds) {
+  if (!isRecord(input.profiles) || Object.keys(input.profiles).length > 100) throw new Error('Invalid legacy appearances');
+  const saved = Object.create(null);
+  for (const [name, appearance] of Object.entries(input.profiles)) {
+    if (!name.trim() || name.length > 80 || ['__proto__', 'prototype', 'constructor'].includes(name)) throw new Error('Invalid legacy appearance name');
+    saved[name] = validateAppearance(appearance, iconIds);
+  }
+  const bindings = input.bindings ?? {};
+  if (!isRecord(bindings)) throw new Error('Invalid legacy workspace bindings');
+  const appearances = Object.create(null);
+  for (const [id, name] of Object.entries(bindings)) {
+    validateId(id);
+    if (typeof name !== 'string' || !Object.hasOwn(saved, name)) throw new Error('Missing legacy workspace appearance');
+    appearances[id] = { ...saved[name] }; // Every workspace gets an independent value, including formerly shared images.
+  }
+  return validateSettings({ version: 2, appearances, features: input.features }, iconIds);
+}
+
+function serialize(settings) {
+  const raw = JSON.stringify(settings);
+  if (new TextEncoder().encode(raw).length > MAX_SETTINGS_BYTES) throw new Error('Settings exceed 2 MB');
+  return raw;
 }
 
 export function createPreferences(storage, iconIds) {
-  const empty = () => ({ version: 1, profiles: Object.create(null), bindings: Object.create(null), features: { ...DEFAULT_FEATURES } });
-  let initial = empty(), error = null;
-  try {
-    const raw = storage.getItem(STORAGE_KEY);
-    if (raw) initial = validateProfile(JSON.parse(raw), iconIds);
-  } catch (e) { error = e.message; }
-  const state = createStore({ ...initial, error });
-  function commit(next) {
-    if (state.getSnapshot().error) throw new Error('Stored settings could not be read. Export a backup and reset first.');
-    next = validateProfile(next, iconIds);
-    const raw = JSON.stringify(next);
-    if (new TextEncoder().encode(raw).length > MAX_PROFILE_BYTES) throw new Error('Settings exceed 2 MB');
+  const empty = () => validateSettings({ version: 2, appearances: {}, features: DEFAULT_FEATURES }, iconIds);
+  function load() {
+    let recoveryAvailable = false, fallback = empty();
+    try {
+      const raw = storage.getItem(STORAGE_KEY);
+      const backup = storage.getItem(LEGACY_BACKUP_KEY);
+      recoveryAvailable = backup !== null;
+      if (raw === null) return Object.freeze({ ...empty(), error: null, recoveryAvailable });
+      const input = JSON.parse(raw);
+      let settings;
+      if (input?.version === 1) {
+        try {
+          settings = migrateLegacy(input, iconIds);
+          // Existing feature flags are already durable even if the new appearance records cannot be written.
+          fallback = { ...fallback, features: settings.features };
+          const migrated = serialize(settings);
+          // Preserve ALL original bytes, including unused saved appearances, outside the active schema.
+          // If either write fails, the original primary key is untouched and nothing is published.
+          if (backup !== null && backup !== raw) throw new Error('A different pre-upgrade recovery copy already exists');
+          if (backup === null) storage.setItem(LEGACY_BACKUP_KEY, raw);
+          recoveryAvailable = true;
+          storage.setItem(STORAGE_KEY, migrated);
+        } catch (reason) { throw new Error('Saved appearances could not be migrated: ' + reason.message); }
+      } else {
+        settings = validateSettings(input, iconIds);
+        serialize(settings);
+      }
+      return Object.freeze({ ...settings, error: null, recoveryAvailable });
+    } catch (reason) { return Object.freeze({ ...fallback, error: reason.message, recoveryAvailable }); }
+  }
+  const state = createStore(load());
+  function commit(next, recovery = false) {
+    if (state.getSnapshot().error && !recovery) throw new Error('Saved settings are unavailable. Retry or save a recovery copy before resetting.');
+    next = validateSettings(next, iconIds);
+    const raw = serialize(next);
     storage.setItem(STORAGE_KEY, raw); // Publish only after a successful durable write.
-    state.set({ ...next, error: null });
+    state.set(Object.freeze({ ...next, error: null, recoveryAvailable: state.getSnapshot().recoveryAvailable }));
   }
   return {
-    ...state,
-    appearance(id) {
+    getSnapshot: state.getSnapshot,
+    subscribe: state.subscribe,
+    appearance(id) { return state.getSnapshot().appearances[id]; },
+    save(id, appearance) {
+      validateId(id);
       const s = state.getSnapshot();
-      return s.profiles[s.bindings[id]];
-    },
-    save(id, alias, appearance) {
-      const s = state.getSnapshot();
-      commit({ ...s, profiles: { ...s.profiles, [alias]: appearance }, bindings: { ...s.bindings, [id]: alias } });
+      commit({ ...s, appearances: { ...s.appearances, [id]: appearance } });
     },
     resetWorkspace(id) {
-      const s = state.getSnapshot(), bindings = { ...s.bindings };
-      delete bindings[id]; commit({ ...s, bindings });
+      validateId(id);
+      const s = state.getSnapshot(), appearances = { ...s.appearances };
+      delete appearances[id]; commit({ ...s, appearances });
     },
     toggle(key, enabled) {
       if (!Object.hasOwn(DEFAULT_FEATURES, key)) return;
+      if (typeof enabled !== 'boolean') throw new Error('Invalid feature value');
       const s = state.getSnapshot(); commit({ ...s, features: { ...s.features, [key]: enabled } });
     },
-    export() {
-      const s = state.getSnapshot();
-      return JSON.stringify({ version: 1, profiles: s.profiles, features: s.features }, null, 2);
+    // Recovery only: there is deliberately no import, portable export or shared-profile API.
+    backup() {
+      return (state.getSnapshot().error ? storage.getItem(STORAGE_KEY) : storage.getItem(LEGACY_BACKUP_KEY))
+        ?? storage.getItem(STORAGE_KEY) ?? '{}';
     },
-    backup() { return storage.getItem(STORAGE_KEY) ?? '{}'; },
-    resetAll() { storage.removeItem(STORAGE_KEY); state.set({ ...empty(), error: null }); },
-    import(raw) {
-      if (new TextEncoder().encode(raw).length > MAX_PROFILE_BYTES) throw new Error('Settings exceed 2 MB');
-      const imported = validateProfile(JSON.parse(raw), iconIds, true);
-      const s = state.getSnapshot();
-      // Imported names never silently replace an existing profile shared by several Workspaces.
-      const profiles = { ...s.profiles };
-      for (const [alias, value] of Object.entries(imported.profiles)) {
-        let name = alias, i = 2;
-        while (Object.hasOwn(profiles, name) && JSON.stringify(profiles[name]) !== JSON.stringify(value)) name = alias.slice(0, 70) + ' (' + i++ + ')';
-        profiles[name] = value;
-      }
-      commit({ ...s, profiles, features: imported.features });
-    },
+    retry() { state.set(load()); },
+    resetAll() { commit(empty(), true); },
   };
 }

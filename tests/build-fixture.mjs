@@ -44,6 +44,12 @@ export async function buildFixture(entry = 'tests/fixture.jsx') {
       platform: 'browser',
       target: ['chrome120', 'safari17'],
       jsx: 'automatic',
+      // Native SidebarRoot receives these build-time substitutions in the host.
+      define: {
+        'process.env.DSH_CLIENT_VERSION': 'undefined',
+        'process.env.DSH_CLIENT_COMMIT_HASH': 'undefined',
+        'process.env.DSH_CLIENT_GIT_DIRTY': 'undefined',
+      },
       loader: { '.css': 'local-css' },
       alias: {
         '@deepseek-ai/dsh-client-ui-primitives': nativeEntry,

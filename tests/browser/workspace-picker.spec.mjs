@@ -5,7 +5,7 @@ test.beforeAll(async()=>{fixture=(await build({entryPoints:['tests/workspace-pic
 test.beforeEach(async({page})=>{
  await page.route('http://fixture.test/**',r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><head><style>.native-icon{width:14px;height:14px;display:inline-flex}#chip{display:flex;align-items:center;gap:6px}#chip>svg:first-child{width:16px;height:16px}#chip>svg:last-child{width:12px;height:12px}</style></head><body>
  <div data-conversation-content data-conversation-session="s1"><div data-conversation-region="composer"><div><button id="chip" aria-haspopup="menu" aria-expanded="false"><svg class="folder"/><span id="chip-label">Duplicate</span><svg class="chevron"/></button><div data-slot="conversation.hero.workspace" style="display:contents"></div><div data-slot="conversation.hero.agentPreset"></div></div><div data-composer-card><textarea></textarea></div></div></div></body></html>`}));
- await page.goto('http://fixture.test/');await page.addScriptTag({content:fixture});await page.evaluate(()=>{window.fixture.prefs.save('w1','one',{kind:'emoji',emoji:'💻'});window.fixture.prefs.save('w2','two',{kind:'emoji',emoji:'🏠'});window.fixture.prefs.save('w3','three',{kind:'icon',icon:'code',color:'#22a06b'});window.fixture.mount();});
+ await page.goto('http://fixture.test/');await page.addScriptTag({content:fixture});await page.evaluate(()=>{window.fixture.prefs.save('w1',{kind:'emoji',emoji:'💻'});window.fixture.prefs.save('w2',{kind:'emoji',emoji:'🏠'});window.fixture.prefs.save('w3',{kind:'icon',icon:'code',color:'#22a06b'});window.fixture.mount();});
 });
 const chipIcon = page => page.locator('#chip .wsp-workspace-picker-icon');
 test('native new-chat trigger uses authoritative membership, not duplicate caption',async({page})=>{
@@ -13,8 +13,8 @@ test('native new-chat trigger uses authoritative membership, not duplicate capti
  await page.evaluate(()=>window.fixture.confirm('w2'));await expect(chipIcon(page)).toHaveText('🏠');
 });
 test('all appearance kinds, reset and switch restore both trigger and open list',async({page})=>{
- await page.evaluate(()=>window.fixture.prefs.save('w1','one',{kind:'icon',icon:'code',color:'#4176e6'}));await expect(chipIcon(page).locator('svg')).toHaveCount(1);await expect(chipIcon(page)).toHaveCSS('color','rgb(65, 118, 230)');
- await page.evaluate(()=>window.fixture.prefs.save('w1','one',{kind:'image',data:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aB1kAAAAASUVORK5CYII='}));await expect(chipIcon(page).locator('img')).toHaveCount(1);
+ await page.evaluate(()=>window.fixture.prefs.save('w1',{kind:'icon',icon:'code',color:'#4176e6'}));await expect(chipIcon(page).locator('svg')).toHaveCount(1);await expect(chipIcon(page)).toHaveCSS('color','rgb(65, 118, 230)');
+ await page.evaluate(()=>window.fixture.prefs.save('w1',{kind:'image',data:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aB1kAAAAASUVORK5CYII='}));await expect(chipIcon(page).locator('img')).toHaveCount(1);
  await page.locator('#chip').click();await expect(page.locator('#pick-menu .wsp-workspace-picker-icon')).toHaveCount(3);await expect(page.locator('#pick-menu .wsp-workspace-picker-icon img')).toHaveCount(1);
  await page.evaluate(()=>window.fixture.prefs.toggle('workspaces',false));await expect(page.locator('.wsp-workspace-picker-icon')).toHaveCount(0);await expect(page.locator('#chip>.folder')).not.toHaveCSS('display','none');
  await page.evaluate(()=>window.fixture.prefs.toggle('workspaces',true));await expect(page.locator('.wsp-workspace-picker-icon')).toHaveCount(4);

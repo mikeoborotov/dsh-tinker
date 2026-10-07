@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
 import { buildFixture } from '../build-fixture.mjs';
 import samples from '../image-fixtures.json' with { type: 'json' };
 
@@ -15,11 +14,19 @@ const html = `<!doctype html><html><head><style>
 <div data-row-key="session:s1" role="treeitem"><span></span><span>First</span><span>1m</span></div>
 <div id="toolbar"><div><button aria-haspopup="menu" aria-busy="false" title="Model"><svg/><span>Model</span></button></div><div id="marker"></div></div>
 <div id="overlay"></div><div id="settings"></div></body></html>`;
-async function setup(page, { dark = true, language = 'en', seed } = {}) {
+async function setup(page, { dark = true, language = 'en', seed, quotaKey } = {}) {
   await page.route('http://fixture.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://fixture.test/');
   await page.addStyleTag({ content: fixture.css });
   await page.evaluate(({ dark, seed }) => { if (dark) document.body.setAttribute('data-ds-dark-theme', ''); if (seed) localStorage.setItem('dsh-workspace-plus:v1', JSON.stringify(seed)); }, { dark, seed });
+  if (quotaKey) await page.evaluate(key => {
+    const original = Storage.prototype.setItem;
+    window.restoreStorageWrites = () => { Storage.prototype.setItem = original; };
+    Storage.prototype.setItem = function (name, value) {
+      if (name === key) throw new DOMException('Quota exceeded', 'QuotaExceededError');
+      return original.call(this, name, value);
+    };
+  }, quotaKey);
   await page.addScriptTag({ content: fixture.js });
   await page.evaluate(language => { window.fixture.mount(); window.fixture.setLanguage(language); }, language);
   await expect(page.locator('#wsp-workspace')).toBeVisible();
@@ -110,7 +117,7 @@ test('full emoji catalog is bounded in DOM but searches all 3512 entries and bot
   await expect(page.locator('.wsp-results-row')).toContainText('120 / 140');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.locator('.wsp-workspace-icon')).toHaveText('🚀');
-  expect((await state(page)).profiles.Infra).toEqual({ kind: 'emoji', emoji: '🚀' });
+  expect((await state(page)).appearances.w1).toEqual({ kind: 'emoji', emoji: '🚀' });
 });
 
 test('Russian localization and custom/manual emoji remain available', async ({ page }) => {
@@ -125,25 +132,51 @@ test('Russian localization and custom/manual emoji remain available', async ({ p
   await expect(page.locator('.wsp-workspace-icon')).toHaveText('🫨');
 });
 
-test('existing shared profiles stay collapsed, reusable and schema-compatible', async ({ page }) => {
-  const seed = { version: 1, profiles: { shared: { kind: 'emoji', emoji: '📚' }, other: { kind: 'icon', icon: 'code', color: '#4176e6' } }, bindings: { w1: 'shared', w2: 'shared' }, features: { workspaces: true, composer: false, sessions: true } };
+test('legacy appearances migrate once with no profile/name/advanced or transfer UI', async ({ page }) => {
+  const seed = { version: 1, profiles: { shared: { kind: 'emoji', emoji: '📚' }, unused: { kind: 'icon', icon: 'code', color: '#4176e6' } }, bindings: { w1: 'shared', w2: 'shared' }, features: { workspaces: true, composer: false, sessions: true } };
   await setup(page, { seed }); await open(page);
-  await expect(page.locator('#wsp-alias')).toBeHidden(); await expect(page.locator('#wsp-saved')).toBeHidden();
+  await expect(page.locator('#wsp-alias, #wsp-saved, .wsp-advanced')).toHaveCount(0);
+  await expect(page.locator('#settings input[type=file]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^(Import|Export) settings$/ })).toHaveCount(0);
+  await expect(page.locator('#settings')).toContainText('Storage recovery only, not settings transfer.');
   await expect(page.locator('.wsp-list-preview')).toContainText('📚');
-  await page.locator('.wsp-advanced summary').click();
-  await expect(page.locator('#wsp-alias')).toHaveValue('shared'); await page.locator('#wsp-saved').selectOption('other');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  const saved = await state(page); expect(saved.version).toBe(1); expect(saved.bindings).toEqual({ w1: 'other', w2: 'shared' });
-  expect(saved.profiles).toEqual(seed.profiles); expect(saved.features).toEqual(seed.features);
+  const saved = await state(page); expect(saved.version).toBe(2); expect(saved.profiles).toBeUndefined(); expect(saved.bindings).toBeUndefined();
+  expect(saved.appearances).toEqual({ w1: seed.profiles.shared, w2: seed.profiles.shared });
+  expect(saved.features).toEqual({ ...seed.features, unread: true, branding: true });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('dsh-workspace-plus:v1:legacy-backup')))).toEqual(seed);
 });
 
-test('preview names the actual list and uses real-size 18px plugin glyph in a 34px row', async ({ page }) => {
+for (const quotaKey of [key, key + ':legacy-backup']) test(`migration quota at ${quotaKey} preserves v1 bytes and Retry completes without reset`, async ({ page }) => {
+  const seed = { version: 1, profiles: { shared: { kind: 'emoji', emoji: '📚' } }, bindings: { w1: 'shared', w2: 'shared' }, features: { composer: false } };
+  await setup(page, { seed, quotaKey });
+  await expect(page.locator('#settings [role=alert]')).toContainText('Saved appearances could not be migrated: Quota exceeded');
+  await expect(page.locator('.wsp-workspace-icon')).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: 'Model logos in the selector and list', exact: true })).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('.wsp-composer-icon')).toHaveCount(0);
+  expect(await storage(page)).toBe(JSON.stringify(seed));
+  await page.evaluate(() => window.restoreStorageWrites());
+  await page.getByRole('button', { name: 'Retry reading saved settings', exact: true }).click();
+  await expect(page.locator('#settings [role=alert]')).toHaveCount(0);
+  await expect(page.locator('.wsp-workspace-icon')).toHaveText('📚');
+  expect((await state(page)).appearances).toEqual({ w1: seed.profiles.shared, w2: seed.profiles.shared });
+  expect(await page.evaluate(() => localStorage.getItem('dsh-workspace-plus:v1:legacy-backup'))).toBe(JSON.stringify(seed));
+});
+
+test('preview is below title and above tabs in all modes, with native/default and real-size custom glyphs', async ({ page }) => {
   await setup(page); await open(page);
   await expect(page.getByRole('group', { name: 'Preview in the Workspace list' })).toBeVisible();
   await expect(page.locator('.wsp-list-preview')).toHaveCSS('height', '34px');
-  await expect(page.locator('.wsp-list-preview .wsp-icon')).toHaveCSS('width', '18px');
+  await expect(page.locator('.wsp-list-preview .wsp-native-folder')).toHaveCSS('width', '16px');
   await expect(page.locator('.wsp-list-preview')).toHaveCSS('font-size', '14px');
   await expect(page.locator('.wsp-list-preview')).toContainText('Infra');
+  await page.getByRole('button', { name: 'code', exact: true }).click();
+  await expect(page.locator('.wsp-list-preview .wsp-icon')).toHaveCSS('width', '18px');
+  for (const mode of ['Icon', 'Emoji', 'Image']) {
+    await page.getByRole('button', { name: mode, exact: true }).click();
+    const title = await page.getByRole('dialog').getByRole('heading').boundingBox();
+    const preview = await page.locator('.wsp-preview-section').boundingBox(), tabs = await page.locator('.wsp-kind-tabs').boundingBox();
+    expect(title.y + title.height).toBeLessThan(preview.y); expect(preview.y + preview.height).toBeLessThan(tabs.y);
+  }
 });
 
 test('native focus/Tab/Escape/X return focus and cancel without saving', async ({ page }) => {
@@ -209,7 +242,7 @@ for (const extension of Object.keys(samples)) test(`Image area accepts a real ${
     const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 64; const context = canvas.getContext('2d'); context.drawImage(image, 0, 0); return context.getImageData(0, 0, 1, 1).data[3];
   })).toBe(0);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  expect((await state(page)).profiles.Infra).toEqual({ kind: 'image', data: dimensions.src });
+  expect((await state(page)).appearances.w1).toEqual({ kind: 'image', data: dimensions.src });
   await expect(page.locator('.wsp-workspace-icon img')).toBeVisible();
 });
 
@@ -307,25 +340,28 @@ for (const rejection of ['multiple', 'link']) test(`rejected ${rejection} drop c
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled(); expect(await storage(page)).toBeNull();
 });
 
-test('choosing a saved profile during decode cancels the pending image without rebinding until Save', async ({ page }) => {
-  const seed = { version: 1, profiles: { shared: { kind: 'emoji', emoji: '📚' }, other: { kind: 'icon', icon: 'code', color: '#4176e6' } }, bindings: { w1: 'shared', w2: 'shared' }, features: { workspaces: true, composer: true, sessions: true } };
+test('Restore default during decode cancels the pending image and changes only draft preview', async ({ page }) => {
+  const seed = { version: 2, appearances: { w1: { kind: 'emoji', emoji: '📚' }, w2: { kind: 'emoji', emoji: '📚' } }, features: { workspaces: true, composer: true, sessions: true, unread: true, branding: true } };
   await setup(page, { seed }); await open(page); await imageMode(page); await delayDecode(page);
   await drop(page, await transfer(page)); await page.waitForFunction(() => window.releaseDecode);
-  await page.locator('.wsp-advanced summary').click(); await page.locator('#wsp-saved').selectOption('other');
-  await page.evaluate(() => window.releaseDecode()); await expect(page.getByRole('button', { name: 'Icon', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Restore default', exact: true }).click();
+  await page.evaluate(() => window.releaseDecode());
+  await expect(page.locator('.wsp-list-preview .wsp-native-folder svg')).toHaveCount(1);
   await expect(page.locator('.wsp-list-preview img')).toHaveCount(0); expect(await state(page)).toEqual(seed);
+  await expect(page.locator('.wsp-workspace-icon')).toHaveText('📚');
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
 });
 
-test('editing a shared profile preserves both bindings and updates their appearance', async ({ page }) => {
+test('editing a formerly shared appearance changes only the selected workspace', async ({ page }) => {
   const seed = { version: 1, profiles: { shared: { kind: 'emoji', emoji: '📚' } }, bindings: { w1: 'shared', w2: 'shared' }, features: { workspaces: true, composer: true, sessions: true } };
   await setup(page, { seed }); await open(page); await page.locator('#wsp-emoji').fill('🏠');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  expect((await state(page)).bindings).toEqual(seed.bindings);
-  expect(await page.evaluate(() => window.fixture.prefs().appearance('w2'))).toEqual({ kind: 'emoji', emoji: '🏠' });
+  expect((await state(page)).appearances).toEqual({ w1: { kind: 'emoji', emoji: '🏠' }, w2: { kind: 'emoji', emoji: '📚' } });
+  expect(await page.evaluate(() => window.fixture.prefs().appearance('w2'))).toEqual({ kind: 'emoji', emoji: '📚' });
 });
 
 test('failed durable Save keeps dialog open and does not publish the draft', async ({ page }) => {
-  const seed = { version: 1, profiles: { original: { kind: 'icon', icon: 'folder', color: '#4176e6' } }, bindings: { w1: 'original' }, features: { workspaces: true, composer: true, sessions: true } };
+  const seed = { version: 2, appearances: { w1: { kind: 'icon', icon: 'folder', color: '#4176e6' } }, features: { workspaces: true, composer: true, sessions: true, unread: true, branding: true } };
   await setup(page, { seed }); await open(page); await page.getByRole('button', { name: 'Emoji', exact: true }).click(); await page.locator('#wsp-emoji').fill('🏠');
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); }; });
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -333,9 +369,63 @@ test('failed durable Save keeps dialog open and does not publish the draft', asy
   expect(await state(page)).toEqual(seed); await expect(page.locator('.wsp-workspace-icon svg')).toHaveCount(1);
 });
 
+const resetAppearances = {
+  icon: { kind: 'icon', icon: 'code', color: '#e5484d' },
+  emoji: { kind: 'emoji', emoji: '📚' },
+  image: { kind: 'image', data: 'data:image/png;base64,' + samples.png.base64 },
+};
+const resetSeed = kind => ({ version: 2, appearances: { w1: resetAppearances[kind], w2: { kind: 'emoji', emoji: '🏠' } }, features: { workspaces: true, composer: true, sessions: true, unread: true, branding: true } });
+for (const kind of Object.keys(resetAppearances)) {
+  for (const exit of ['Cancel', 'Close', 'Escape']) test(`${kind} reset is only a draft and ${exit} discards it`, async ({ page }) => {
+    const seed = resetSeed(kind); await setup(page, { seed }); await open(page);
+    const before = await storage(page);
+    await page.getByRole('button', { name: 'Restore default', exact: true }).click();
+    // Clicking the already selected tab is navigation, not an appearance change.
+    await page.getByRole('button', { name: kind[0].toUpperCase() + kind.slice(1), exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible(); await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+    await expect(page.locator('.wsp-list-preview .wsp-native-folder')).toHaveCSS('width', '16px');
+    await expect(page.locator('.wsp-list-preview svg path').first()).toHaveAttribute('d', /^M1\.50439 3\.11059/);
+    expect(await storage(page)).toBe(before); await expect(page.locator('.wsp-workspace-icon')).toHaveCount(1);
+    if (exit === 'Escape') await page.keyboard.press('Escape'); else await page.getByRole('button', { name: exit, exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0); expect(await storage(page)).toBe(before);
+    await open(page); await expect(page.locator('.wsp-list-preview .wsp-native-folder')).toHaveCount(0);
+    if (kind === 'emoji') await expect(page.locator('.wsp-list-preview .wsp-icon')).toHaveText('📚');
+    if (kind === 'image') await expect(page.locator('.wsp-list-preview img')).toBeVisible();
+  });
+  for (const language of ['en', 'ru']) test(`${kind} ${language} reset applies native folder only on Save and preserves other workspace`, async ({ page }) => {
+    const seed = resetSeed(kind); await setup(page, { seed, language }); await open(page);
+    const reset = language === 'ru' ? 'Восстановить по умолчанию' : 'Restore default';
+    await page.getByRole('button', { name: reset, exact: true }).click(); expect(await state(page)).toEqual(seed);
+    await page.getByRole('button', { name: language === 'ru' ? 'Сохранить' : 'Save', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0); await expect(page.locator('.wsp-workspace-icon')).toHaveCount(0);
+    await expect(page.locator('[data-row-key="workspace:w1"] > span > svg').first()).not.toHaveCSS('display', 'none');
+    expect((await state(page)).appearances).toEqual({ w2: seed.appearances.w2 });
+    await open(page); await expect(page.locator('.wsp-list-preview .wsp-native-folder')).toHaveCount(1);
+  });
+}
+
+test('failed durable reset Save leaves original appearance and bytes intact', async ({ page }) => {
+  const seed = resetSeed('emoji'); await setup(page, { seed }); await open(page);
+  await page.getByRole('button', { name: 'Restore default', exact: true }).click();
+  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); }; });
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible(); await expect(page.getByRole('alert')).toHaveText('Quota exceeded');
+  await expect(page.locator('.wsp-workspace-icon')).toHaveText('📚'); expect(await state(page)).toEqual(seed);
+});
+
+test('corrupted storage shows recovery-only controls, no portable transfer inputs', async ({ page }) => {
+  await setup(page, { seed: { version: 999 } });
+  await expect(page.locator('#settings [role=alert]')).toContainText('Unsupported settings version');
+  await expect(page.getByRole('button', { name: 'Save recovery copy' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry reading saved settings' })).toBeVisible();
+  await expect(page.locator('#settings input[type=file]')).toHaveCount(0);
+  const original = await storage(page);
+  await page.getByRole('button', { name: 'Retry reading saved settings' }).click(); expect(await storage(page)).toBe(original);
+});
+
 test('390px narrow and short viewports keep footer reachable without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 620 }); await setup(page, { language: 'ru' }); await open(page);
-  await page.getByRole('button', { name: 'Emoji', exact: true }).click(); await page.locator('.wsp-advanced summary').click();
+  await page.getByRole('button', { name: 'Emoji', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toBeInViewport();
   const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth,
     dialog: { width: document.querySelector('[role=dialog]').clientWidth, scrollWidth: document.querySelector('[role=dialog]').scrollWidth },
@@ -349,16 +439,15 @@ test('390px narrow and short viewports keep footer reachable without horizontal 
   await expect(page.getByRole('button', { name: 'Сохранить', exact: true })).toHaveCSS('height', '36px');
 });
 
-test('capture actual implementation previews in both native themes without network/page errors', async ({ page }) => {
+test('capture actual implementation previews in both native themes without network/page errors', async ({ page }, testInfo) => {
   const errors = [], requests = []; page.on('pageerror', error => errors.push(error.message)); page.on('request', request => requests.push(request.url()));
-  await mkdir('dist/preview-0.1.4', { recursive: true });
   for (const dark of [true, false]) {
     await setup(page, { dark }); await open(page); await page.mouse.move(900, 700);
-    await page.getByRole('dialog').screenshot({ path: `dist/preview-0.1.4/appearance-${dark ? 'dark' : 'light'}.png`, animations: 'disabled' });
+    await page.getByRole('dialog').screenshot({ path: testInfo.outputPath(`appearance-${dark ? 'dark' : 'light'}.png`), animations: 'disabled' });
     if (dark) {
-      await imageMode(page); await page.getByRole('dialog').screenshot({ path: 'dist/preview-0.1.4/image-drop-dark.png', animations: 'disabled' });
+      await imageMode(page); await page.getByRole('dialog').screenshot({ path: testInfo.outputPath('image-drop-dark.png'), animations: 'disabled' });
       await page.getByRole('button', { name: 'Emoji', exact: true }).click(); await page.getByRole('searchbox', { name: 'Search emoji' }).fill('rocket');
-      await page.getByRole('dialog').screenshot({ path: 'dist/preview-0.1.4/emoji-search-dark.png', animations: 'disabled' });
+      await page.getByRole('dialog').screenshot({ path: testInfo.outputPath('emoji-search-dark.png'), animations: 'disabled' });
     }
     await page.getByRole('button', { name: 'Close', exact: true }).click();
   }

@@ -21,6 +21,8 @@ const ctx={
  sessions:{list:sessions,refreshProjections:async id=>{refreshes++;sessions.set(s=>({...s,byId:{...s.byId,[id]:{projectionValues:{modelSelection:{next:{provider:'openai-codex',model:'sol'}}}}}}));}},
  workspaces:{list:workspaces}, modelDirectories:{directoryFor:()=>({store:directory})},
  slots:{inject(name,fn){fn();},register(options,Component){
+    // Other host slots are exercised by dedicated fixtures, not this appearance shell.
+    if (!['shell.overlay','conversation.input.right','settings.section'].includes(options.name) || options.id === 'workspace-plus-unread-error') return ()=>{};
    let place=options.name==='shell.overlay'?document.getElementById('overlay'):options.name==='conversation.input.right'?document.getElementById('marker'):document.getElementById('settings');
    const root=createRoot(place);roots.push(root);
    rendered.set(options.name,{root,Component,options});

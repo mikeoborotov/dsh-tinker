@@ -141,7 +141,7 @@ test('newer/experimental emojis are absent but saved/manual emojis remain uncons
     setItem: (key, value) => storage.set(key, value),
     removeItem: key => storage.delete(key),
   }, ['folder']);
-  preferences.save('workspace', 'newer-emoji', { kind: 'emoji', emoji: '🫠' });
+  preferences.save('workspace', { kind: 'emoji', emoji: '🫠' });
   assert.equal(preferences.appearance('workspace').emoji, '🫠');
 });
 

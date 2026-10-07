@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Button, observeComposition } from '@deepseek-ai/dsh-client-ui-primitives';
+import { Modal, Button, IconFolderCloseRegular, observeComposition } from '@deepseek-ai/dsh-client-ui-primitives';
 import { ICONS, ICON_IDS, PALETTE, fillAppearance } from './icons.js';
 import { validateAppearance } from './store.js';
 import { useStore } from './use-store.js';
@@ -10,22 +10,27 @@ const DEFAULT_ICON = { kind: 'icon', icon: 'folder', color: PALETTE[0] };
 const PAGE_SIZE = 120;
 const hasFiles = event => [...(event.dataTransfer?.types ?? [])].includes('Files');
 
-function Preview({ appearance }) {
+function Artwork({ appearance }) {
   const ref = useRef(null);
   useLayoutEffect(() => { if (ref.current) fillAppearance(ref.current, appearance); }, [appearance]);
   return <span ref={ref} className="wsp-icon" aria-hidden="true" />;
 }
+function Preview({ appearance }) {
+  return appearance ? <Artwork appearance={appearance} />
+    : <span className="wsp-icon wsp-native-folder" aria-hidden="true"><IconFolderCloseRegular size={16} /></span>;
+}
 
 export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
-  const settings = useStore(prefs), list = useStore(workspaces.list);
+  const list = useStore(workspaces.list);
   const workspace = list.items.find(item => item.workspaceId === target.id);
-  const initial = useRef(prefs.appearance(target.id) ?? DEFAULT_ICON).current;
+  const saved = useRef(prefs.appearance(target.id)).current;
+  const initial = saved ?? DEFAULT_ICON;
+  const [restoring, setRestoring] = useState(!saved);
   const [kind, setKind] = useState(initial.kind);
   const [drafts, setDrafts] = useState(() => ({
     icon: DEFAULT_ICON, emoji: { kind: 'emoji', emoji: '💻' }, image: { kind: 'image', data: '' }, [initial.kind]: initial,
   }));
   const appearance = drafts[kind];
-  const [alias, setAlias] = useState(() => settings.bindings[target.id] ?? (workspace?.title || target.id).slice(0, 80));
   const [error, setError] = useState(''), [loading, setLoading] = useState(false);
   const [iconQuery, setIconQuery] = useState(''), [emojiQuery, setEmojiQuery] = useState('');
   const [emojiGroup, setEmojiGroup] = useState('all'), [emojiLimit, setEmojiLimit] = useState(PAGE_SIZE);
@@ -34,10 +39,15 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   const russian = String(lang ?? t('language')).startsWith('ru');
   const close = () => { uploadGeneration.current++; ui.set({ target: null }); };
   function setAppearance(next) {
-    setKind(next.kind); setDrafts(previous => ({ ...previous, [next.kind]: next }));
+    setRestoring(false); setKind(next.kind); setDrafts(previous => ({ ...previous, [next.kind]: next }));
   }
   function selectKind(next) {
-    uploadGeneration.current++; setLoading(false); setError(''); setDragging(false); dragDepth.current = 0; setKind(next);
+    if (next === kind) return;
+    uploadGeneration.current++; setLoading(false); setError(''); setDragging(false); dragDepth.current = 0; setRestoring(false); setKind(next);
+  }
+  function restoreDefault() {
+    uploadGeneration.current++; setLoading(false); setError(''); setDragging(false); dragDepth.current = 0;
+    setRestoring(true);
   }
   useLayoutEffect(() => {
     const observer = observeComposition(document);
@@ -65,13 +75,13 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   }, [iconQuery]);
   const matchingEmoji = useMemo(() => searchEmoji(emojiQuery, emojiGroup), [emojiQuery, emojiGroup]);
   let valid = true;
-  try { validateAppearance(appearance, ICON_IDS); } catch { valid = false; }
-  const canSave = !loading && Boolean(alias.trim()) && valid;
+  if (!restoring) try { validateAppearance(appearance, ICON_IDS); } catch { valid = false; }
+  const canSave = !loading && valid;
   function run(fn) { try { fn(); close(); } catch (reason) { setError(reason.message); } }
-  const save = () => { if (canSave) run(() => prefs.save(target.id, alias.trim(), appearance)); };
+  const save = () => { if (canSave) run(() => restoring ? prefs.resetWorkspace(target.id) : prefs.save(target.id, appearance)); };
   async function upload(files) {
     if (!files?.length) return;
-    const generation = ++uploadGeneration.current; setDragging(false); dragDepth.current = 0;
+    const generation = ++uploadGeneration.current; setRestoring(false); setDragging(false); dragDepth.current = 0;
     if (files.length !== 1) { setLoading(false); setError(t('imageOneFile')); return; }
     setLoading(true); setError('');
     try {
@@ -89,11 +99,15 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       }
     }}
     footer={<>
-      <Button className="wsp-reset-action" variant="ghost" onClick={() => run(() => prefs.resetWorkspace(target.id))}>{t('reset')}</Button>
+      <Button className="wsp-reset-action" variant="ghost" onClick={restoreDefault}>{t('reset')}</Button>
       <Button variant="outline" onClick={close}>{t('cancel')}</Button>
       <Button variant="primary" disabled={!canSave} onClick={save}>{loading ? t('loading') : t('save')}</Button>
     </>}>
     <div className="wsp-appearance-body">
+      <div className="wsp-preview-section">
+        <span id="wsp-preview-label" className="wsp-field-label">{t('previewLabel')}</span>
+        <div className="wsp-list-preview" role="group" aria-labelledby="wsp-preview-label"><Preview appearance={restoring ? null : appearance} /><span>{workspace?.title}</span></div>
+      </div>
       <div className="wsp-kind-tabs" role="group" aria-label={t('kind')}>
         {['icon', 'emoji', 'image'].map(value => <Button key={value} size="sm" aria-pressed={kind === value} onClick={() => selectKind(value)}>{t(value)}</Button>)}
       </div>
@@ -150,24 +164,6 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           <span className="wsp-help">{t('imageHint')}</span>
         </div>
       </>}
-      <div className="wsp-preview-section">
-        <span id="wsp-preview-label" className="wsp-field-label">{t('previewLabel')}</span>
-        <div className="wsp-list-preview" role="group" aria-labelledby="wsp-preview-label"><Preview appearance={appearance} /><span>{workspace?.title}</span></div>
-      </div>
-      <details className="wsp-advanced">
-        <summary>{t('advanced')}</summary>
-        <label className="wsp-field-label" htmlFor="wsp-alias">{t('profileName')}</label>
-        <input id="wsp-alias" className="wsp-appearance-input" type="text" maxLength={80} value={alias} onChange={event => setAlias(event.target.value)} />
-        <p className="wsp-help">{t('profileHint')}</p>
-        {Object.keys(settings.profiles).length > 0 && <>
-          <label className="wsp-field-label" htmlFor="wsp-saved">{t('savedProfiles')}</label>
-          <select id="wsp-saved" className="wsp-appearance-input" value="" onChange={event => {
-            if (event.target.value) { uploadGeneration.current++; setLoading(false); setError(''); setAlias(event.target.value); setAppearance(settings.profiles[event.target.value]); }
-          }}>
-            <option value="">{t('chooseProfile')}</option>{Object.keys(settings.profiles).map(name => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </>}
-      </details>
       {error && <div role="alert" className="wsp-error">{error}</div>}
     </div>
   </Modal>;

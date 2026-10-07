@@ -4,7 +4,7 @@ import workspaceIcons from './workspace-icons.json';
 export const ICONS = workspaceIcons;
 export const ICON_IDS = ICONS.map(icon => icon.id);
 export const PALETTE = ['#4176e6', '#22a06b', '#8b5cf6', '#d946a3', '#e5484d', '#e97924', '#d9a514', '#16a5a3', '#77808c'];
-const names = { deepseek: 'DeepSeek', openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google', moonshotai: 'Kimi', xai: 'xAI', mistral: 'Mistral' };
+const names = { deepseek: 'DeepSeek', openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google', moonshotai: 'Kimi', xai: 'xAI', mistral: 'Mistral', qwen: 'Qwen', zhipuai: 'Zhipu AI', minimax: 'MiniMax' };
 
 export function vendorOf(selection) {
   if (!selection) return null;
@@ -18,6 +18,10 @@ export function vendorOf(selection) {
     if (/kimi|moonshot/.test(value)) return 'moonshotai';
     if (/grok|(^|[-_/])xai($|[-_/])/.test(value)) return 'xai';
     if (/mistral|codestral|devstral/.test(value)) return 'mistral';
+    // Match actual model families and lab aliases, not Alibaba/DashScope transports or display names.
+    if (/(^|[-_/])qwen(?=\d|$|[-_/.])/.test(value)) return 'qwen';
+    if (/(^|[-_/])(?:chatglm|glm)(?=\d|$|[-_/.])|(^|[-_/])(?:zhipu(?:ai)?|z[.-]?ai)(?=$|[-_/.])/.test(value)) return 'zhipuai';
+    if (/(^|[-_/])minimax(?=$|[-_/.])/.test(value)) return 'minimax';
     if (/(^|[/_-])(gpt|o[134])[-_.\d]|codex|openai/.test(value)) return 'openai';
     return null;
   };
