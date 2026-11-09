@@ -23,7 +23,7 @@ function Settings({ prefs, reminders, workspaces, ui, t, close }) {
   const state = useStore(prefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = useState('');
   async function safe(fn) { try { await fn(); setError(''); } catch (e) { setError(e.message); } }
   return <section className="wsp-panel">
-    <h2>Workspace Plus</h2>
+    <h2>Tinker</h2>
     <p>{t('adapterHint')}</p>
     {['workspaces','composer','sessions','unread','branding'].map(key => <div key={key} className="wsp-toggle"><span>{t(key)}</span><button role="switch" aria-label={t(key)} aria-checked={state.features[key]} onClick={() => safe(() => prefs.toggle(key, !state.features[key]))}>{t(state.features[key] ? 'on' : 'off')}</button></div>)}
     <label htmlFor="wsp-workspace">{t('editWorkspace')}</label><select id="wsp-workspace" value="" onChange={e => { if (e.target.value) { const id = e.target.value; close?.(); queueMicrotask(() => ui.set({ target: { id } })); } }}>
@@ -31,13 +31,13 @@ function Settings({ prefs, reminders, workspaces, ui, t, close }) {
     {(state.error || error) && <div role="alert" className="wsp-error">{error || state.error}</div>}
     {(state.error || state.recoveryAvailable) && <>
       <p>{t('recoveryHint')}</p>
-      <div className="wsp-row"><button onClick={() => safe(() => download(prefs.backup(), 'workspace-plus-recovery.json'))}>{t('backup')}</button>
+      <div className="wsp-row"><button onClick={() => safe(() => download(prefs.backup(), 'tinker-recovery.json'))}>{t('backup')}</button>
         {state.error && <><button onClick={() => safe(() => prefs.retry())}>{t('retry')}</button><button onClick={() => safe(() => { if (window.confirm(t('resetConfirm'))) prefs.resetAll(); })}>{t('resetAll')}</button></>}
       </div>
     </>}
     {(unreadState.error || unreadState.lastError) && <>
       <div role="alert" className="wsp-error">{t('unreadRecovery')} {unreadState.error || unreadState.lastError}</div>
-      <div className="wsp-row"><button onClick={() => safe(() => download(reminders.backup(), 'workspace-plus-unread-recovery.json'))}>{t('backup')}</button>
+      <div className="wsp-row"><button onClick={() => safe(() => download(reminders.backup(), 'tinker-unread-recovery.json'))}>{t('backup')}</button>
         <button onClick={() => safe(() => reminders.refresh())}>{t('retry')}</button>
         <button onClick={() => safe(() => { if (window.confirm(t('unreadResetConfirm'))) return reminders.resetAll(); })}>{t('resetAll')}</button></div>
     </>}
@@ -86,7 +86,7 @@ export function apply(ctx) {
     return <span ref={marker} data-wsp-owned="" style={{ display: 'none' }} />;
   }
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'workspace-plus-dialog', order: 90, locale: NS }, Overlay));
-  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', order: 80, label: 'Workspace Plus', locale: NS }, props => <Settings prefs={prefs} reminders={reminders} ui={ui} workspaces={ctx.workspaces} t={props.t} close={props.close} />));
+  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', order: 80, label: 'Tinker', locale: NS }, props => <Settings prefs={prefs} reminders={reminders} ui={ui} workspaces={ctx.workspaces} t={props.t} close={props.close} />));
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right', id: 'workspace-plus-model', order: 10,
     inject: sessionId => ({ sessionId, directory: ctx.modelDirectories.directoryFor(sessionId).store }),

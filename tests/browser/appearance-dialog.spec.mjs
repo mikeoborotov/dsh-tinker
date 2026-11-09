@@ -53,6 +53,26 @@ async function drop(page, data, selector = '.wsp-image-dropzone') {
 }
 async function imageMode(page) { await page.getByRole('button', { name: 'Image', exact: true }).click(); }
 
+for (const language of ['en', 'ru']) test(`Tinker settings and reset confirmation use the public product name (${language})`, async ({ page }, testInfo) => {
+  await setup(page, { language, dark: language === 'ru' });
+  await expect(page.getByRole('heading', { name: 'Tinker', exact: true })).toBeVisible();
+  await expect(page.getByRole('switch')).toHaveCount(5);
+  await expect(page.locator('#settings')).not.toContainText('Workspace Plus');
+  await page.locator('#settings').screenshot({ path: testInfo.outputPath(`tinker-settings-${language}.png`), animations: 'disabled' });
+  // The recovery-only reset path must use the new label without changing its data key.
+  await page.evaluate(() => localStorage.setItem('dsh-workspace-plus:v1', '{invalid'));
+  await page.reload();
+  await page.addStyleTag({ content: fixture.css });
+  await page.addScriptTag({ content: fixture.js });
+  await page.evaluate(language => { window.fixture.mount(); window.fixture.setLanguage(language); }, language);
+  const confirmation = page.waitForEvent('dialog').then(async dialog => {
+    const message = dialog.message(); await dialog.dismiss(); return message;
+  });
+  await page.getByRole('button', { name: language === 'en' ? 'Reset plugin settings' : 'Сбросить настройки плагина', exact: true }).click();
+  expect(await confirmation).toBe(language === 'en' ? 'Reset all Tinker settings? Save a recovery copy first.' : 'Сбросить все настройки Tinker? Сначала сохраните копию для восстановления.');
+  expect(await storage(page)).toBe('{invalid');
+});
+
 for (const dark of [true, false]) test(`native modal/header/input/footer match ${dark ? 'dark' : 'light'} theme`, async ({ page }) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await setup(page, { dark }); await open(page);

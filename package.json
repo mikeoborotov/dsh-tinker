@@ -1,5 +1,5 @@
 {
-  "name": "dsh-workspace-plus",
+  "name": "dsh-tinker",
   "version": "0.1.5",
   "description": "Workspace appearance, model logos, unread reminders and sidebar branding for DeepSeek Harness",
   "type": "module",
@@ -7,7 +7,7 @@
   "author": "Mike Oborotov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mikeoborotov/dsh-workspace-plus.git"
+    "url": "https://github.com/mikeoborotov/dsh-tinker.git"
   },
   "icon": "./icon.svg",
   "exports": {

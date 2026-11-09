@@ -1,269 +1,80 @@
-# dsh-workspace-plus
+# Tinker
 
-Небольшой UI-плагин для [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
-Текущая версия: **0.1.5**, адаптеры для **DSH 0.2.0-rc.2 / Windows**.
-Браузерные регрессионные проверки используют настоящие native Modal/Button/Menu/StateDot
-и SidebarRoot RC.2; рабочая установка и живой пользовательский прогон 0.1.5 ещё нужны.
+**dsh-tinker 0.1.5** is a web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), previously distributed from this repository as local Workspace Plus bundles/archives. It adds workspace appearance, model logos and manual unread reminders to the existing interface. It does not send model requests or change prompts or credentials.
 
-## Возможности
+## Features
 
-- Своя иконка Workspace: 36 встроенных значков с цветом, emoji или загруженное изображение.
-  Одно оформление в sidebar, кнопке выбора проекта над prompt и списке проектов нового чата.
-- Логотип лаборатории прямо в кнопке выбора модели, у каждой модели в раскрытом списке
-  и перед названием чата. Штатный DSH и Codex Subscription 2.5.2 поддерживаются.
-- Логотип отражает модель следующего запроса. Штатные индикаторы работы/ожидания сохраняются рядом.
-- Поддержка DeepSeek, OpenAI (включая `openai-codex`), Anthropic, Google, Kimi, xAI, Mistral,
-  Qwen, Zhipu AI/GLM и MiniMax, в том числе через Alibaba Token Plan.
-  Для неизвестной лаборатории показывается нейтральный значок AI.
-- Независимое оформление каждого Workspace без общих профилей, отдельные выключатели функций.
-- «Пометить непрочитанным» в меню и действиях при наведении на чат, зелёное напоминание до открытия.
-- Верхний брендинг sidebar скрыт вместе с его высотой; New Session и навигация сохранены.
-- Плагин не вызывает модели, не изменяет запросы, не читает ключи и не добавляет свой sidebar.
+- Independent appearance for each workspace: 36 colored icons, system emoji with English/Russian search, or a local image. The appearance is shared by the sidebar and workspace picker above the prompt.
+- Model-lab logos in the model selector, model list and chat rows. Includes DeepSeek, OpenAI/Codex, Anthropic, Google, Kimi, xAI, Mistral, Qwen, Zhipu AI/GLM and MiniMax, including recognized Alibaba routes. Unknown models use a neutral AI icon.
+- **Mark as unread** in the chat menu and hover actions. The reminder survives reload until the next observed opening. Native running, warning and completion indicators take precedence.
+- Hide the sidebar's top branding row and its space while retaining New Session and navigation.
+- Five independent feature switches in **Settings / Tinker**. English and Russian UI; Chinese currently uses English.
 
-## Установка в Desktop
+Use **Appearance** in a workspace's menu or choose a workspace in **Settings / Tinker**. Changes apply with **Save**; **Restore default** only changes the draft until saved. Image uploads accept PNG, JPEG, WebP, GIF and AVIF up to 5 MB and 16 million pixels, stored as a static PNG up to 128 px. No remote image links, SVG or animated output.
 
-1. Откройте **Plugins / Add plugin**.
-2. Для локальной разработки введите абсолютный путь к этому клону:
-   `C:\Users\mikeoborotov\code\personal\dsh-workspace-plus`.
-   Собирать его для установки не нужно: готовый `client.js` включён в репозиторий.
-3. Либо укажите готовый архив:
-   `C:\Users\mikeoborotov\code\personal\dsh-workspace-plus\dist\dsh-workspace-plus-0.1.5.tgz`.
-   Это рекомендуемый вариант для закреплённой версии и передачи коллегам.
-4. Подтвердите доверие к коду, нажмите **Install**, затем **Enable now**.
-5. Полностью закройте и снова откройте DSH, если он попросил перезапуск
-   или если заменяли ранее установленную версию.
+## Install
 
-Пакет пока не опубликован в npm. Одно имя `dsh-workspace-plus` как адрес установки
-ещё не работает. Публичный GitHub-адрес станет пригоден после отдельного пуша кода.
+1. Open **Plugins / Add plugin** in DeepSeek Harness.
+2. Enter the exact npm package name **`dsh-tinker`**.
+3. Review the trust prompt, install and enable the plugin. Restart the application if requested.
 
-Официальный механизм установки: [Plugin Manager RC.2](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-plugin-manager/README.md).
+For a local release archive, select `dsh-tinker-0.1.5.tgz` instead. Follow the host's [Plugin Manager instructions](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-plugin-manager/README.md). A newly published npm version may be temporarily unavailable under the host's package-age policy; do not disable that protection globally.
 
-## Как пользоваться
+If one of this repository's local Workspace Plus bundles is already installed, follow the migration steps below **before enabling Tinker**. Never run both copies together.
 
-В меню Workspace с тремя точками появился **Appearance** (в русской локали - **Оформление**).
-В окне **Change workspace appearance** выберите Icon / Emoji / Image.
-Поиск иконок и emoji понимает русские и английские названия. Цвет применяется только
-к встроенному значку; палитра находится выше коллекции. Подписанное превью показывает
-значок и название в реальном размере строки Workspace.
+## Requirements and verification status
 
-Каталог содержит все 3 512 полностью квалифицированных emoji из устоявшегося
-[Unicode Emoji 13.1](https://unicode.org/Public/emoji/13.1/emoji-test.txt), 9 категорий,
-русские/английские названия и ключевые слова [CLDR 38.1](https://github.com/unicode-org/cldr/tree/release-38-1).
-Это системные emoji: рисунок и поддержка зависят от ОС/шрифта. В частности, Windows
-может показывать флаги буквами, а старые ОС - разделять некоторые составные emoji.
-Картинки/шрифты emoji не загружаются. Можно вставить свой emoji; уже сохранённые и более
-новые символы не ограничены версией каталога.
+| Area | Requirement or actual coverage |
+| --- | --- |
+| Host version | The package declares `>=0.2.0-rc.2 <0.3.0-0`. This is an install range, not a claim that every version was tested. |
+| UI adapters | Target DSH 0.2.0-rc.2 markup. Later core/interface changes may require updated adapters. |
+| Automated browser tests | Windows, using exact vendored RC.2 Modal/Button/Menu/StateDot/Toast and SidebarRoot sources. Session rows, navigation and Cordis lifecycle are fixture stand-ins. |
+| Live installation | The rebranded 0.1.5 package has not yet been verified in an installed host. Offline fixture results are not live GUI verification. |
+| Newer core / Codex | Newer core versions and newer Codex Subscription releases are not verified. Model-selector adapters target native RC.2 and Codex Subscription 2.5.2 markup. |
+| macOS | Physical Mac not verified. Offline tests cover the native darwin markup branch, not OS window behavior. |
+| Unread reminders | Require Web Locks in a secure browser context (HTTPS or loopback). Without it, writes report an error rather than risking lost updates. |
+| Runtime | React and native UI primitives are supplied by the host; no separate runtime dependencies are installed by this package. |
 
-На вкладке **Image** перетащите **один файл в область загрузки** либо нажмите **Choose image**.
-Поддерживаются PNG, JPEG, WebP, GIF и AVIF до 5 МБ и 16 миллионов пикселей; сохраняется
-самостоятельная статичная PNG-копия до 128 px с исходными пропорциями и прозрачностью,
-если она есть. Анимация не сохраняется. SVG, HEIC и ссылки вместо файлов не принимаются.
-Drop за пределами области не меняет режим/оформление и не открывает файл в браузере.
-Загрузка меняет только черновик; постоянное оформление записывается кнопкой **Save**.
+Adapters leave unsupported structures unchanged rather than guessing. Full-text search results have different markup and do not receive chat logos. Older lab-name heuristics can misidentify custom aliases. Emoji rendering depends on the OS/font. There is no cross-device sync or portable appearance import/export.
 
-Превью находится сразу под заголовком, выше вкладок. **Restore default** / **Восстановить
-по умолчанию** меняет только черновик на настоящую штатную папку. Сброс применяется через
-**Save**; **Cancel**, крестик и Escape закрывают окно без изменения сохранённого оформления.
-Общие профили, их имена, привязки, Additional settings и импорт/экспорт удалены.
+## Migrating from this repository's local Workspace Plus builds
 
-**Settings / Workspace Plus**: пять независимых выключателей и запасной вход в оформление.
-Видимые подписи следуют локали приложения; есть словари en/ru, для zh пока английский текст.
-Каждый Workspace хранит собственную запись по ID. Изменение одного не меняет остальные.
-Данные локальны для браузера/профиля; очистка browser data удаляет оформление и напоминания.
+These steps apply only to local Workspace Plus bundles/archives from this repository, including releases older than 0.1.5. Tinker is not a rebrand or continuation of the separate public npm package [dsh-workspace-plus](https://www.npmjs.com/package/dsh-workspace-plus).
 
-### Ручная непрочитанность
+1. Disable this repository's old local Workspace Plus bundle. Keep its archive and back up the relevant browser/desktop profile before changing the installation. Do not enable both package names at once: they share data and host identities.
+2. Save the **raw values of all three keys below**, including a missing value as missing. The recovery download alone is not a complete current-state backup: it may prefer the pre-upgrade legacy copy.
+3. Install and test Tinker in a disposable profile first. To test existing settings, use a backed-up copy of the same profile/origin; a fresh profile has no existing data. Do not experiment with the working profile's storage.
+4. After verification, replace the old installation using the host's normal plugin procedure, restart as needed and enable only Tinker in the original profile. Disabling/uninstalling the code does not intentionally remove saved data; clearing browser/profile data does.
 
-**Mark as unread** / **Пометить непрочитанным** есть в native меню и при наведении на чат.
-Зелёное напоминание сохраняется после перезагрузки до следующего наблюдаемого открытия,
-включая повторный клик по уже текущему чату. Само действие не открывает чат, не меняет
-модель/название и не запускает работу. Native busy/pending/child/completion статусы остаются
-главными; напоминание видно в свободном idle-месте и не теряется во время работы.
-Это отдельное ручное напоминание, не изменение private native completion-unread.
+Historical keys are intentionally unchanged:
 
-Открытия, случившиеся при отключённом плагине или до подключения наблюдателя, по уже
-существующей ссылке mainView определить нельзя. Такие метки не стираются при включении:
-их снимет следующее наблюдаемое открытие. Автовосстановление после подключения снимает
-метку как обычное открытие; уже восстановленный до подключения чат считается baseline.
+- `dsh-workspace-plus:v1` - current appearance/settings schema version 2, despite the historical key suffix.
+- `dsh-workspace-plus:v1:legacy-backup` - exact pre-upgrade schema-1 bytes, if migration occurred. Not the latest settings.
+- `dsh-workspace-plus:unread:v1` - manual unread reminders; also the Web Lock name.
 
-Записи между окнами сериализованы через Web Locks; Chromium на HTTPS/loopback поддерживает
-этот API. На незащищённом remote HTTP или без Web Locks действие покажет ошибку, а не
-перейдёт к записи с потерей данных. Ошибка сохранения показана native Toast и в Settings;
-зелёный статус публикуется только после записи. Отключение функции скрывает действие/метку,
-но не удаляет сохранённые напоминания.
+The event `workspace-plus:unread-change`, Cordis instance ID `workspace-plus` and internal locale/slot/DOM identifiers also remain unchanged for compatibility. Package name, patch module name and compiled factory ID are `dsh-tinker`; workspace and session IDs are not renamed.
 
-## MacBook и коллеги
+Schema-1 appearances migrate once, preserving the original bytes before replacing the main value. Invalid data, quota errors or a conflicting legacy backup stop migration instead of discarding data. **0.1.4 and older cannot read schema 2**: downgrading requires separately saved, valid schema-1 data and loses changes made after that snapshot. Save copies before any reset or rollback.
 
-1. Установите DSH обычным способом; на Mac он уже предусмотрен в вашем Brewfile.
-2. Передайте тот же `.tgz` и установите через Plugins / Add plugin.
-3. Настройте Appearance местного Workspace независимо на каждой машине.
+## Development
 
-Обмена профилями и автоматической синхронизации в 0.1.5 нет. Recovery copy предназначена
-для восстановления исходного хранилища, не переноса оформления по разным Workspace IDs.
-Физический Mac пока не проверен; offline проверяется только native darwin-ветка разметки.
+Use Node.js and npm; this release was checked with Node 24.18.0 and npm 11.16.0. Development dependencies are pinned in [package-lock.json](<package-lock.json>).
 
-## Изменения 0.1.5
-
-- Независимые Workspace appearances; однократная миграция всех прежних bound icon/emoji/image
-  с точной recovery-only копией оригинала до записи новой схемы. Активных профилей/transfer API нет.
-- Превью под заголовком; Restore default только через Save, отмена сохраняет прежнее оформление.
-- Qwen, Zhipu AI/GLM и MiniMax во всех трёх местах; лаборатория важнее транспортного провайдера.
-- Ручная непрочитанность с durable сохранением, native меню/focus, приоритетом штатных статусов.
-- Верхний брендинг и его высота удалены; New Session и collapse сохранены. Выключатель и выгрузка
-  возвращают штатный слот. Проверяются native anchors и официальный конкурент priority 0.
-- Offline тесты используют точные native примитивы/SidebarRoot RC.2. SessionRow/status/navigation
-  и Cordis lifecycle в fixture являются stand-ins, не полным installed-host integration test.
-
-## Изменения 0.1.4 (история, заменены 0.1.5)
-
-- Редактор использует [штатные Modal и Button](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-primitives/src/index.ts),
-  уже доступные в host. Заголовок **Change workspace appearance**, без названия Workspace,
-  штатный крестик и тема; Save - нейтральное основное действие, не синяя кнопка.
-- Поиск по нынешним 36 иконкам и полному устоявшемуся каталогу системных emoji RU/EN.
-  Каталог локальный: поиск по всем записям, отрисовка порциями, категории и ручной ввод.
-- Палитра выше иконок, подписанное превью строки списка с 18px значком вместо увеличенного
-  30px. Профили доступны в Additional settings, по умолчанию свёрнуты.
-- Drag-and-drop только в зоне Image; PNG/JPEG/WebP/GIF/AVIF проверяются по содержимому,
-  не расширению/MIME. Локальная статичная копия сохраняет пропорции и прозрачность.
-- Старое оформление, общие профили и схема `version: 1` прежние. Отмена/смена режима/
-  новый файл не позволяют завершившейся старой загрузке заменить актуальный черновик.
-- Native focus/Tab/Escape; Enter подтверждает ручной текст, не строку поиска. IME-защита
-  включает завершающую клавишу после compositionend, через публичный штатный observer.
-- Тесты используют [точные исходники native RC.2](<tests/native-rc2/README.md>), не имитацию
-  UI. Эти копии не входят в установочный пакет. Runtime-зависимостей и второго UI kit нет.
-
-## Изменения 0.1.3
-
-- Логотип чата сдвинут вправо на 5px: зазоры к статусу и названию стали 5/5px вместо
-  0/10px. Положение статуса, названия и времени не меняется.
-- Appearance стоит между Rename и Delete, с кисточкой Heroicons. Пункт использует классы
-  штатного нейтрального меню, включая шрифт, отступы, скругление, hover и focus.
-- Выбранное оформление Workspace показано в кнопке и списке проектов нового чата.
-  Цвет, emoji и картинка переиспользуют тот же профиль, что sidebar; выключатель Workspaces общий.
-- Во время смены проекта кнопка кратко показывает штатную папку до подтверждения membership.
-  Для пункта списка проверяется полный native порядок store, количество, подписи и структура.
-  При несовпадении разметки или неизвестном Workspace сохраняется штатный UI, без угадывания.
-  Полная коллекция из 36 Lucide иконок пока не заменена.
-
-## Изменение 0.1.2
-
-Добавлены логотипы слева от всех моделей в раскрытом списке. Они используют тот же
-каталог лабораторий, что кнопка и чаты. Галочки, загрузка, названия, поиск и выбор модели
-принадлежат прежнему интерфейсу. Пункты effort/speed/verbosity не получают значков моделей.
-Отключение **Model logos in the selector and list** удаляет значки и из кнопки, и из меню.
-
-Список наблюдается только в меню, связанном с вашим переключателем через aria-controls.
-Лаборатория определяется по модели и группе в общем каталоге, включая API-модели и маршруты
-агрегаторов. Неизвестное или неоднозначное соответствие показывает нейтральный AI.
-Разметка native RC.2 и Codex Subscription 2.5.2 адаптируется раздельно; поиск самого
-переключателя у кнопки и меню общий (`src/composer-target.js`).
-
-## Исправление 0.1.1
-
-Добавлена поддержка собственного переключателя модели `dsh-codex-subscription` 2.5.2.
-В 0.1.0 логотип появлялся только в штатной кнопке DSH: подписочная кнопка не имеет
-`aria-busy`, а её SVG - стрелка/индикатор Fast, не значок модели. Версия 0.1.1
-добавляет логотип отдельно и сохраняет эти элементы. Поздний монтаж и замена кнопки
-React также наблюдаются локально. Подписки и OAuth не изменены.
-
-## Обновление и отключение
-
-Автообновления здесь нет. Сначала сохраните raw-копию настроек; установите новый архив
-по штатной процедуре DSH (в RC.2 - удалить прежний пакет, установить новый), перезапустите.
-0.1.5 однократно читает прежнюю `version: 1` и записывает `version: 2` в тот же ключ
-`dsh-workspace-plus:v1`. Каждый bound Workspace получает независимую копию icon/emoji/image;
-цвет и прежние выключатели сохраняются. Неиспользуемые профили остаются только в recovery copy.
-Перед заменой основного ключа точные исходные bytes записываются в
-`dsh-workspace-plus:v1:legacy-backup`. Эта копия не участвует в работе и не удаляется сбросом.
-
-При превышении 2 MB после клонирования картинок, quota, invalid data или конфликте с другой
-legacy backup миграция останавливается: исходник не заменён, частичного оформления нет.
-Settings предлагает **Save recovery copy**, **Retry reading saved settings**, явный reset.
-Сначала сохраните исходные bytes; не очищайте browser data и не сбрасывайте до копии.
-Отличающаяся existing legacy backup не перезаписывается. Напоминания имеют отдельный ключ
-`dsh-workspace-plus:unread:v1`, их recovery reset не сбрасывает Workspace appearances.
-
-🚨 **Обратная совместимость чтения не означает безопасный downgrade.** 0.1.4 и старше
-не читают v2. Установка старого пакета без восстановления данных покажет ошибку настроек.
-Legacy backup - снимок ДО обновления, не текущие изменения 0.1.5; автоматического обратного
-переноса нет. Для ручного отката с уже существующей legacy copy:
-
-1. Закройте остальные окна этого профиля и отключите 0.1.5.
-2. Сохраните текущую строку основного ключа и legacy backup отдельно через DevTools;
-   это две разные копии. Не меняйте хранилище рабочего профиля в процессе диагностики.
-3. Проверьте, что backup является прежней валидной `version: 1`; восстановите именно её bytes
-   в основной ключ. Если её нет, переносить свежее v2-оформление старый пакет не умеет.
-4. Установите 0.1.4. Оформление откатится к pre-upgrade snapshot; более новые изменения
-   остаются только в сохранённой v2-копии, которую старый пакет не читает.
-
-Отключение/удаление bundle убирает код/значки, меню, стили и обработчики; данные остаются
-в localStorage и подхватываются при повторной установке 0.1.5. Картинки внутри данных,
-не установочного пакета. Каждую функцию также можно выключить отдельно в Settings.
-
-## Совместимость и ограничения
-
-- Точные места Workspace/кнопки модели/активного чата в RC.2 не имеют всех нужных slots.
-  Поэтому применяются изолированные DOM-адаптеры к подтверждённой разметке.
-- При несовпадении структуры адаптер оставляет штатные элементы. После обновления DSH
-  может потребоваться версия плагина с новым адаптером. Проверено именно RC.2.
-- Нативные строки дерева Workspaces поддержаны. Результаты полнотекстового поиска DSH
-  используют другую разметку без стабильного DOM-ID: логотипы там пока не добавляются.
-- Для неоткрытых чатов читаются только проекции видимых строк, максимум два чтения
-  одновременно. Полные истории не открываются. Если модель ещё неизвестна, виден значок AI.
-- UI04-UI09 (группы Workspaces, уведомления, статистика, субагенты, Git) остаются будущими этапами.
-- Первый живой прогон 0.1.0/0.1.1 выполнялся в отдельном web-профиле установленного Desktop
-  runtime. Для 0.1.5 рабочая установка и installed-host прогон не проводились. Native shell
-  и примитивы проверяются offline в Edge, без запросов моделям. OS window chrome/drag,
-  реальный Cordis lifecycle и физический Mac не подтверждены этим fixture.
-- Прежние эвристики DeepSeek/Kimi/других старых семейств принимают подстроки; непрозрачный
-  custom alias вроде notdeepseek может ошибочно получить старый логотип. Это прежнее
-  ограничение, не новая регрессия; новые Qwen/GLM/MiniMax имеют boundary guards.
-
-## Разработка
-
-```powershell
+```sh
 npm ci --ignore-scripts
-npm run build
-npm test
-npm run test:browser
+npm run check
+```
+
+`check` runs the build, Node unit tests and Playwright browser tests. Browser tests default to installed Microsoft Edge. On systems without Edge, install the existing pinned browser with `npx playwright install chromium` and set `WSP_BROWSER_CHANNEL=chromium` before running the tests. Fixtures are isolated browser pages; they do not connect to a running DSH GUI or call models.
+
+After a successful build, create a local archive with:
+
+```sh
 npm pack --ignore-scripts --pack-destination dist
 ```
 
-На Windows браузерные тесты используют установленный Edge. На другой ОС задайте
-`WSP_BROWSER_CHANNEL=chromium` и установите Chromium командой `npx playwright install chromium`.
-Runtime-зависимостей у установочного пакета нет; React берётся из DSH. Dev-зависимости
-закреплены в [package-lock.json](<package-lock.json>). Install-скриптов пакет не содержит.
+Work happens on `develop`; `master` is stable. Merge, tags, GitHub Release and npm publication require an explicit owner command; there is no release CI yet. The generated client bundle must accompany source changes. See [AGENTS.md](<AGENTS.md>) for the project guide in a source checkout.
 
-[client.jsx](<src/client.jsx>) - slots и UI; [adapters.js](<src/adapters.js>) - RC.2 adapters;
-[store.js](<src/store.js>) - схема/миграция; [icons.js](<src/icons.js>) - лаборатории;
-[model-menu.js](<src/model-menu.js>) - список моделей; [unread.js](<src/unread.js>) - reminders;
-[session-actions.jsx](<src/session-actions.jsx>) - native actions и Toast;
-[sidebar-branding.js](<src/sidebar-branding.js>) - удаление верхнего брендинга/высоты.
-Готовый [client.js](<client.js>) генерирует [build.mjs](<scripts/build.mjs>); его нужно
-коммитить вместе с исходниками. [Редактор](<src/appearance-dialog.jsx>) и
-[загрузка](<src/image-upload.js>) вынесены отдельно. [Emoji-каталог](<src/emoji-catalog.js>)
-использует проверенные локальные данные, обычная сборка/тесты не требуют сети.
+## License
 
-Данные можно проверить без сети:
-
-```powershell
-node scripts/build-emoji-data.mjs --check
-```
-
-Явная повторная генерация [build-emoji-data.mjs](<scripts/build-emoji-data.mjs>) скачивает
-только закреплённые версии с проверкой SHA256; не используйте её для автоматического
-обновления emoji вместе с каждым build. [buildFixture](<tests/build-fixture.mjs>) компилирует
-точные native Modal/Button/Menu/StateDot/Toast/SidebarRoot и возвращает JS + CSS для offline
-браузерных тестов. [vendor-native-extra.mjs](<scripts/vendor-native-extra.mjs>) сверяет pinned
-байты/хеши через `--check`; `--download` явно добавляет недостающий pinned native граф.
-
-Настоящий host smoke-test, только против своего временного профиля:
-
-```powershell
-node scripts/verify-host.mjs "http://127.0.0.1:PORT/?token=TEST_TOKEN"
-```
-
-Этот тест меняет оформление/выключатели временного профиля, не отправляя запросов моделям.
-Не запускать его против рабочего профиля.
-
-Основа API: [официальный гайд RC.2](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/preset/agent-preset/skills/cordis-plugin-development/SKILL.md).
-Лицензии и происхождение значков: [THIRD_PARTY_NOTICES.md](<THIRD_PARTY_NOTICES.md>).
+[MIT](<LICENSE>). Bundled icon, provider-mark and Unicode data notices are in [THIRD_PARTY_NOTICES.md](<THIRD_PARTY_NOTICES.md>). Brand marks belong to their respective owners; no endorsement is implied.

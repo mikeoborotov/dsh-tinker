@@ -54,7 +54,7 @@ const en = {
   backup: 'Save recovery copy',
   retry: 'Retry reading saved settings',
   resetAll: 'Reset plugin settings',
-  resetConfirm: 'Reset all Workspace Plus settings? Save a recovery copy first.',
+  resetConfirm: 'Reset all Tinker settings? Save a recovery copy first.',
 };
 const ru = {
   language: 'ru',
@@ -110,7 +110,7 @@ const ru = {
   backup: 'Сохранить копию для восстановления',
   retry: 'Повторить чтение настроек',
   resetAll: 'Сбросить настройки плагина',
-  resetConfirm: 'Сбросить все настройки Workspace Plus? Сначала сохраните копию для восстановления.',
+  resetConfirm: 'Сбросить все настройки Tinker? Сначала сохраните копию для восстановления.',
 };
 for (const icon of ICONS) { en['icon.' + icon.id] = icon.en; ru['icon.' + icon.id] = icon.ru; }
 export const dictionaries = { en, ru, zh: en };
