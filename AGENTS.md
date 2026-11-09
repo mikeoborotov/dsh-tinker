@@ -7,6 +7,7 @@ Tinker 0.1.5 is a web UI plugin for DeepSeek Harness. Source is in `src/`; `clie
 - Work in `develop`; `master` is the stable branch.
 - Merge to `master`, create release tags/GitHub Releases and publish to npm only on the owner's explicit command. Completing a task is not release permission.
 - Push product code only with explicit consent for that push. Never force-push without separate consent.
+- Write commit messages in English: concise and factual, without filler, session details or AI credits.
 
 ## Compatibility and data
 
