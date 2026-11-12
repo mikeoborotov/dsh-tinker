@@ -11,6 +11,9 @@ import { useStore } from './use-store.js';
 import { createUnreadStore, observeSessionOpenings, UNREAD_STORAGE_KEY, UNREAD_CHANGE_EVENT } from './unread.js';
 import { registerSidebarFeatures, SESSION_ACTION_CSS } from './session-actions.jsx';
 import { BRANDING_CSS } from './sidebar-branding.js';
+import { createProfilePreferences, PROFILE_STORAGE_KEY } from './profile-store.js';
+import { ProfileDialog } from './profile-dialog.jsx';
+import { createProfileAdapter, PROFILE_ADAPTER_CSS } from './profile-adapter.js';
 
 export const inject = ['slots', 'locale', 'sessions', 'workspaces', 'modelDirectories', 'remote', 'remote.session'];
 const NS = 'workspacePlus';
@@ -19,13 +22,15 @@ function download(text, name) {
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function Settings({ prefs, reminders, workspaces, ui, t, close }) {
-  const state = useStore(prefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = useState('');
-  async function safe(fn) { try { await fn(); setError(''); } catch (e) { setError(e.message); } }
+function Settings({ prefs, profilePrefs, reminders, workspaces, ui, t, close }) {
+  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = useState('');
+  async function safe(fn) { try { await fn(); setError(''); } catch (e) { setError(String(e.code ?? '').startsWith('profile') ? t(e.code) : e.message); } }
   return <section className="wsp-panel">
     <h2>Tinker</h2>
     <p>{t('adapterHint')}</p>
     {['workspaces','composer','sessions','unread','branding'].map(key => <div key={key} className="wsp-toggle"><span>{t(key)}</span><button role="switch" aria-label={t(key)} aria-checked={state.features[key]} onClick={() => safe(() => prefs.toggle(key, !state.features[key]))}>{t(state.features[key] ? 'on' : 'off')}</button></div>)}
+    <div className="wsp-toggle"><span>{t('profileFeature')}</span><button role="switch" aria-label={t('profileFeature')} aria-checked={profileState.enabled} disabled={Boolean(profileState.error)} onClick={() => safe(() => profilePrefs.toggle(!profileState.enabled))}>{t(profileState.enabled ? 'on' : 'off')}</button></div>
+    {profileState.error && <div role="alert" className="wsp-error">{t(profileState.error)} <button onClick={() => safe(() => profilePrefs.retry())}>{t('retry')}</button></div>}
     <label htmlFor="wsp-workspace">{t('editWorkspace')}</label><select id="wsp-workspace" value="" onChange={e => { if (e.target.value) { const id = e.target.value; close?.(); queueMicrotask(() => ui.set({ target: { id } })); } }}>
       <option value="">{t('chooseWorkspace')}</option>{list.items.map(w => <option key={w.workspaceId} value={w.workspaceId}>{w.title}</option>)}</select>
     {(state.error || error) && <div role="alert" className="wsp-error">{error || state.error}</div>}
@@ -46,10 +51,11 @@ function Settings({ prefs, reminders, workspaces, ui, t, close }) {
 
 export function apply(ctx) {
   const locale = ctx.locale, prefs = createPreferences(window.localStorage, ICON_IDS), ui = createStore({ target: null }), currentModels = createStore({});
-  const reminders = createUnreadStore(window.localStorage);
+  const reminders = createUnreadStore(window.localStorage), profilePrefs = createProfilePreferences(window.localStorage);
+  const closeProfile = () => { if (ui.getSnapshot().profileTarget) ui.set({ target: null }); };
   ctx.effect(() => locale.register(NS, dictionaries));
   const t = locale.bind(NS);
-  ctx.effect(() => { const style = document.createElement('style'); style.dataset.wspOwned = ''; style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS; document.head.append(style); return () => style.remove(); });
+  ctx.effect(() => { const style = document.createElement('style'); style.dataset.wspOwned = ''; style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS + PROFILE_ADAPTER_CSS; document.head.append(style); return () => style.remove(); });
   ctx.effect(() => {
     const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t });
     const unsubscribe = ctx.on('connection/reset', () => adapter.reconnect());
@@ -58,14 +64,27 @@ export function apply(ctx) {
   ctx.effect(() => createWorkspacePickerAdapter({ document, preferences: prefs, workspaces: ctx.workspaces, defaultName: () => locale.bind('workspace')('workspace.defaultName') }).dispose);
   ctx.effect(() => observeSessionOpenings(ctx.sessions, reminders));
   ctx.effect(() => {
-    const onStorage = event => { if (event.storageArea === window.localStorage && (event.key === UNREAD_STORAGE_KEY || event.key === null)) reminders.refresh(); };
+    const adapter = createProfileAdapter({ document, preferences: profilePrefs, translate: t,
+      onEdit: profileTarget => { if (profilePrefs.getSnapshot().enabled) ui.set({ target: null, profileTarget }); },
+      onUnavailable: closeProfile });
+    const unsubscribe = profilePrefs.subscribe(() => { if (!profilePrefs.getSnapshot().enabled) closeProfile(); });
+    const disconnect = ctx.on('connection/reset', () => { closeProfile(); adapter.refresh(); });
+    return () => { disconnect(); unsubscribe(); adapter.dispose(); closeProfile(); };
+  });
+  ctx.effect(() => {
+    const onStorage = event => {
+      if (event.storageArea !== window.localStorage) return;
+      if (event.key === UNREAD_STORAGE_KEY || event.key === null) reminders.refresh();
+      if (event.key === PROFILE_STORAGE_KEY || event.key === null) profilePrefs.refresh();
+    };
     window.addEventListener('storage', onStorage);
     window.addEventListener(UNREAD_CHANGE_EVENT, reminders.onChange);
     return () => { window.removeEventListener('storage', onStorage); window.removeEventListener(UNREAD_CHANGE_EVENT, reminders.onChange); };
   });
   registerSidebarFeatures(ctx, { prefs, reminders, namespace: NS });
   function Overlay(props) {
-    const { target } = useStore(ui);
+    const { target, profileTarget } = useStore(ui), profileState = useStore(profilePrefs);
+    if (profileTarget && profileState.enabled) return <ProfileDialog prefs={profilePrefs} baseline={profileTarget.baseline} anchor={profileTarget.anchor} t={props.t} onClose={closeProfile} />;
     return target ? <AppearanceDialog key={target.id} target={target} prefs={prefs} ui={ui} workspaces={ctx.workspaces} t={props.t} lang={props.lang} /> : null;
   }
   function Composer({ directory, sessionId }) {
@@ -86,7 +105,7 @@ export function apply(ctx) {
     return <span ref={marker} data-wsp-owned="" style={{ display: 'none' }} />;
   }
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'workspace-plus-dialog', order: 90, locale: NS }, Overlay));
-  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', order: 80, label: 'Tinker', locale: NS }, props => <Settings prefs={prefs} reminders={reminders} ui={ui} workspaces={ctx.workspaces} t={props.t} close={props.close} />));
+  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', order: 80, label: 'Tinker', locale: NS }, props => <Settings prefs={prefs} profilePrefs={profilePrefs} reminders={reminders} ui={ui} workspaces={ctx.workspaces} t={props.t} close={props.close} />));
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right', id: 'workspace-plus-model', order: 10,
     inject: sessionId => ({ sessionId, directory: ctx.modelDirectories.directoryFor(sessionId).store }),

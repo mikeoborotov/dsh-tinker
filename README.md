@@ -1,6 +1,8 @@
 # Tinker
 
-**dsh-tinker 0.1.5** is a web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It adds workspace appearance, model logos and manual unread reminders to the existing interface. It does not send model requests or change prompts or credentials.
+Tinker is a web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It adds workspace appearance, model logos and manual unread reminders to the existing interface. It does not send model requests or change prompts or credentials.
+
+The latest published npm version is **dsh-tinker 0.1.5**. This development checkout also includes **unreleased local profile customization**, available in a separately built **Tinker (develop)** package.
 
 ## Features
 
@@ -8,9 +10,12 @@
 - Model-lab logos in the model selector, model list and chat rows. Includes DeepSeek, OpenAI/Codex, Anthropic, Google, Kimi, xAI, Mistral, Qwen, Zhipu AI/GLM and MiniMax, including recognized Alibaba routes. Unknown models use a neutral AI icon.
 - **Mark as unread** in the chat menu and hover actions. The reminder survives reload until the next observed opening. Native running, warning and completion indicators take precedence.
 - Hide the sidebar's top branding row and its space while retaining New Session and navigation.
-- Five independent feature switches in **Settings / Tinker**. English and Russian UI; Chinese currently uses English.
+- **Local profile appearance (unreleased):** a custom name and avatar in the bottom-left signed-in profile. Open **Customize profile** above **Sign out** in its menu. One additional switch in **Settings / Tinker** enables or disables the feature; the editor exists only in the profile menu.
+- Six independent feature switches in this development version; published 0.1.5 has five. English and Russian UI; Chinese currently uses English.
 
 Use **Appearance** in a workspace's menu or choose a workspace in **Settings / Tinker**. Changes apply with **Save**; **Restore default** only changes the draft until saved. Image uploads accept PNG, JPEG, WebP, GIF and AVIF up to 5 MB and 16 million pixels, stored as a static PNG up to 128 px. No remote image links, SVG or animated output.
+
+Profile customization changes only the local display, not your DeepSeek account. Name and image can be overridden independently. **Reset to DeepSeek account details** changes the draft; **Save** applies it. Signed-out **More** and native sign-in/sign-out actions remain unchanged.
 
 ## Install
 
@@ -25,9 +30,9 @@ See the host's [Plugin Manager instructions](https://github.com/deepseek-ai/deep
 | Area | Requirement or actual coverage |
 | --- | --- |
 | Host version | The package declares `>=0.2.0-rc.2 <0.3.0-0`. This is an install range, not a claim that every version was tested. |
-| UI adapters | Target DSH 0.2.0-rc.2 markup. Later core/interface changes may require updated adapters. |
-| Automated browser tests | Windows, using exact vendored RC.2 Modal/Button/Menu/StateDot/Toast and SidebarRoot sources. Session rows, navigation and Cordis lifecycle are fixture stand-ins. |
-| Live installation | The 0.1.5 package has not been verified in an installed host. Offline fixture results are not live GUI verification. |
+| UI adapters | Workspace/model/chat adapters target DSH 0.2.0-rc.2 markup. The guarded profile adapter targets the 0.2.2-rc.1 account launcher/menu. Later core/interface changes may require updated adapters. |
+| Automated browser tests | Windows, using exact vendored RC.2 UI primitives and SidebarRoot sources. Profile tests add a source-shaped 0.2.2-rc.1 account/menu model. Navigation and Cordis lifecycle are fixture stand-ins. |
+| Live installation | The unreleased profile feature still needs manual testing in an installed host. Offline fixture results are not live GUI verification. |
 | Newer core / Codex | Newer core versions and newer Codex Subscription releases are not verified. Model-selector adapters target native RC.2 and Codex Subscription 2.5.2 markup. |
 | macOS | Physical Mac not verified. Offline tests cover the native darwin markup branch, not OS window behavior. |
 | Unread reminders | Require Web Locks in a secure browser context (HTTPS or loopback). Without it, writes report an error rather than risking lost updates. |
@@ -37,7 +42,9 @@ Adapters leave unsupported structures unchanged rather than guessing. Full-text 
 
 ## Data
 
-Workspace appearance, settings and unread reminders are stored in the browser or desktop profile for the current origin. Disabling or uninstalling the plugin does not intentionally remove saved data; clearing profile storage does.
+Workspace appearance, settings, unread reminders and local profile appearance are stored in the browser or desktop profile for the current origin. Profile appearance is shared across DeepSeek accounts within that storage; it is not account-synchronized. Its separate versioned record is not overwritten by the older workspace settings writer.
+
+Uploaded images are saved as self-contained PNG copies, not source-file paths. Deleting the original file after a successful save does not remove the saved image. Disabling or uninstalling the plugin does not intentionally remove saved data; clearing profile storage does.
 
 The recovery download may not include the latest settings. Back up the profile before resetting data. There is no cross-device sync or portable appearance import/export.
 
@@ -51,6 +58,20 @@ npm run check
 ```
 
 `check` runs the build, Node unit tests and Playwright browser tests. Browser tests default to installed Microsoft Edge. On systems without Edge, install the existing pinned browser with `npx playwright install chromium` and set `WSP_BROWSER_CHANNEL=chromium` before running the tests. Fixtures are isolated browser pages; they do not connect to a running DSH GUI or call models.
+
+### Local development package
+
+```sh
+npm run pack:dev
+```
+
+This builds a fresh **Tinker (develop)** archive and a hash/provenance file under `dist/develop/`, without changing the stable package identity or publishing anything. The development package uses the separate technical name `dsh-tinker-develop` but shares local preferences with compatible Tinker versions.
+
+1. Build the archive, then add that local archive through the host's Plugin Manager **without enabling it**.
+2. Turn off the stable **Tinker** bundle and wait for it to stop. Then enable **Tinker (develop)**; restart if requested.
+3. Test the changes. To return, disable **Tinker (develop)** before enabling stable **Tinker**.
+
+Never enable both bundles together: their historical Cordis row and UI namespaces are shared. Switching code versions does not restore an earlier copy of settings. Browser fixtures do not verify this installed-host transition.
 
 ## License
 

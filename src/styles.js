@@ -64,5 +64,29 @@ export const CSS = `
 .wsp-error{color:var(--dsw-alias-state-error-primary);margin:10px 0}
 .wsp-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .wsp-toggle button{min-width:60px}
+/* The profile editor uses the native Modal shell, not the broad wsp-panel settings rules. */
+.wsp-profile-dialog{width:min(388px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-profile-content>p{font-size:12px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.wsp-profile-body{display:flex;flex-direction:column;align-items:center;gap:23px;font-size:14px;line-height:22px;min-width:0;padding:3px 0 0}
+.wsp-profile-body *{box-sizing:border-box}
+.wsp-profile-body .wsp-profile-portrait{position:relative;display:inline-flex;width:84px;height:84px;min-width:84px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.wsp-profile-body .wsp-profile-portrait:hover:not(:disabled){background:transparent}
+.wsp-profile-avatar{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden;border-radius:50%;corner-shape:round;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
+.wsp-profile-avatar>svg{width:65%;height:65%}
+.wsp-profile-avatar>img{display:block;width:100%;height:100%;object-fit:cover}
+.wsp-profile-camera{position:absolute;right:-1px;bottom:-1px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:3px solid var(--dsw-alias-bg-layer-2);border-radius:50%;corner-shape:round;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-2);pointer-events:none}
+.wsp-profile-camera>svg{width:13px;height:13px}
+.wsp-profile-body .wsp-profile-dragging{outline:2px dashed var(--dsw-alias-label-primary);outline-offset:4px}
+.wsp-profile-dragging .wsp-profile-avatar{opacity:.72}
+.wsp-profile-name{width:100%;max-width:282px;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;text-align:center;outline:none}
+.wsp-profile-name::placeholder{color:var(--dsw-alias-label-tertiary)}
+.wsp-profile-name:focus-visible,.wsp-profile-portrait:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-profile-file{display:none}
+.wsp-profile-body .wsp-profile-reset{display:inline-flex;gap:6px;max-width:100%;height:auto;min-height:28px;padding:3px 0;font-size:12px;line-height:18px;white-space:normal;text-align:center;color:var(--dsw-alias-label-secondary)}
+.wsp-profile-reset>svg{width:14px;height:14px;flex:none}
+.wsp-profile-error{display:flex;flex-direction:column;align-self:stretch;gap:10px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
+.wsp-profile-error>button{align-self:center;max-width:100%;height:auto;min-height:28px;white-space:normal;text-align:center}
+@media(max-width:430px){.wsp-profile-body{gap:20px}.wsp-profile-body .wsp-profile-reset{font-size:11px}}
 @media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;

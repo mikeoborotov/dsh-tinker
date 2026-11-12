@@ -56,7 +56,9 @@ async function imageMode(page) { await page.getByRole('button', { name: 'Image',
 for (const language of ['en', 'ru']) test(`Tinker settings and reset confirmation use the public product name (${language})`, async ({ page }, testInfo) => {
   await setup(page, { language, dark: language === 'ru' });
   await expect(page.getByRole('heading', { name: 'Tinker', exact: true })).toBeVisible();
-  await expect(page.getByRole('switch')).toHaveCount(5);
+  await expect(page.getByRole('switch')).toHaveCount(6);
+  await expect(page.getByRole('switch', { name: language === 'en' ? 'Profile appearance' : 'Оформление профиля', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#settings .wsp-profile-name, #settings .wsp-profile-portrait')).toHaveCount(0);
   await expect(page.locator('#settings')).not.toContainText('Workspace Plus');
   await page.locator('#settings').screenshot({ path: testInfo.outputPath(`tinker-settings-${language}.png`), animations: 'disabled' });
   // The recovery-only reset path must use the new label without changing its data key.

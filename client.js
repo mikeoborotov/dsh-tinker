@@ -36,7 +36,7 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react4 = __toESM(require("react"), 1);
+var import_react5 = __toESM(require("react"), 1);
 
 // src/store.js
 var STORAGE_KEY = "dsh-workspace-plus:v1";
@@ -327,9 +327,9 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
     el.setAttribute("aria-hidden", "true");
     return el;
   }
-  function restore(record) {
-    record.icon.remove();
-    if (record.original.style.display === "none") record.original.style.display = record.display;
+  function restore(record2) {
+    record2.icon.remove();
+    if (record2.original.style.display === "none") record2.original.style.display = record2.display;
   }
   function ensureProjection(id) {
     const value = sessions.list.getSnapshot()?.byId?.[id];
@@ -355,15 +355,15 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
   function scanWorkspace(row, state) {
     const id = row.getAttribute("data-row-key").slice("workspace:".length);
     const appearance = state.features.workspaces ? preferences.appearance(id) : void 0;
-    let record = restorations.get(row);
-    if (record && (!record.original.isConnected || record.original.parentElement !== row.firstElementChild)) {
-      restore(record);
+    let record2 = restorations.get(row);
+    if (record2 && (!record2.original.isConnected || record2.original.parentElement !== row.firstElementChild)) {
+      restore(record2);
       restorations.delete(row);
-      record = void 0;
+      record2 = void 0;
     }
     if (!appearance) {
-      if (record) {
-        restore(record);
+      if (record2) {
+        restore(record2);
         restorations.delete(row);
       }
       return;
@@ -374,16 +374,16 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       return;
     }
     const signature = JSON.stringify(appearance);
-    if (!record) {
+    if (!record2) {
       const icon = ownSpan("wsp-workspace-icon");
-      record = { original, display: original.style.display, icon, signature: "" };
-      restorations.set(row, record);
+      record2 = { original, display: original.style.display, icon, signature: "" };
+      restorations.set(row, record2);
       slot.append(icon);
     }
     original.style.display = "none";
-    if (record.signature !== signature) {
-      fillAppearance(record.icon, appearance);
-      record.signature = signature;
+    if (record2.signature !== signature) {
+      fillAppearance(record2.icon, appearance);
+      record2.signature = signature;
     }
     stats.workspaceRows++;
   }
@@ -439,8 +439,8 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
   function scan() {
     const state = preferences.getSnapshot();
     stats.workspaceRows = stats.sessionRows = stats.incompatibleRows = 0;
-    for (const [row, record] of restorations) if (!row.isConnected) {
-      restore(record);
+    for (const [row, record2] of restorations) if (!row.isConnected) {
+      restore(record2);
       restorations.delete(row);
     }
     for (const [row, icon] of sessionIcons) if (!row.isConnected) {
@@ -496,7 +496,7 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       for (const fn of unsub) fn();
       doc.removeEventListener("click", onClick, true);
       doc.removeEventListener("scroll", schedule, true);
-      for (const record of restorations.values()) restore(record);
+      for (const record2 of restorations.values()) restore(record2);
       restorations.clear();
       for (const icon of sessionIcons.values()) icon.remove();
       sessionIcons.clear();
@@ -581,10 +581,10 @@ function providerGroups(section, menu, kind, groups) {
   const named = groups.filter((group) => normalize(group.name) === name || group.id === name);
   return named.length ? named : groups;
 }
-function ownedMutation(record, win) {
-  if (record.target instanceof win.Element && record.target.closest("[data-wsp-owned]")) return true;
-  if (record.type !== "childList") return false;
-  const changes = [...record.addedNodes, ...record.removedNodes];
+function ownedMutation(record2, win) {
+  if (record2.target instanceof win.Element && record2.target.closest("[data-wsp-owned]")) return true;
+  if (record2.type !== "childList") return false;
+  const changes = [...record2.addedNodes, ...record2.removedNodes];
   return changes.length > 0 && changes.every((node) => node instanceof win.Element && node.hasAttribute("data-wsp-owned"));
 }
 function attachModelMenuIcons(marker, directory) {
@@ -627,28 +627,28 @@ function attachModelMenuIcons(marker, directory) {
           const label = modelLabel(button, owner.kind);
           if (!label) continue;
           const selection = matchingSelection(candidates, label), signature = JSON.stringify(selection);
-          let record = icons.get(button);
-          if (!record || record.icon.parentElement !== button) {
-            record?.icon.remove();
+          let record2 = icons.get(button);
+          if (!record2 || record2.icon.parentElement !== button) {
+            record2?.icon.remove();
             const icon = doc.createElement("span");
             icon.className = "wsp-icon wsp-model-menu-icon";
             icon.setAttribute("data-wsp-owned", "");
             icon.setAttribute("aria-hidden", "true");
             button.insertBefore(icon, button.firstChild);
-            record = { icon, signature: void 0 };
-            icons.set(button, record);
+            record2 = { icon, signature: void 0 };
+            icons.set(button, record2);
           }
-          if (record.signature !== signature) {
-            record.icon.innerHTML = markSVG(selection);
-            record.icon.dataset.vendor = vendorName(selection);
-            record.signature = signature;
+          if (record2.signature !== signature) {
+            record2.icon.innerHTML = markSVG(selection);
+            record2.icon.dataset.vendor = vendorName(selection);
+            record2.signature = signature;
           }
           seen.add(button);
         }
       }
     }
-    for (const [button, record] of icons) if (!seen.has(button)) {
-      record.icon.remove();
+    for (const [button, record2] of icons) if (!seen.has(button)) {
+      record2.icon.remove();
       icons.delete(button);
     }
   }
@@ -665,7 +665,7 @@ function attachModelMenuIcons(marker, directory) {
     scopeObserver.disconnect();
     menuObserver.disconnect();
     portalObserver.disconnect();
-    for (const record of icons.values()) record.icon.remove();
+    for (const record2 of icons.values()) record2.icon.remove();
     icons.clear();
     observedMenu = null;
   };
@@ -686,37 +686,37 @@ function createWorkspacePickerAdapter({ document: doc, preferences, workspaces, 
     });
   }
   function restore(target) {
-    const record = records.get(target);
-    if (!record) return;
-    record.icon.remove();
-    if (record.original.style.display === "none") record.original.style.display = record.display;
+    const record2 = records.get(target);
+    if (!record2) return;
+    record2.icon.remove();
+    if (record2.original.style.display === "none") record2.original.style.display = record2.display;
     records.delete(target);
   }
   function decorate(target, original, id, menu = false) {
     const appearance = preferences.getSnapshot().features.workspaces && preferences.appearance(id);
-    let record = records.get(target);
-    if (record && (record.original !== original || record.icon.parentElement !== target)) {
+    let record2 = records.get(target);
+    if (record2 && (record2.original !== original || record2.icon.parentElement !== target)) {
       restore(target);
-      record = null;
+      record2 = null;
     }
     if (!appearance || !original) {
       restore(target);
       return;
     }
-    if (!record) {
+    if (!record2) {
       const icon = doc.createElement("span");
       icon.className = "wsp-icon wsp-workspace-picker-icon" + (menu ? " wsp-workspace-picker-menu-icon" : "");
       icon.setAttribute(OWNED2, "");
       icon.setAttribute("aria-hidden", "true");
-      record = { original, display: original.style.display, icon, signature: "" };
-      records.set(target, record);
+      record2 = { original, display: original.style.display, icon, signature: "" };
+      records.set(target, record2);
       original.before(icon);
     }
     original.style.display = "none";
     const signature = JSON.stringify(appearance);
-    if (record.signature !== signature) {
-      fillAppearance(record.icon, appearance);
-      record.signature = signature;
+    if (record2.signature !== signature) {
+      fillAppearance(record2.icon, appearance);
+      record2.signature = signature;
     }
   }
   function owners() {
@@ -898,6 +898,30 @@ var CSS = `
 .wsp-error{color:var(--dsw-alias-state-error-primary);margin:10px 0}
 .wsp-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .wsp-toggle button{min-width:60px}
+/* The profile editor uses the native Modal shell, not the broad wsp-panel settings rules. */
+.wsp-profile-dialog{width:min(388px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-profile-content>p{font-size:12px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.wsp-profile-body{display:flex;flex-direction:column;align-items:center;gap:23px;font-size:14px;line-height:22px;min-width:0;padding:3px 0 0}
+.wsp-profile-body *{box-sizing:border-box}
+.wsp-profile-body .wsp-profile-portrait{position:relative;display:inline-flex;width:84px;height:84px;min-width:84px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.wsp-profile-body .wsp-profile-portrait:hover:not(:disabled){background:transparent}
+.wsp-profile-avatar{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden;border-radius:50%;corner-shape:round;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
+.wsp-profile-avatar>svg{width:65%;height:65%}
+.wsp-profile-avatar>img{display:block;width:100%;height:100%;object-fit:cover}
+.wsp-profile-camera{position:absolute;right:-1px;bottom:-1px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:3px solid var(--dsw-alias-bg-layer-2);border-radius:50%;corner-shape:round;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-2);pointer-events:none}
+.wsp-profile-camera>svg{width:13px;height:13px}
+.wsp-profile-body .wsp-profile-dragging{outline:2px dashed var(--dsw-alias-label-primary);outline-offset:4px}
+.wsp-profile-dragging .wsp-profile-avatar{opacity:.72}
+.wsp-profile-name{width:100%;max-width:282px;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;text-align:center;outline:none}
+.wsp-profile-name::placeholder{color:var(--dsw-alias-label-tertiary)}
+.wsp-profile-name:focus-visible,.wsp-profile-portrait:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-profile-file{display:none}
+.wsp-profile-body .wsp-profile-reset{display:inline-flex;gap:6px;max-width:100%;height:auto;min-height:28px;padding:3px 0;font-size:12px;line-height:18px;white-space:normal;text-align:center;color:var(--dsw-alias-label-secondary)}
+.wsp-profile-reset>svg{width:14px;height:14px;flex:none}
+.wsp-profile-error{display:flex;flex-direction:column;align-self:stretch;gap:10px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
+.wsp-profile-error>button{align-self:center;max-width:100%;height:auto;min-height:28px;white-space:normal;text-align:center}
+@media(max-width:430px){.wsp-profile-body{gap:20px}.wsp-profile-body .wsp-profile-reset{font-size:11px}}
 @media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;
 
@@ -947,6 +971,29 @@ var en = {
   unreadRecovery: "Unread reminders could not be read. Back up before resetting.",
   unreadResetConfirm: "Remove only manual unread reminders? Appearance and chats will not change.",
   branding: "Hide sidebar branding",
+  profileFeature: "Profile appearance",
+  profileCustomize: "Customize profile",
+  profileDialogTitle: "DeepSeek Harness profile settings",
+  profileDescription: "Customize how your profile appears in the bottom-left corner of DeepSeek Harness. Your DeepSeek account details are not changed.",
+  profileName: "Profile name",
+  profileReset: "Reset to DeepSeek account details",
+  profileChooseImage: "Choose a profile image",
+  profileSaving: "Saving...",
+  profileRetry: "Retry reading profile appearance",
+  profileReadError: "Profile appearance could not be read. Retry reading. Saved data has not been replaced.",
+  profileWriteError: "Profile appearance could not be saved. Check available browser storage, then retry.",
+  profileInvalidData: "Saved profile appearance is invalid. It has not been replaced. Restore valid saved data before retrying.",
+  profileUnsupportedVersion: "Saved profile appearance uses an unsupported version. It has not been replaced. Use a compatible Tinker version before retrying.",
+  profileNameInvalid: "Profile name must be text of up to 80 characters.",
+  profileImageInvalid: "This is not a supported local PNG copy. Choose the image again.",
+  profileEnabledInvalid: "Profile appearance could not be switched. Retry with On or Off.",
+  profileSaveError: "Profile appearance could not be saved. Your changes are still in this dialog.",
+  profileImageType: "Choose a PNG, JPEG, WebP, GIF or AVIF image.",
+  profileImageFileSize: "Image exceeds 5 MB.",
+  profileImageDecode: "This image could not be read. Choose another file.",
+  profileImageOneFile: "Choose one image at a time.",
+  profileImageDropFiles: "Drop an image file, not a link.",
+  profileImageSize: "Image is too large (maximum 16 million pixels).",
   on: "On",
   off: "Off",
   editWorkspace: "Workspace appearance",
@@ -1003,6 +1050,29 @@ var ru = {
   unreadRecovery: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u043E\u043F\u0438\u044E \u043F\u0435\u0440\u0435\u0434 \u0441\u0431\u0440\u043E\u0441\u043E\u043C.",
   unreadResetConfirm: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0440\u0443\u0447\u043D\u044B\u0435 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438? \u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0438 \u0447\u0430\u0442\u044B \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442\u0441\u044F.",
   branding: "\u0421\u043A\u0440\u044B\u0442\u044C \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0432 \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438",
+  profileFeature: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileCustomize: "\u041D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043F\u0440\u043E\u0444\u0438\u043B\u044C",
+  profileDialogTitle: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u043F\u0440\u043E\u0444\u0438\u043B\u044F DeepSeek Harness",
+  profileDescription: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0432 \u043B\u0435\u0432\u043E\u043C \u043D\u0438\u0436\u043D\u0435\u043C \u0443\u0433\u043B\u0443 DeepSeek Harness. \u041D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u0430\u043C\u043E\u0433\u043E \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 DeepSeek.",
+  profileName: "\u0418\u043C\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileReset: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u043A \u0434\u0430\u043D\u043D\u044B\u043C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 DeepSeek",
+  profileChooseImage: "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileSaving: "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435...",
+  profileRetry: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u0447\u0442\u0435\u043D\u0438\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileReadError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0447\u0442\u0435\u043D\u0438\u0435. \u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B.",
+  profileWriteError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0441\u0432\u043E\u0431\u043E\u0434\u043D\u043E\u0435 \u043C\u0435\u0441\u0442\u043E \u0432 \u0445\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430 \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u043F\u043E\u043F\u044B\u0442\u043A\u0443.",
+  profileInvalidData: "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u043D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u043E. \u0414\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B. \u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u044B\u043C \u0447\u0442\u0435\u043D\u0438\u0435\u043C.",
+  profileUnsupportedVersion: "\u0412\u0435\u0440\u0441\u0438\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044F. \u0414\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u0438\u043C\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E Tinker \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u044B\u043C \u0447\u0442\u0435\u043D\u0438\u0435\u043C.",
+  profileNameInvalid: "\u0418\u043C\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u0442\u0435\u043A\u0441\u0442\u043E\u043C \u0434\u043E 80 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432.",
+  profileImageInvalid: "\u042D\u0442\u043E \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u0430\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u0430\u044F PNG-\u043A\u043E\u043F\u0438\u044F. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.",
+  profileEnabledInvalid: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \xAB\u0412\u043A\u043B.\xBB \u0438\u043B\u0438 \xAB\u0412\u044B\u043A\u043B.\xBB \u0437\u0430\u043D\u043E\u0432\u043E.",
+  profileSaveError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u0412\u0430\u0448\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C \u0432 \u044D\u0442\u043E\u043C \u043E\u043A\u043D\u0435.",
+  profileImageType: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 PNG, JPEG, WebP, GIF \u0438\u043B\u0438 AVIF.",
+  profileImageFileSize: "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 5 \u041C\u0411.",
+  profileImageDecode: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u0440\u0443\u0433\u043E\u0439 \u0444\u0430\u0439\u043B.",
+  profileImageOneFile: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043E\u0434\u043D\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430 \u0440\u0430\u0437.",
+  profileImageDropFiles: "\u041F\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0444\u0430\u0439\u043B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F, \u043D\u0435 \u0441\u0441\u044B\u043B\u043A\u0443.",
+  profileImageSize: "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 (\u043C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 16 \u043C\u0438\u043B\u043B\u0438\u043E\u043D\u043E\u0432 \u043F\u0438\u043A\u0441\u0435\u043B\u0435\u0439).",
   on: "\u0412\u043A\u043B.",
   off: "\u0412\u044B\u043A\u043B.",
   editWorkspace: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
@@ -5265,6 +5335,757 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
   });
 }
 
+// src/profile-store.js
+var PROFILE_STORAGE_KEY = "dsh-tinker:profile-appearance:v1";
+var EMPTY = Object.freeze({ version: 1, enabled: true, name: null, image: null });
+var ENVELOPE_KEYS = ["version", "enabled", "name", "image"];
+var DRAFT_KEYS = ["name", "image"];
+var ERROR_CODES = /* @__PURE__ */ new Set(["profileInvalidData", "profileUnsupportedVersion", "profileReadError", "profileWriteError", "profileNameInvalid", "profileImageInvalid", "profileEnabledInvalid"]);
+function codeOf(reason) {
+  try {
+    if (ERROR_CODES.has(reason?.code)) return reason.code;
+  } catch {
+  }
+  return "profileInvalidData";
+}
+function fail(code) {
+  const error = new Error(code);
+  error.code = code;
+  throw error;
+}
+function record(value, keys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail("profileInvalidData");
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) fail("profileInvalidData");
+  const own = Reflect.ownKeys(value);
+  if (own.length !== keys.length || own.some((key) => !keys.includes(key))) fail("profileInvalidData");
+  for (const key of keys) if (!Object.hasOwn(value, key) || !Object.hasOwn(Object.getOwnPropertyDescriptor(value, key), "value")) fail("profileInvalidData");
+}
+function nameOf(value) {
+  if (value === null) return null;
+  if (typeof value !== "string" || value.trim().length > 80) fail("profileNameInvalid");
+  return value.trim() || null;
+}
+function imageOf(value) {
+  if (value === null || value === "") return null;
+  if (typeof value !== "string" || value.length > MAX_IMAGE_LENGTH || !/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(value)) fail("profileImageInvalid");
+  let bytes;
+  try {
+    const encoded = value.slice(22);
+    if (encoded.length % 4) fail("profileImageInvalid");
+    bytes = atob(encoded);
+    if (btoa(bytes) !== encoded) fail("profileImageInvalid");
+  } catch {
+    fail("profileImageInvalid");
+  }
+  if (bytes.length < 33 || ![137, 80, 78, 71, 13, 10, 26, 10].every((byte, i) => bytes.charCodeAt(i) === byte) || bytes.slice(12, 16) !== "IHDR") fail("profileImageInvalid");
+  return value;
+}
+function draftOf(input) {
+  record(input, DRAFT_KEYS);
+  return { name: nameOf(input.name), image: imageOf(input.image) };
+}
+function envelopeOf(input) {
+  if (input && typeof input === "object") {
+    const version = Object.getOwnPropertyDescriptor(input, "version");
+    if (version && Object.hasOwn(version, "value") && version.value !== 1) fail("profileUnsupportedVersion");
+  }
+  record(input, ENVELOPE_KEYS);
+  if (input.version !== 1) fail("profileUnsupportedVersion");
+  if (typeof input.enabled !== "boolean") fail("profileEnabledInvalid");
+  return { version: 1, enabled: input.enabled, name: nameOf(input.name), image: imageOf(input.image) };
+}
+function createProfilePreferences(storage) {
+  const listeners = /* @__PURE__ */ new Set();
+  let snapshot = Object.freeze({ ...EMPTY, error: null });
+  function publish(next, error = null) {
+    const value = { version: next.version, enabled: next.enabled, name: next.name, image: next.image, error };
+    if (Object.keys(value).every((key) => value[key] === snapshot[key])) return snapshot;
+    snapshot = Object.freeze(value);
+    for (const listener of [...listeners]) {
+      try {
+        listener();
+      } catch {
+      }
+    }
+    return snapshot;
+  }
+  function readLatest() {
+    let raw;
+    try {
+      raw = storage.getItem(PROFILE_STORAGE_KEY);
+    } catch {
+      fail("profileReadError");
+    }
+    if (raw === null) return EMPTY;
+    if (typeof raw !== "string" || raw.length > MAX_IMAGE_LENGTH + 2048) fail("profileInvalidData");
+    let input;
+    try {
+      input = JSON.parse(raw);
+    } catch {
+      fail("profileInvalidData");
+    }
+    return envelopeOf(input);
+  }
+  function refresh() {
+    try {
+      return publish(readLatest());
+    } catch (reason) {
+      return publish(snapshot, codeOf(reason));
+    }
+  }
+  function mutate(change) {
+    let next;
+    try {
+      next = envelopeOf(change(readLatest()));
+      try {
+        storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        fail("profileWriteError");
+      }
+    } catch (reason) {
+      const code = codeOf(reason);
+      publish(snapshot, code);
+      fail(code);
+    }
+    return publish(next);
+  }
+  refresh();
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    save(input) {
+      return mutate((latest) => ({ ...latest, ...draftOf(input) }));
+    },
+    reset() {
+      return mutate((latest) => ({ ...latest, name: null, image: null }));
+    },
+    toggle(enabled) {
+      return mutate((latest) => {
+        if (typeof enabled !== "boolean") fail("profileEnabledInvalid");
+        return { ...latest, enabled };
+      });
+    },
+    refresh,
+    retry: refresh
+  };
+}
+
+// src/profile-dialog.jsx
+var import_react4 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
+var hasFiles2 = (event) => [...event.dataTransfer?.types ?? []].includes("Files") || Boolean(event.dataTransfer?.files?.length);
+var UPLOAD_ERRORS = { imageType: "profileImageType", imageFileSize: "profileImageFileSize", imageDecode: "profileImageDecode", imageSize: "profileImageSize" };
+var SAVE_ERRORS = /* @__PURE__ */ new Set(["profileReadError", "profileWriteError", "profileInvalidData", "profileUnsupportedVersion", "profileNameInvalid", "profileImageInvalid", "profileEnabledInvalid"]);
+var saveError = (reason) => SAVE_ERRORS.has(reason?.code ?? reason?.message) ? reason.code ?? reason.message : "profileSaveError";
+function ProfileIcon({ camera = false }) {
+  return /* @__PURE__ */ import_react4.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, camera ? /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M3 7h5l1.5-3h5L16 7h5v13H3Z", stroke: "currentColor", strokeWidth: "1.7", strokeLinejoin: "round" }), /* @__PURE__ */ import_react4.default.createElement("circle", { cx: "12", cy: "13", r: "3.5", stroke: "currentColor", strokeWidth: "1.7" })) : /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("circle", { cx: "12", cy: "8", r: "4", fill: "currentColor" }), /* @__PURE__ */ import_react4.default.createElement("path", { d: "M4 21v-2a8 8 0 0 1 16 0v2Z", fill: "currentColor" })));
+}
+function Avatar({ image }) {
+  const [failed, setFailed] = (0, import_react4.useState)(null);
+  return /* @__PURE__ */ import_react4.default.createElement("span", { className: "wsp-profile-avatar", "aria-hidden": "true" }, image && failed !== image ? /* @__PURE__ */ import_react4.default.createElement("img", { src: image, alt: "", referrerPolicy: "no-referrer", onError: () => setFailed(image) }) : /* @__PURE__ */ import_react4.default.createElement(ProfileIcon, null));
+}
+function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, anchor, onClose }) {
+  const state = useStore(prefs), initial = (0, import_react4.useRef)(state).current;
+  const [draftName, setDraftName] = (0, import_react4.useState)(initial.name);
+  const [inputName, setInputName] = (0, import_react4.useState)(initial.name ?? baseline.name ?? "");
+  const [draftImage, setDraftImage] = (0, import_react4.useState)(initial.image);
+  const [error, setError] = (0, import_react4.useState)(""), [loading, setLoading] = (0, import_react4.useState)(false), [saving, setSaving] = (0, import_react4.useState)(false);
+  const [dragging, setDragging] = (0, import_react4.useState)(false);
+  const uploadInput = (0, import_react4.useRef)(null), portrait = (0, import_react4.useRef)(null), generation = (0, import_react4.useRef)(0), dragDepth = (0, import_react4.useRef)(0);
+  const active = (0, import_react4.useRef)(true), dirty = (0, import_react4.useRef)({ name: false, image: false }), savingNow = (0, import_react4.useRef)(false), uploadingNow = (0, import_react4.useRef)(false), composition = (0, import_react4.useRef)(null);
+  const errorId = (0, import_react4.useId)(), language = t("language");
+  const errorCode = error || state.error;
+  const validName = draftName === null || draftName.trim().length <= 80;
+  const canSave = !loading && !saving && !state.error && validName;
+  const customDraft = Boolean(draftName?.trim() || draftImage);
+  function cancelUpload() {
+    generation.current++;
+    uploadingNow.current = false;
+    dragDepth.current = 0;
+    setLoading(false);
+    setDragging(false);
+  }
+  function close() {
+    if (!active.current) return;
+    active.current = false;
+    generation.current++;
+    onClose();
+  }
+  function restore() {
+    if (savingNow.current) return;
+    cancelUpload();
+    dirty.current = { name: true, image: true };
+    setDraftName(null);
+    setInputName(baseline.name ?? "");
+    setDraftImage(null);
+    setError("");
+  }
+  function syncUntouched(next) {
+    if (next.error) return;
+    if (!dirty.current.name) {
+      setDraftName(next.name);
+      setInputName(next.name ?? baseline.name ?? "");
+    }
+    if (!dirty.current.image) setDraftImage(next.image);
+  }
+  function retry() {
+    if (loading || savingNow.current) return;
+    setError("");
+    try {
+      syncUntouched(prefs.retry());
+    } catch (reason) {
+      setError(saveError(reason));
+    }
+  }
+  function save() {
+    if (!active.current || savingNow.current || uploadingNow.current || !canSave) return;
+    savingNow.current = true;
+    setSaving(true);
+    setError("");
+    try {
+      const latest = prefs.refresh();
+      if (latest.error) throw new Error(latest.error);
+      prefs.save({ name: dirty.current.name ? draftName : latest.name, image: dirty.current.image ? draftImage : latest.image });
+      close();
+    } catch (reason) {
+      if (active.current) {
+        setError(saveError(reason));
+        setSaving(false);
+        savingNow.current = false;
+      }
+    }
+  }
+  async function upload(files) {
+    if (!active.current || savingNow.current || !files?.length) return;
+    const current = ++generation.current;
+    dragDepth.current = 0;
+    setDragging(false);
+    setError("");
+    if (files.length !== 1) {
+      uploadingNow.current = false;
+      setLoading(false);
+      setError("profileImageOneFile");
+      return;
+    }
+    uploadingNow.current = true;
+    setLoading(true);
+    try {
+      const image = await imageData(files[0]);
+      if (!active.current || current !== generation.current) return;
+      if (!image.startsWith("data:image/png;base64,") || image.length > MAX_IMAGE_LENGTH) {
+        setError("profileImageInvalid");
+        return;
+      }
+      dirty.current.image = true;
+      setDraftImage(image);
+    } catch (reason) {
+      if (active.current && current === generation.current) setError(UPLOAD_ERRORS[reason?.message] ?? "profileImageDecode");
+    } finally {
+      if (active.current && current === generation.current) {
+        uploadingNow.current = false;
+        setLoading(false);
+      }
+    }
+  }
+  (0, import_react4.useLayoutEffect)(() => {
+    const observer = (0, import_dsh_client_ui_primitives3.observeComposition)(document);
+    composition.current = observer;
+    return () => {
+      observer.dispose();
+      composition.current = null;
+    };
+  }, []);
+  (0, import_react4.useEffect)(() => {
+    active.current = true;
+    const ignoreDrop = (event) => {
+      if (hasFiles2(event) || [...event.dataTransfer?.types ?? []].includes("text/uri-list")) {
+        event.preventDefault();
+        if (!portrait.current?.contains(event.target)) event.stopPropagation();
+        if (event.type === "dragover") event.dataTransfer.dropEffect = "none";
+      }
+      if (event.type === "drop") {
+        dragDepth.current = 0;
+        setDragging(false);
+      }
+    };
+    document.addEventListener("dragover", ignoreDrop, true);
+    document.addEventListener("drop", ignoreDrop, true);
+    return () => {
+      active.current = false;
+      generation.current++;
+      document.removeEventListener("dragover", ignoreDrop, true);
+      document.removeEventListener("drop", ignoreDrop, true);
+      queueMicrotask(() => {
+        if (document.activeElement === document.body && anchor?.isConnected) anchor.focus();
+      });
+    };
+  }, []);
+  (0, import_react4.useLayoutEffect)(() => {
+    cancelUpload();
+  }, [language]);
+  (0, import_react4.useEffect)(() => {
+    syncUntouched(state);
+  }, [state, baseline.name]);
+  return /* @__PURE__ */ import_react4.default.createElement(
+    import_dsh_client_ui_primitives3.Modal,
+    {
+      open: true,
+      title: t("profileDialogTitle"),
+      description: t("profileDescription"),
+      closeLabel: t("close"),
+      onClose: close,
+      className: "wsp-profile-dialog",
+      contentClassName: "wsp-profile-content",
+      onKeyDownCapture: (event) => {
+        if (composition.current?.guards(event.nativeEvent)) return;
+        if (event.key === "Enter" && event.target.tagName === "INPUT" && event.target.type === "text") {
+          event.preventDefault();
+          event.stopPropagation();
+          save();
+        }
+      },
+      footer: /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : saving ? t("profileSaving") : t("save")))
+    },
+    /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-profile-body", "aria-busy": loading || saving }, /* @__PURE__ */ import_react4.default.createElement(
+      import_dsh_client_ui_primitives3.Button,
+      {
+        ref: portrait,
+        className: "wsp-profile-portrait" + (dragging ? " wsp-profile-dragging" : ""),
+        variant: "ghost",
+        "aria-label": t("profileChooseImage"),
+        title: t("profileChooseImage"),
+        disabled: saving,
+        onClick: () => uploadInput.current?.click(),
+        onDragEnter: (event) => {
+          if (hasFiles2(event) && !savingNow.current) {
+            event.preventDefault();
+            dragDepth.current++;
+            setDragging(true);
+          }
+        },
+        onDragOver: (event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = hasFiles2(event) && !savingNow.current ? "copy" : "none";
+        },
+        onDragLeave: () => {
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (!dragDepth.current) setDragging(false);
+        },
+        onDrop: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDragging(false);
+          dragDepth.current = 0;
+          if (event.dataTransfer.files.length) upload(event.dataTransfer.files);
+          else {
+            cancelUpload();
+            setError("profileImageDropFiles");
+          }
+        }
+      },
+      /* @__PURE__ */ import_react4.default.createElement(Avatar, { image: draftImage ?? baseline.image }),
+      /* @__PURE__ */ import_react4.default.createElement("span", { className: "wsp-profile-camera", "aria-hidden": "true" }, /* @__PURE__ */ import_react4.default.createElement(ProfileIcon, { camera: true }))
+    ), /* @__PURE__ */ import_react4.default.createElement(
+      "input",
+      {
+        ref: uploadInput,
+        className: "wsp-profile-file",
+        type: "file",
+        tabIndex: -1,
+        accept: IMAGE_ACCEPT,
+        "aria-label": t("profileChooseImage"),
+        onChange: (event) => {
+          upload(event.target.files);
+          event.target.value = "";
+        }
+      }
+    ), /* @__PURE__ */ import_react4.default.createElement(
+      "input",
+      {
+        className: "wsp-profile-name",
+        type: "text",
+        maxLength: 80,
+        autoComplete: "off",
+        "data-modal-autofocus": true,
+        "aria-label": t("profileName"),
+        placeholder: t("profileName"),
+        value: inputName,
+        disabled: saving,
+        "aria-invalid": !validName || errorCode === "profileNameInvalid",
+        "aria-describedby": errorCode ? errorId : void 0,
+        onChange: (event) => {
+          const value = event.target.value;
+          dirty.current.name = true;
+          setInputName(value);
+          setDraftName(value.trim() === (baseline.name ?? "").trim() ? null : value);
+          setError("");
+        }
+      }
+    ), customDraft && /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { className: "wsp-profile-reset", variant: "ghost", size: "sm", disabled: saving, onClick: restore }, /* @__PURE__ */ import_react4.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M4 10a8 8 0 1 1 1.5 7M4 4v6h6", stroke: "currentColor", strokeWidth: "1.6", strokeLinejoin: "round", strokeLinecap: "round" })), /* @__PURE__ */ import_react4.default.createElement("span", null, t("profileReset"))), errorCode && /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-profile-error" }, /* @__PURE__ */ import_react4.default.createElement("div", { id: errorId, role: "alert" }, t(errorCode)), state.error && /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { variant: "outline", size: "sm", disabled: loading || saving, onClick: retry }, t("profileRetry"))))
+  );
+}
+
+// src/profile-adapter.js
+var PROFILE_ADAPTER_CSS = `
+[data-slot="settings.launcher"] [data-wsp-profile-native-hidden]{display:none!important}
+[data-slot="settings.launcher"] [data-wsp-profile-name]{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-slot="settings.launcher"] img[data-wsp-profile-avatar]{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;pointer-events:none}
+[data-wsp-profile-menu] [data-wsp-profile-icon]{display:inline-flex;align-items:center;justify-content:center}
+[data-wsp-profile-menu] [data-wsp-profile-icon] svg{width:16px;height:16px}
+`;
+var COPY = [
+  ["Account menu", "Settings", "Feedback", "Sign out", "Signed in to DeepSeek"],
+  ["\u8D26\u53F7\u83DC\u5355", "\u8BBE\u7F6E", "\u610F\u89C1\u53CD\u9988", "\u9000\u51FA\u767B\u5F55", "\u5DF2\u767B\u5F55 DeepSeek"],
+  ["\u30A2\u30AB\u30A6\u30F3\u30C8\u30E1\u30CB\u30E5\u30FC", "\u8A2D\u5B9A", "\u30D5\u30A3\u30FC\u30C9\u30D0\u30C3\u30AF", "\u30ED\u30B0\u30A2\u30A6\u30C8", "DeepSeek \u306B\u30ED\u30B0\u30A4\u30F3\u6E08\u307F"],
+  ["Men\xFA de cuenta", "Configuraci\xF3n", "Comentarios", "Cerrar sesi\xF3n", "Iniciado sesi\xF3n en DeepSeek"],
+  ["Menu du compte", "Param\xE8tres", "Commentaires", "Se d\xE9connecter", "Connect\xE9 \xE0 DeepSeek"],
+  ["Kontomen\xFC", "Einstellungen", "R\xFCckmeldung", "Abmelden", "Angemeldet bei DeepSeek"],
+  ["\u041C\u0435\u043D\u044E \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438", "\u041E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", "\u0412\u044B\u0439\u0442\u0438", "\u0412\u043E\u0448\u0451\u043B \u0432 DeepSeek"],
+  ["Menu da conta", "Configura\xE7\xF5es", "Coment\xE1rios", "Sair", "Conectado em DeepSeek"]
+];
+var CLASSES = { trigger: "_5Qcc8a_trigger", anchor: "_5Qcc8a_anchor", root: "_5Qcc8a_root", avatar: "_5Qcc8a_avatar", label: "_5Qcc8a_label" };
+var SLOT2 = '[data-slot="settings.launcher"]';
+var nextOwner = 0;
+var BRUSH2 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m14 5 5 5M4 20l5-1 12-12a2.1 2.1 0 0 0-3-3L6 16l-2 4Z"/></svg>';
+function createProfileAdapter({ document: doc, preferences, translate, onEdit, onUnavailable = () => {
+} }) {
+  const win = doc.defaultView, owner = String(++nextOwner), ownedSelector = `[data-wsp-profile-owned="${owner}"]`;
+  let disposed = false, frame = 0, timer = 0, generation = 0;
+  let current = null, opening = null, menuRecord = null, blocked = null, pendingEdit = null, closing = false;
+  let nameNode = null, imageNode = null, failedImage = null, unavailableNotified = false;
+  const hidden = /* @__PURE__ */ new Map();
+  const ours = (node) => node instanceof win.Element && node.getAttribute("data-wsp-profile-owned") === owner;
+  const nativeChildren = (element) => [...element.children].filter((node) => !ours(node));
+  const mark = (element) => {
+    element.setAttribute("data-wsp-owned", "");
+    element.setAttribute("data-wsp-profile-owned", owner);
+    return element;
+  };
+  const text = (element) => element?.textContent?.trim() ?? "";
+  const visible = (element) => element.isConnected && !element.closest('[hidden], [inert], [aria-hidden="true"]') && win.getComputedStyle(element).visibility !== "hidden" && element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0;
+  function readPreferences() {
+    const state = preferences.getSnapshot();
+    if (!state || state.version !== 1 || typeof state.enabled !== "boolean" || !(state.name === null || typeof state.name === "string" && state.name.trim() && state.name.length <= 80) || !(state.image === null || typeof state.image === "string" && /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(state.image))) return null;
+    return state;
+  }
+  function discover() {
+    const slots = [...doc.querySelectorAll(SLOT2)];
+    if (slots.length !== 1 || slots[0].querySelector("[data-slot-error]")) return null;
+    const slot = slots[0], triggers = slot.querySelectorAll('button[aria-haspopup="menu"][data-signed-out][data-collapsed]');
+    if (triggers.length !== 1) return null;
+    const trigger = triggers[0], anchor = trigger.parentElement, root = anchor?.parentElement;
+    const copy = COPY.find((row) => row[0] === trigger.getAttribute("aria-label"));
+    if (!copy || trigger.type !== "button" || !trigger.classList.contains(CLASSES.trigger) || !anchor?.classList.contains(CLASSES.anchor) || !root?.classList.contains(CLASSES.root) || root.parentElement !== slot || !["true", "false"].includes(trigger.getAttribute("aria-expanded")) || !["true", "false"].includes(trigger.getAttribute("data-collapsed")) || !["true", "false"].includes(trigger.getAttribute("data-signed-out"))) return null;
+    const signedIn = trigger.getAttribute("data-signed-out") === "false", collapsed = trigger.getAttribute("data-collapsed") === "true";
+    const children = nativeChildren(trigger), label = collapsed ? null : children[1];
+    if (children.length !== (collapsed ? 1 : 2) || label && (label.tagName !== "SPAN" || !label.classList.contains(CLASSES.label))) return null;
+    if (!signedIn) return { trigger, signedIn, collapsed, copy };
+    const avatar = children[0];
+    if (avatar?.tagName !== "SPAN" || !avatar.classList.contains(CLASSES.avatar) || ![null, "loading", "ready", "failed"].includes(avatar.getAttribute("data-avatar-status"))) return null;
+    const pictures = nativeChildren(avatar);
+    if (pictures.length !== 1 || !["svg", "img"].includes(pictures[0].tagName.toLowerCase())) return null;
+    const picture = pictures[0];
+    if (picture.tagName === "IMG" && (picture.getAttribute("alt") !== "" || !picture.classList.contains("zSpNNG_image"))) return null;
+    return { trigger, signedIn, collapsed, copy, label, avatar, picture };
+  }
+  function baseline(target) {
+    const value = text(target.label);
+    return { name: !value || value === target.copy[4] ? null : value, image: target.picture.tagName === "IMG" ? target.picture.getAttribute("src") || null : null };
+  }
+  function restoreHidden(element, previous) {
+    if (element.getAttribute("data-wsp-profile-native-hidden") !== owner) return;
+    if (previous === null) element.removeAttribute("data-wsp-profile-native-hidden");
+    else element.setAttribute("data-wsp-profile-native-hidden", previous);
+  }
+  function restoreProjection() {
+    nameNode?.remove();
+    imageNode?.remove();
+    nameNode = imageNode = null;
+    for (const [element, previous] of hidden) restoreHidden(element, previous);
+    hidden.clear();
+  }
+  function project(target, state) {
+    if (failedImage !== state.image) failedImage = null;
+    const showImage = state.image !== null && failedImage !== state.image;
+    const wanted = /* @__PURE__ */ new Set();
+    if (state.name !== null && !target.collapsed) wanted.add(target.label);
+    if (showImage) wanted.add(target.picture);
+    for (const [element, previous] of hidden) if (!wanted.has(element)) {
+      restoreHidden(element, previous);
+      hidden.delete(element);
+    }
+    for (const element of wanted) {
+      if (!hidden.has(element)) hidden.set(element, element.getAttribute("data-wsp-profile-native-hidden"));
+      element.setAttribute("data-wsp-profile-native-hidden", owner);
+    }
+    if (state.name !== null && !target.collapsed) {
+      if (nameNode?.parentElement !== target.trigger) {
+        nameNode?.remove();
+        nameNode = mark(doc.createElement("span"));
+        nameNode.setAttribute("data-wsp-profile-name", "");
+        target.trigger.append(nameNode);
+      }
+      if (nameNode.className !== target.label.className) nameNode.className = target.label.className;
+      if (nameNode.textContent !== state.name) nameNode.textContent = state.name;
+    } else {
+      nameNode?.remove();
+      nameNode = null;
+    }
+    if (showImage) {
+      if (imageNode?.parentElement !== target.avatar) {
+        imageNode?.remove();
+        imageNode = mark(doc.createElement("img"));
+        imageNode.setAttribute("data-wsp-profile-avatar", "");
+        imageNode.alt = "";
+        imageNode.draggable = false;
+        const node = imageNode;
+        node.addEventListener("error", () => {
+          if (disposed || imageNode !== node) return;
+          const latest = discover(), picture = latest?.avatar === node.parentElement ? latest.picture : null;
+          failedImage = node.getAttribute("src");
+          node.remove();
+          imageNode = null;
+          if (picture && hidden.has(picture)) {
+            restoreHidden(picture, hidden.get(picture));
+            hidden.delete(picture);
+          }
+          schedule();
+        });
+        target.avatar.append(imageNode);
+      }
+      if (imageNode.getAttribute("src") !== state.image) imageNode.src = state.image;
+    } else {
+      imageNode?.remove();
+      imageNode = null;
+    }
+  }
+  function removeMenu() {
+    if (menuRecord?.wrapper.contains(doc.activeElement) && menuRecord.trigger.isConnected) menuRecord.trigger.focus({ preventScroll: true });
+    menuRecord?.wrapper.remove();
+    menuRecord = null;
+  }
+  function clearTimer() {
+    win.clearTimeout(timer);
+    timer = 0;
+  }
+  function unavailable() {
+    generation++;
+    pendingEdit = null;
+    opening = null;
+    clearTimer();
+    removeMenu();
+    restoreProjection();
+    current = null;
+    if (!unavailableNotified) {
+      unavailableNotified = true;
+      onUnavailable();
+    }
+  }
+  function stopOpening() {
+    generation++;
+    opening = null;
+    pendingEdit = null;
+    clearTimer();
+    removeMenu();
+  }
+  function denyPopup(trigger) {
+    blocked = trigger;
+    unavailable();
+  }
+  function menuShape(menu, target) {
+    if (menu.querySelector('[role="menu"]')) return null;
+    const buttons = [...menu.querySelectorAll('button[role="menuitem"]')].filter((button) => !ours(button) && button.closest('[role="menu"]') === menu);
+    if (buttons.length !== 3) return null;
+    const viewport = buttons[0].parentElement?.parentElement;
+    if (viewport?.parentElement !== menu || viewport.getAttribute("role") !== "presentation" || nativeChildren(viewport).length !== 3) return null;
+    const labels = target.copy.slice(1, 4);
+    for (let index2 = 0; index2 < buttons.length; index2++) {
+      const button = buttons[index2], wrapper = button.parentElement, children = nativeChildren(button);
+      if (button.type !== "button" || button.hasAttribute("aria-haspopup") || wrapper?.tagName !== "DIV" || wrapper.parentElement !== viewport || nativeChildren(wrapper).length !== 1 || wrapper.firstElementChild !== button || !wrapper.className || !button.className || wrapper.className !== buttons[0].parentElement.className || button.className !== buttons[0].className || children.length < 2 || children.length > (index2 === 0 ? 3 : 2) || children[0].tagName !== "SPAN" || children[0].querySelectorAll("svg").length !== 1 || children[1].tagName !== "SPAN" || text(children[1]) !== labels[index2] || index2 < 2 && button.disabled) return null;
+    }
+    return { buttons, viewport };
+  }
+  function finishEdit(token) {
+    if (disposed || pendingEdit?.token !== token) return;
+    const state = readPreferences(), target = discover(), pending = pendingEdit;
+    if (!state?.enabled || !target?.signedIn || target.trigger !== pending.trigger || blocked === target.trigger) {
+      unavailable();
+      return;
+    }
+    if (target.trigger.getAttribute("aria-expanded") !== "false" || pending.menu.isConnected) return;
+    pendingEdit = null;
+    clearTimer();
+    opening = null;
+    removeMenu();
+    target.trigger.focus({ preventScroll: true });
+    onEdit({ anchor: target.trigger, baseline: baseline(target) });
+  }
+  function insert(menu, target, shape) {
+    const [settings, , auth] = shape.buttons;
+    const wrapper = mark(doc.createElement("div"));
+    wrapper.className = settings.parentElement.className;
+    wrapper.setAttribute("data-wsp-profile-menu", "");
+    const button = mark(doc.createElement("button"));
+    button.type = "button";
+    button.className = settings.className;
+    button.setAttribute("role", "menuitem");
+    button.disabled = auth.disabled;
+    const icon = mark(doc.createElement("span"));
+    icon.className = settings.children[0].className;
+    icon.setAttribute("data-wsp-profile-icon", "");
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = BRUSH2;
+    const label = mark(doc.createElement("span"));
+    label.className = settings.children[1].className;
+    label.textContent = translate("profileCustomize");
+    button.append(icon, label);
+    wrapper.append(button);
+    auth.parentElement.before(wrapper);
+    const record2 = { menu, wrapper, button, label, trigger: target.trigger };
+    menuRecord = record2;
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const state = readPreferences(), fresh = discover(), freshShape = fresh?.signedIn ? menuShape(menu, fresh) : null;
+      if (disposed || menuRecord !== record2 || !state?.enabled || !fresh?.signedIn || fresh.trigger !== target.trigger || !freshShape || freshShape.buttons[2].disabled || fresh.trigger.getAttribute("aria-expanded") !== "true") return;
+      const candidates = [...doc.querySelectorAll('[role="menu"]')].filter(visible);
+      if (candidates.length !== 1 || candidates[0] !== menu) {
+        denyPopup(fresh.trigger);
+        return;
+      }
+      const token = ++generation;
+      pendingEdit = { token, trigger: fresh.trigger, menu };
+      opening = null;
+      clearTimer();
+      closing = true;
+      try {
+        fresh.trigger.click();
+        fresh.trigger.focus({ preventScroll: true });
+      } finally {
+        closing = false;
+      }
+      timer = win.setTimeout(() => {
+        if (pendingEdit?.token === token) unavailable();
+      }, 1e3);
+      win.queueMicrotask(() => finishEdit(token));
+      schedule();
+    });
+  }
+  function scanMenu(target) {
+    if (pendingEdit) {
+      finishEdit(pendingEdit.token);
+      return;
+    }
+    if (target.trigger.getAttribute("aria-expanded") !== "true") {
+      opening = null;
+      blocked = null;
+      clearTimer();
+      removeMenu();
+      return;
+    }
+    if (!opening || opening.trigger !== target.trigger) {
+      removeMenu();
+      return;
+    }
+    const menus = [...doc.querySelectorAll('[role="menu"]')].filter(visible);
+    const fresh = menus.filter((menu2) => !opening.existing.has(menu2));
+    if (menus.length > 1 || fresh.length > 1) {
+      denyPopup(target.trigger);
+      return;
+    }
+    if (fresh.length !== 1) {
+      if (menuRecord) denyPopup(target.trigger);
+      return;
+    }
+    const menu = fresh[0], shape = menuShape(menu, target);
+    if (!shape) {
+      denyPopup(target.trigger);
+      return;
+    }
+    clearTimer();
+    if (menuRecord && (menuRecord.menu !== menu || menuRecord.wrapper.parentElement !== shape.viewport || !menuRecord.button.isConnected)) removeMenu();
+    if (!menuRecord) insert(menu, target, shape);
+    menuRecord.button.disabled = shape.buttons[2].disabled;
+    const label = translate("profileCustomize");
+    if (menuRecord.label.textContent !== label) menuRecord.label.textContent = label;
+  }
+  function scan() {
+    if (disposed) return;
+    const state = readPreferences(), target = discover();
+    if (blocked && (!blocked.isConnected || blocked.getAttribute("aria-expanded") !== "true")) blocked = null;
+    if (!state?.enabled || !target?.signedIn || blocked === target.trigger) {
+      unavailable();
+      return;
+    }
+    if (current && current.trigger !== target.trigger) unavailable();
+    current = target;
+    unavailableNotified = false;
+    project(target, state);
+    scanMenu(target);
+  }
+  function schedule() {
+    if (!disposed && !frame) frame = win.requestAnimationFrame(() => {
+      frame = 0;
+      scan();
+    });
+  }
+  function onClick(event) {
+    const button = event.target instanceof win.Element ? event.target.closest("button") : null;
+    if (closing || !button?.matches('button[aria-haspopup="menu"][data-signed-out][data-collapsed]') || !button.closest(SLOT2)) return;
+    const state = readPreferences(), target = discover();
+    stopOpening();
+    blocked = null;
+    if (!state?.enabled || !target?.signedIn || target.trigger !== button) {
+      unavailable();
+      return;
+    }
+    if (button.getAttribute("aria-expanded") === "false") {
+      const token = generation;
+      opening = { trigger: button, existing: new Set(doc.querySelectorAll('[role="menu"]')) };
+      timer = win.setTimeout(() => {
+        if (opening && generation === token) denyPopup(button);
+      }, 1e3);
+    }
+    schedule();
+  }
+  const observer = new win.MutationObserver((records) => {
+    if (records.some((record2) => {
+      const element = record2.target.nodeType === 1 ? record2.target : record2.target.parentElement;
+      if (element?.closest(ownedSelector)) return false;
+      if (record2.type !== "childList") return true;
+      return [...record2.addedNodes, ...record2.removedNodes].some((node) => !ours(node));
+    })) schedule();
+  });
+  observer.observe(doc.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ["data-slot", "data-signed-out", "data-collapsed", "data-avatar-status", "aria-expanded", "aria-label", "src", "class", "style", "disabled", "hidden", "inert", "aria-hidden"]
+  });
+  const unsubscribe = preferences.subscribe(schedule);
+  doc.addEventListener("click", onClick, true);
+  scan();
+  return {
+    refresh: schedule,
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      observer.disconnect();
+      win.cancelAnimationFrame(frame);
+      clearTimer();
+      unsubscribe();
+      doc.removeEventListener("click", onClick, true);
+      unavailable();
+      blocked = null;
+    }
+  };
+}
+
 // src/client.jsx
 var inject = ["slots", "locale", "sessions", "workspaces", "modelDirectories", "remote", "remote.session"];
 var NS = "workspacePlus";
@@ -5276,37 +6097,40 @@ function download(text, name) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1e3);
 }
-function Settings({ prefs, reminders, workspaces, ui, t, close }) {
-  const state = useStore(prefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = (0, import_react4.useState)("");
+function Settings({ prefs, profilePrefs, reminders, workspaces, ui, t, close }) {
+  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = (0, import_react5.useState)("");
   async function safe(fn) {
     try {
       await fn();
       setError("");
     } catch (e) {
-      setError(e.message);
+      setError(String(e.code ?? "").startsWith("profile") ? t(e.code) : e.message);
     }
   }
-  return /* @__PURE__ */ import_react4.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react4.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react4.default.createElement("p", null, t("adapterHint")), ["workspaces", "composer", "sessions", "unread", "branding"].map((key) => /* @__PURE__ */ import_react4.default.createElement("div", { key, className: "wsp-toggle" }, /* @__PURE__ */ import_react4.default.createElement("span", null, t(key)), /* @__PURE__ */ import_react4.default.createElement("button", { role: "switch", "aria-label": t(key), "aria-checked": state.features[key], onClick: () => safe(() => prefs.toggle(key, !state.features[key])) }, t(state.features[key] ? "on" : "off")))), /* @__PURE__ */ import_react4.default.createElement("label", { htmlFor: "wsp-workspace" }, t("editWorkspace")), /* @__PURE__ */ import_react4.default.createElement("select", { id: "wsp-workspace", value: "", onChange: (e) => {
+  return /* @__PURE__ */ import_react5.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react5.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react5.default.createElement("p", null, t("adapterHint")), ["workspaces", "composer", "sessions", "unread", "branding"].map((key) => /* @__PURE__ */ import_react5.default.createElement("div", { key, className: "wsp-toggle" }, /* @__PURE__ */ import_react5.default.createElement("span", null, t(key)), /* @__PURE__ */ import_react5.default.createElement("button", { role: "switch", "aria-label": t(key), "aria-checked": state.features[key], onClick: () => safe(() => prefs.toggle(key, !state.features[key])) }, t(state.features[key] ? "on" : "off")))), /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-toggle" }, /* @__PURE__ */ import_react5.default.createElement("span", null, t("profileFeature")), /* @__PURE__ */ import_react5.default.createElement("button", { role: "switch", "aria-label": t("profileFeature"), "aria-checked": profileState.enabled, disabled: Boolean(profileState.error), onClick: () => safe(() => profilePrefs.toggle(!profileState.enabled)) }, t(profileState.enabled ? "on" : "off"))), profileState.error && /* @__PURE__ */ import_react5.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => profilePrefs.retry()) }, t("retry"))), /* @__PURE__ */ import_react5.default.createElement("label", { htmlFor: "wsp-workspace" }, t("editWorkspace")), /* @__PURE__ */ import_react5.default.createElement("select", { id: "wsp-workspace", value: "", onChange: (e) => {
     if (e.target.value) {
       const id = e.target.value;
       close?.();
       queueMicrotask(() => ui.set({ target: { id } }));
     }
-  } }, /* @__PURE__ */ import_react4.default.createElement("option", { value: "" }, t("chooseWorkspace")), list.items.map((w) => /* @__PURE__ */ import_react4.default.createElement("option", { key: w.workspaceId, value: w.workspaceId }, w.title))), (state.error || error) && /* @__PURE__ */ import_react4.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => {
+  } }, /* @__PURE__ */ import_react5.default.createElement("option", { value: "" }, t("chooseWorkspace")), list.items.map((w) => /* @__PURE__ */ import_react5.default.createElement("option", { key: w.workspaceId, value: w.workspaceId }, w.title))), (state.error || error) && /* @__PURE__ */ import_react5.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => {
     if (window.confirm(t("resetConfirm"))) prefs.resetAll();
-  }) }, t("resetAll"))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => {
+  }) }, t("resetAll"))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => {
     if (window.confirm(t("unreadResetConfirm"))) return reminders.resetAll();
   }) }, t("resetAll")))));
 }
 function apply(ctx) {
   const locale = ctx.locale, prefs = createPreferences(window.localStorage, ICON_IDS), ui = createStore({ target: null }), currentModels = createStore({});
-  const reminders = createUnreadStore(window.localStorage);
+  const reminders = createUnreadStore(window.localStorage), profilePrefs = createProfilePreferences(window.localStorage);
+  const closeProfile = () => {
+    if (ui.getSnapshot().profileTarget) ui.set({ target: null });
+  };
   ctx.effect(() => locale.register(NS, dictionaries));
   const t = locale.bind(NS);
   ctx.effect(() => {
     const style = document.createElement("style");
     style.dataset.wspOwned = "";
-    style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS;
+    style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS + PROFILE_ADAPTER_CSS;
     document.head.append(style);
     return () => style.remove();
   });
@@ -5321,8 +6145,34 @@ function apply(ctx) {
   ctx.effect(() => createWorkspacePickerAdapter({ document, preferences: prefs, workspaces: ctx.workspaces, defaultName: () => locale.bind("workspace")("workspace.defaultName") }).dispose);
   ctx.effect(() => observeSessionOpenings(ctx.sessions, reminders));
   ctx.effect(() => {
+    const adapter = createProfileAdapter({
+      document,
+      preferences: profilePrefs,
+      translate: t,
+      onEdit: (profileTarget) => {
+        if (profilePrefs.getSnapshot().enabled) ui.set({ target: null, profileTarget });
+      },
+      onUnavailable: closeProfile
+    });
+    const unsubscribe = profilePrefs.subscribe(() => {
+      if (!profilePrefs.getSnapshot().enabled) closeProfile();
+    });
+    const disconnect = ctx.on("connection/reset", () => {
+      closeProfile();
+      adapter.refresh();
+    });
+    return () => {
+      disconnect();
+      unsubscribe();
+      adapter.dispose();
+      closeProfile();
+    };
+  });
+  ctx.effect(() => {
     const onStorage = (event) => {
-      if (event.storageArea === window.localStorage && (event.key === UNREAD_STORAGE_KEY || event.key === null)) reminders.refresh();
+      if (event.storageArea !== window.localStorage) return;
+      if (event.key === UNREAD_STORAGE_KEY || event.key === null) reminders.refresh();
+      if (event.key === PROFILE_STORAGE_KEY || event.key === null) profilePrefs.refresh();
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener(UNREAD_CHANGE_EVENT, reminders.onChange);
@@ -5333,12 +6183,13 @@ function apply(ctx) {
   });
   registerSidebarFeatures(ctx, { prefs, reminders, namespace: NS });
   function Overlay(props) {
-    const { target } = useStore(ui);
-    return target ? /* @__PURE__ */ import_react4.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
+    const { target, profileTarget } = useStore(ui), profileState = useStore(profilePrefs);
+    if (profileTarget && profileState.enabled) return /* @__PURE__ */ import_react5.default.createElement(ProfileDialog, { prefs: profilePrefs, baseline: profileTarget.baseline, anchor: profileTarget.anchor, t: props.t, onClose: closeProfile });
+    return target ? /* @__PURE__ */ import_react5.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
   }
   function Composer({ directory, sessionId }) {
-    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react4.useRef)(null);
-    (0, import_react4.useEffect)(() => {
+    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react5.useRef)(null);
+    (0, import_react5.useEffect)(() => {
       currentModels.set((s) => ({ ...s, [sessionId]: state.pending ?? state.current }));
       return () => currentModels.set((s) => {
         const next = { ...s };
@@ -5346,18 +6197,18 @@ function apply(ctx) {
         return next;
       });
     }, [sessionId, state.current, state.pending]);
-    (0, import_react4.useLayoutEffect)(() => {
+    (0, import_react5.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachComposerIcon(marker.current, state.pending ?? state.current);
     }, [state.current, state.pending, settings.features.composer]);
-    (0, import_react4.useLayoutEffect)(() => {
+    (0, import_react5.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachModelMenuIcons(marker.current, directory);
     }, [directory, settings.features.composer]);
-    return /* @__PURE__ */ import_react4.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
+    return /* @__PURE__ */ import_react5.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "workspace-plus-dialog", order: 90, locale: NS }, Overlay));
-  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react4.default.createElement(Settings, { prefs, reminders, ui, workspaces: ctx.workspaces, t: props.t, close: props.close })));
+  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react5.default.createElement(Settings, { prefs, profilePrefs, reminders, ui, workspaces: ctx.workspaces, t: props.t, close: props.close })));
   ctx.slots.inject("conversation.input.right", () => ctx.slots.register({
     name: "conversation.input.right",
     id: "workspace-plus-model",
