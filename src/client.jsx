@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Button, Switch } from '@deepseek-ai/dsh-client-ui-primitives';
 import { createPreferences, createStore } from './store.js';
 import { ICON_IDS } from './icons.js';
 import { createDOMAdapter, attachComposerIcon } from './adapters.js';
@@ -15,6 +16,7 @@ import { BRANDING_CSS } from './sidebar-branding.js';
 import { createProfilePreferences, PROFILE_STORAGE_KEY } from './profile-store.js';
 import { ProfileDialog } from './profile-dialog.jsx';
 import { createProfileAdapter, PROFILE_ADAPTER_CSS } from './profile-adapter.js';
+import { SettingsSectionIcon } from './settings-icon.jsx';
 
 export const inject = ['slots', 'locale', 'sessions', 'workspaces', 'modelDirectories', 'remote', 'remote.session'];
 const NS = 'workspacePlus';
@@ -23,29 +25,44 @@ function download(text, name) {
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function Settings({ prefs, profilePrefs, reminders, workspaces, ui, t, close }) {
-  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = useState('');
+function SettingsFeature({ label, description, checked, onChange, disabled = false }) {
+  return <div className="wsp-settings-feature">
+    <div className="wsp-settings-feature-copy"><div className="wsp-settings-feature-label">{label}</div><div className="wsp-settings-feature-description">{description}</div></div>
+    <Switch label={label} checked={checked} onChange={onChange} disabled={disabled} />
+  </div>;
+}
+
+function Settings({ prefs, profilePrefs, reminders, t }) {
+  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = useState('');
   async function safe(fn) { try { await fn(); setError(''); } catch (e) { setError(String(e.code ?? '').startsWith('profile') ? t(e.code) : e.message); } }
+  const feature = key => <SettingsFeature key={key} label={t(key)} description={t(key + 'Description')} checked={state.features[key]} onChange={next => safe(() => prefs.toggle(key, next))} />;
   return <section className="wsp-panel">
     <h2>Tinker</h2>
-    <p>{t('adapterHint')}</p>
-    {['workspaces','composer','sessions','unread','branding'].map(key => <div key={key} className="wsp-toggle"><span>{t(key)}</span><button role="switch" aria-label={t(key)} aria-checked={state.features[key]} onClick={() => safe(() => prefs.toggle(key, !state.features[key]))}>{t(state.features[key] ? 'on' : 'off')}</button></div>)}
-    <div className="wsp-toggle"><span>{t('profileFeature')}</span><button role="switch" aria-label={t('profileFeature')} aria-checked={profileState.enabled} disabled={Boolean(profileState.error)} onClick={() => safe(() => profilePrefs.toggle(!profileState.enabled))}>{t(profileState.enabled ? 'on' : 'off')}</button></div>
-    {profileState.error && <div role="alert" className="wsp-error">{t(profileState.error)} <button onClick={() => safe(() => profilePrefs.retry())}>{t('retry')}</button></div>}
-    <label htmlFor="wsp-workspace">{t('editWorkspace')}</label><select id="wsp-workspace" value="" onChange={e => { if (e.target.value) { const id = e.target.value; close?.(); queueMicrotask(() => ui.set({ target: { id } })); } }}>
-      <option value="">{t('chooseWorkspace')}</option>{list.items.map(w => <option key={w.workspaceId} value={w.workspaceId}>{w.title}</option>)}</select>
-    {(state.error || error) && <div role="alert" className="wsp-error">{error || state.error}</div>}
-    {(state.error || state.recoveryAvailable) && <>
-      <p>{t('recoveryHint')}</p>
-      <div className="wsp-row"><button onClick={() => safe(() => download(prefs.backup(), 'tinker-recovery.json'))}>{t('backup')}</button>
-        {state.error && <><button onClick={() => safe(() => prefs.retry())}>{t('retry')}</button><button onClick={() => safe(() => { if (window.confirm(t('resetConfirm'))) prefs.resetAll(); })}>{t('resetAll')}</button></>}
+    <p className="wsp-settings-description">{t('settingsDescription')}</p>
+    <section className="wsp-settings-group">
+      <h3>{t('settingsAppearance')}</h3><div className="wsp-settings-card">
+        {feature('workspaces')}
+        <SettingsFeature label={t('profileFeature')} description={t('profileFeatureDescription')} checked={profileState.enabled} disabled={Boolean(profileState.error)} onChange={next => safe(() => profilePrefs.toggle(next))} />
+        {feature('branding')}
       </div>
-    </>}
+      {profileState.error && <div role="alert" className="wsp-error">{t(profileState.error)} <Button size="sm" onClick={() => safe(() => profilePrefs.retry())}>{t('retry')}</Button></div>}
+    </section>
+    <section className="wsp-settings-group"><h3>{t('settingsModelLogos')}</h3><div className="wsp-settings-card">{feature('composer')}{feature('sessions')}</div></section>
+    <section className="wsp-settings-group"><h3>{t('settingsChats')}</h3><div className="wsp-settings-card">{feature('unread')}</div></section>
+    {(state.error || error) && <div role="alert" className="wsp-error">{error || state.error}</div>}
+    {(state.error || state.recoveryAvailable) && <details className="wsp-settings-recovery">
+      <summary>{t('recoveryTitle')}</summary>
+      <div className="wsp-settings-recovery-body"><p>{t('recoveryHint')}</p><p>{t('recoveryScope')}</p><p>{t('recoverySource')}</p>
+        <div className="wsp-row"><Button size="sm" variant="outline" onClick={() => safe(() => download(prefs.backup(), 'tinker-recovery.json'))}>{t('backup')}</Button>
+          {state.error && <><Button size="sm" onClick={() => safe(() => prefs.retry())}>{t('retry')}</Button><Button size="sm" onClick={() => safe(() => { if (window.confirm(t('resetConfirm'))) prefs.resetAll(); })}>{t('resetAll')}</Button></>}
+        </div>
+      </div>
+    </details>}
     {(unreadState.error || unreadState.lastError) && <>
       <div role="alert" className="wsp-error">{t('unreadRecovery')} {unreadState.error || unreadState.lastError}</div>
-      <div className="wsp-row"><button onClick={() => safe(() => download(reminders.backup(), 'tinker-unread-recovery.json'))}>{t('backup')}</button>
-        <button onClick={() => safe(() => reminders.refresh())}>{t('retry')}</button>
-        <button onClick={() => safe(() => { if (window.confirm(t('unreadResetConfirm'))) return reminders.resetAll(); })}>{t('resetAll')}</button></div>
+      <div className="wsp-row"><Button size="sm" variant="outline" onClick={() => safe(() => download(reminders.backup(), 'tinker-unread-recovery.json'))}>{t('backup')}</Button>
+        <Button size="sm" onClick={() => safe(() => reminders.refresh())}>{t('retry')}</Button>
+        <Button size="sm" onClick={() => safe(() => { if (window.confirm(t('unreadResetConfirm'))) return reminders.resetAll(); })}>{t('resetAll')}</Button></div>
     </>}
   </section>;
 }
@@ -106,7 +123,9 @@ export function apply(ctx) {
     return <span ref={marker} data-wsp-owned="" style={{ display: 'none' }} />;
   }
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'workspace-plus-dialog', order: 90, locale: NS }, Overlay));
-  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', order: 80, label: 'Tinker', locale: NS }, props => <Settings prefs={prefs} profilePrefs={profilePrefs} reminders={reminders} ui={ui} workspaces={ctx.workspaces} t={props.t} close={props.close} />));
+  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', order: 80, label: 'Tinker', locale: NS }, props => <Settings prefs={prefs} profilePrefs={profilePrefs} reminders={reminders} t={props.t} />));
+  // Older Hosts have no icon seat: public inject waits without registering an unknown slot.
+  ctx.slots.inject('settings.section.icon', () => ctx.slots.register({ name: 'settings.section.icon', id: 'workspace-plus' }, SettingsSectionIcon));
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right', id: 'workspace-plus-model', order: 10,
     inject: sessionId => ({ sessionId, directory: ctx.modelDirectories.directoryFor(sessionId).store }),

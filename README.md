@@ -2,7 +2,7 @@
 
 Tinker is a web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It adds workspace appearance, model logos and manual unread reminders to the existing interface. It does not send model requests or change prompts or credentials.
 
-The latest published npm version is **dsh-tinker 0.1.5**. Local profile customization, the unread keyboard shortcut and current workspace-menu/hover-layout fixes in this checkout are **unreleased development changes**, available in a separately built **Tinker (develop)** package.
+The latest published npm version is **dsh-tinker 0.1.5**. Local profile customization, the unread keyboard shortcut, grouped Settings, new project icons and current workspace-menu/hover-layout fixes in this checkout are **unreleased development changes**, available in a separately built **Tinker (develop)** package.
 
 ## Features
 
@@ -10,10 +10,10 @@ The latest published npm version is **dsh-tinker 0.1.5**. Local profile customiz
 - Model-lab logos in the model selector, model list and chat rows. Includes DeepSeek, OpenAI/Codex, Anthropic, Google, Kimi, xAI, Mistral, Qwen, Zhipu AI/GLM and MiniMax, including recognized Alibaba routes. Unknown models use a neutral AI icon.
 - **Mark as unread** in the chat menu and hover actions. The reminder survives reload until the next observed opening. Native running, warning and completion indicators take precedence. The unreleased **Ctrl+Alt+U** shortcut marks the currently open chat on Windows desktop/web and Linux desktop; macOS and Linux web have no new default. The menu shows the effective host-managed binding, including user changes.
 - Hide the sidebar's top branding row and its space while retaining New Session and navigation.
-- **Local profile appearance (unreleased):** a custom name and avatar in the bottom-left signed-in profile. Open **Customize profile** above **Sign out** in its menu. One additional switch in **Settings / Tinker** enables or disables the feature; the editor exists only in the profile menu.
-- Six independent feature switches in this development version; published 0.1.5 has five. English and Russian UI; Chinese currently uses English.
+- **Local profile appearance (unreleased):** a custom name and avatar in the bottom-left signed-in profile. Open **Appearance** above **Sign out** in its menu. One additional switch in **Settings / Tinker** enables or disables the feature; the editor exists only in the profile menu.
+- Six independent native feature switches, grouped under **Appearance**, **AI model logos** and **Chats** in **Settings / Tinker**; published 0.1.5 has five. English and Russian UI; Chinese currently uses English.
 
-Use **Appearance** in a workspace's menu or choose a workspace in **Settings / Tinker**. Changes apply with **Save**; **Restore default** only changes the draft until saved. Image uploads accept PNG, JPEG, WebP, GIF and AVIF up to 5 MB and 16 million pixels, stored as a static PNG up to 128 px. No remote image links, SVG or animated output.
+Use **Appearance** in a workspace's menu. The Settings page enables or disables features; it does not open appearance editors. Changes apply with **Save**; **Restore default** only changes the draft until saved. Image uploads accept PNG, JPEG, WebP, GIF and AVIF up to 5 MB and 16 million pixels, stored as a static PNG up to 128 px. No remote image links, SVG or animated output.
 
 Profile customization changes only the local display, not your DeepSeek account. Name and image can be overridden independently. **Reset to DeepSeek account details** changes the draft; **Save** applies it. Signed-out **More** and native sign-in/sign-out actions remain unchanged.
 
@@ -32,7 +32,7 @@ See the host's [Plugin Manager instructions](https://github.com/deepseek-ai/deep
 | Host version | The package declares `>=0.2.0-rc.2 <0.3.0-0`. This is an install range, not a claim that every version was tested. |
 | UI adapters | Workspace menus recognize the known Rename/Delete and Rename/Show in folder/Delete patterns through 0.2.2-rc.1. Hover unread actions follow its native 24 px button / 14 px icon geometry. Other model/chat adapters retain their RC.2 targets; the guarded profile adapter targets the 0.2.2-rc.1 account launcher. Later interface changes may require updates. |
 | Automated browser tests | Windows, with pinned RC.2 primitives and scoped RC.1 hover/MenuOverlay/SlotOutlet source. Shortcut tests use the exact lower-bound registry and actual current Cordis dependency lifecycle; a separate diagnostic executes the full current native Workspace source path. Controlled navigation/remote services and source-shaped account fixtures are not a complete running Host. |
-| Live installation | Profile customization and unread hover alignment received initial manual Desktop checks. The newer Workspace content-outlet fix and keyboard shortcut still need installed-host testing; offline results are not live GUI verification. |
+| Live installation | The owner confirmed Workspace appearance and the unread shortcut in an earlier development package, alongside initial profile/hover checks. The grouped Settings redesign and new project icons still need installed-host testing; offline results are not live GUI verification. |
 | Newer core / Codex | Newer core versions and newer Codex Subscription releases are not verified. Model-selector adapters target native RC.2 and Codex Subscription 2.5.2 markup. |
 | macOS | Physical Mac not verified. Offline tests cover the native darwin markup branch, not OS window behavior. |
 | Unread reminders | Require Web Locks in a secure browser context (HTTPS or loopback). Without it, writes report an error rather than risking lost updates. |

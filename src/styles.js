@@ -7,19 +7,22 @@ export const CSS = `
 .wsp-workspace-picker-menu-icon{width:100%;height:100%;flex-basis:auto;font-size:14px}
 /* RC.2 has no row gap; the title adds 4px after our 6px margin. Move only the glyph. */
 .wsp-session-icon{margin-right:6px;transform:translateX(5px)}
-.wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.5;max-width:580px}
-.wsp-panel *{box-sizing:border-box}
-.wsp-panel h2{font-size:18px;font-weight:600;margin:0 0 16px}
-.wsp-panel p{margin:8px 0;color:var(--dsw-alias-label-secondary)}
-.wsp-panel button,.wsp-panel input,.wsp-panel select{font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-1);border-radius:8px;padding:8px 12px}
-.wsp-panel button{cursor:pointer}
-.wsp-panel button:hover{background:var(--dsw-alias-bg-overlay)}
-.wsp-panel button:focus-visible,.wsp-panel input:focus-visible,.wsp-panel select:focus-visible{outline:2px solid var(--dsw-alias-border-l4);outline-offset:2px}
-.wsp-panel button:disabled{opacity:.5;cursor:default}
-.wsp-panel button[aria-pressed=true]{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-overlay)}
-.wsp-panel label{display:block;margin:12px 0 4px}
-.wsp-panel input[type=text],.wsp-panel select{width:100%}
-.wsp-panel input[type=color]{width:44px;height:36px;padding:3px;cursor:pointer}
+.wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.4;max-width:560px}
+.wsp-panel>h2{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.45px;margin:0 0 7px}
+.wsp-settings-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0 0 20px}
+.wsp-settings-group{margin:0 0 15px}
+.wsp-settings-group>h3{font-size:12px;line-height:17px;font-weight:600;margin:0 0 7px}
+.wsp-settings-card{border:1px solid var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l4));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-layer-2));overflow:hidden}
+.wsp-settings-feature{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:53px;padding:10px 13px}
+.wsp-settings-feature+.wsp-settings-feature{border-top:1px solid var(--dsw-alias-border-l3)}
+.wsp-settings-feature-copy{min-width:0}
+.wsp-settings-feature-label{font-size:12px;line-height:17px}
+.wsp-settings-feature-description{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary);margin-top:1px}
+.wsp-settings-recovery{border-top:1px solid var(--dsw-alias-border-l3);margin-top:20px;padding-top:12px}
+.wsp-settings-recovery>summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery>summary:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color);outline-offset:3px}
+.wsp-settings-recovery-body{margin:12px 0 0 14px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery-body>p{margin:0 0 9px}
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */
@@ -62,8 +65,6 @@ export const CSS = `
 .wsp-drop-title{font-size:16px;line-height:24px}
 .wsp-hidden-file{display:none}
 .wsp-error{color:var(--dsw-alias-state-error-primary);margin:10px 0}
-.wsp-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.wsp-toggle button{min-width:60px}
 /* The profile editor uses the native Modal shell, not the broad wsp-panel settings rules. */
 .wsp-profile-dialog{width:min(388px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
 .wsp-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}

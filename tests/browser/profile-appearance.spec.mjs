@@ -35,11 +35,11 @@ async function setup(page,options={}) {
 }
 async function menu(page,language='en') {
   await trigger(page).first().click();
-  await expect(page.getByRole('menuitem',{name:language==='en'?'Customize profile':'Настроить профиль',exact:true})).toBeVisible();
+  await expect(page.getByRole('menuitem',{name:language==='en'?'Appearance':'Оформление',exact:true})).toBeVisible();
 }
 async function open(page,language='en') {
-  await menu(page,language);await page.getByRole('menuitem',{name:language==='en'?'Customize profile':'Настроить профиль',exact:true}).click();
-  await expect(dialog(page)).toBeVisible();await expect(page.getByRole('menu')).toHaveCount(0);
+  await menu(page,language);await page.getByRole('menuitem',{name:language==='en'?'Appearance':'Оформление',exact:true}).click();
+  await expect(dialog(page)).toBeVisible();await expect(dialog(page)).toHaveAccessibleName(language==='en'?'DeepSeek Harness profile appearance':'Оформление профиля DeepSeek Harness');await expect(page.getByRole('menu')).toHaveCount(0);
 }
 async function save(page,name,language='en') { await input(page,language).fill(name);await dialog(page).getByRole('button',{name:language==='en'?'Save':'Сохранить',exact:true}).click();await expect(dialog(page)).toHaveCount(0); }
 async function transfer(page,extension='png') {
@@ -54,18 +54,18 @@ async function drop(page,target,extension='png') {
 // Native nodes and listeners stay authoritative: unknown ids would increment signout.
 test('native actions/order/node identity survive an additive Customize item without accidental logout',async({page})=>{
   await setup(page);await trigger(page).click();
-  await expect(page.getByRole('menuitem')).toHaveText(['SettingsCtrl+,','Feedback','Customize profile','Sign out']);
+  await expect(page.getByRole('menuitem')).toHaveText(['SettingsCtrl+,','Feedback','Appearance','Sign out']);
   await page.evaluate(()=>window.profileFixture.captureNodes());
   await page.evaluate(()=>window.profileFixture.save('Local Alice'));
   await expect(customName(page)).toHaveText('Local Alice');
   expect(await page.evaluate(()=>window.profileFixture.sameNodes())).toBe(true);
-  await page.getByRole('menuitem',{name:'Customize profile',exact:true}).click();await expect(dialog(page)).toBeVisible();
+  await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();await expect(dialog(page)).toBeVisible();
   expect(await page.evaluate(()=>window.profileFixture.counters())).toEqual({settings:0,feedback:0,signout:0,signin:0});
   await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
   await menu(page);await page.getByRole('menuitem',{name:'Settings',exact:false}).click();
   await expect(page.locator('#settings [role="switch"]')).toHaveCount(6);
   await expect(page.locator('#settings input[type="file"],#settings [data-wsp-profile-avatar],#settings input[placeholder="Profile name"]')).toHaveCount(0);
-  await expect(page.locator('#settings')).not.toContainText('Customize profile');
+  await expect(page.locator('#settings [data-wsp-profile-menu]')).toHaveCount(0);
   await menu(page);await page.getByRole('menuitem',{name:'Feedback',exact:true}).click();
   await menu(page);await page.getByRole('menuitem',{name:'Sign out',exact:true}).click();
   expect(await page.evaluate(()=>window.profileFixture.counters())).toEqual({settings:1,feedback:1,signout:1,signin:0});
@@ -77,7 +77,7 @@ test('current DOM rows share native keyboard walk, Enter/Tab activation, Escape 
   await page.keyboard.press('End');await expect(page.getByRole('menuitem',{name:'Sign out',exact:true})).toBeFocused();
   await page.keyboard.press('Home');await expect(page.getByRole('menuitem',{name:'Settings',exact:false})).toBeFocused();
   await page.keyboard.press('ArrowDown');await expect(page.getByRole('menuitem',{name:'Feedback',exact:true})).toBeFocused();
-  await page.keyboard.press('ArrowDown');await expect(page.getByRole('menuitem',{name:'Customize profile',exact:true})).toBeFocused();
+  await page.keyboard.press('ArrowDown');await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();
   await page.keyboard.press('Enter');await expect(input(page)).toBeFocused();await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
   await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await page.keyboard.press('Tab');
   await expect(dialog(page)).toBeVisible();await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
@@ -87,9 +87,9 @@ test('current DOM rows share native keyboard walk, Enter/Tab activation, Escape 
 
 test('native busy auth action cannot be bypassed by opening another editor',async({page})=>{
   await setup(page);await menu(page);await page.evaluate(()=>window.profileFixture.update({busy:true}));
-  await expect(page.getByRole('menuitem',{name:'Sign out',exact:true})).toBeDisabled();await expect(page.getByRole('menuitem',{name:'Customize profile',exact:true})).toBeDisabled();
+  await expect(page.getByRole('menuitem',{name:'Sign out',exact:true})).toBeDisabled();await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeDisabled();
   await page.keyboard.press('End');await expect(page.getByRole('menuitem',{name:'Feedback',exact:true})).toBeFocused();
-  await page.evaluate(()=>window.profileFixture.update({busy:false}));await page.getByRole('menuitem',{name:'Customize profile',exact:true}).click();await expect(dialog(page)).toBeVisible();expect((await page.evaluate(()=>window.profileFixture.counters())).signout).toBe(0);
+  await page.evaluate(()=>window.profileFixture.update({busy:false}));await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();await expect(dialog(page)).toBeVisible();expect((await page.evaluate(()=>window.profileFixture.counters())).signout).toBe(0);
 });
 
 test('name and independent normalized image survive reload; Cancel and staged reset do not write',async({page})=>{
@@ -161,7 +161,7 @@ test('preexisting foreign popup is never adopted and native popup remains unchan
 });
 
 test('removing a focused owned menu row restores a keyboard anchor for native actions',async({page})=>{
-  await setup(page);await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await expect(page.getByRole('menuitem',{name:'Customize profile',exact:true})).toBeFocused();
+  await setup(page);await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();
   await page.evaluate(()=>window.profileFixture.toggle(false));await expect(page.getByRole('menuitem')).toHaveCount(3);await expect(trigger(page)).toBeFocused();
   await page.keyboard.press('Home');await expect(page.getByRole('menuitem',{name:'Settings',exact:false})).toBeFocused();await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
 });
@@ -196,8 +196,8 @@ test('unknown source classes and multiple launchers restore native projection in
 test('native image/text replacements and menu remounts stay native; disconnect/remount/disposal close stale editor',async({page})=>{
   await setup(page,{seed:{version:1,enabled:true,name:'Local',image:png}});await expect(customName(page)).toHaveText('Local');
   await page.evaluate(image=>window.profileFixture.update({name:'Fresh native',image}),png);
-  await menu(page);await page.evaluate(()=>window.profileFixture.update({menuRemount:1}));await expect(page.getByRole('menuitem',{name:'Customize profile',exact:true})).toHaveCount(1);
-  await page.getByRole('menuitem',{name:'Customize profile',exact:true}).click();await expect(dialog(page)).toBeVisible();
+  await menu(page);await page.evaluate(()=>window.profileFixture.update({menuRemount:1}));await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toHaveCount(1);
+  await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();await expect(dialog(page)).toBeVisible();
   await page.evaluate(()=>window.profileFixture.update({remount:1}));await expect(dialog(page)).toHaveCount(0);await expect(customName(page)).toHaveText('Local');
   await open(page);await page.evaluate(()=>window.profileFixture.update({mounted:false}));await expect(dialog(page)).toHaveCount(0);await expect(customName(page)).toHaveCount(0);
   await page.evaluate(()=>window.profileFixture.update({mounted:true}));await expect(customName(page)).toHaveText('Local');await menu(page);
@@ -206,17 +206,17 @@ test('native image/text replacements and menu remounts stay native; disconnect/r
 });
 
 test('pending native close cannot reopen H after disable or plugin disposal',async({page})=>{
-  await setup(page,{native:{delayClose:150}});await menu(page);await page.getByRole('menuitem',{name:'Customize profile',exact:true}).click();await page.evaluate(()=>window.profileFixture.toggle(false));
+  await setup(page,{native:{delayClose:150}});await menu(page);await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();await page.evaluate(()=>window.profileFixture.toggle(false));
   await expect(page.getByRole('menu')).toHaveCount(0);await expect(dialog(page)).toHaveCount(0);
-  await page.evaluate(()=>window.profileFixture.toggle(true));await menu(page);await page.getByRole('menuitem',{name:'Customize profile',exact:true}).click();await page.evaluate(()=>window.profileFixture.disposePlugin());
+  await page.evaluate(()=>window.profileFixture.toggle(true));await menu(page);await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();await page.evaluate(()=>window.profileFixture.disposePlugin());
   await expect(page.getByRole('menu')).toHaveCount(0);await expect(dialog(page)).toHaveCount(0);expect((await page.evaluate(()=>window.profileFixture.counters())).signout).toBe(0);
 });
 
 test('RU native/menu translation updates while open and settings contains one toggle only',async({page})=>{
   await setup(page);await menu(page);await page.evaluate(()=>window.profileFixture.language('ru'));
-  await expect(page.getByRole('menuitem')).toHaveText(['НастройкиCtrl+,','Обратная связь','Настроить профиль','Выйти']);
-  await page.getByRole('menuitem',{name:'Настроить профиль',exact:true}).click();await expect(input(page,'ru')).toBeVisible();await expect(input(page,'ru')).toHaveAttribute('placeholder','Имя профиля');await page.keyboard.press('Escape');
-  await menu(page,'ru');await page.getByRole('menuitem',{name:'Настройки',exact:false}).click();await expect(page.locator('#settings [role="switch"]')).toHaveCount(6);await expect(page.locator('#settings')).not.toContainText('Настроить профиль');
+  await expect(page.getByRole('menuitem')).toHaveText(['НастройкиCtrl+,','Обратная связь','Оформление','Выйти']);
+  await page.getByRole('menuitem',{name:'Оформление',exact:true}).click();await expect(input(page,'ru')).toBeVisible();await expect(input(page,'ru')).toHaveAttribute('placeholder','Имя профиля');await page.keyboard.press('Escape');
+  await menu(page,'ru');await page.getByRole('menuitem',{name:'Настройки',exact:false}).click();await expect(page.locator('#settings [role="switch"]')).toHaveCount(6);await expect(page.locator('#settings [data-wsp-profile-menu]')).toHaveCount(0);
 });
 
 test('two same-origin windows observe saved appearance and disable through actual storage events',async({page,context})=>{

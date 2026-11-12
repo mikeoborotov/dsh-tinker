@@ -36,7 +36,8 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react5 = __toESM(require("react"), 1);
+var import_react6 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives4 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/store.js
 var STORAGE_KEY = "dsh-workspace-plus:v1";
@@ -952,19 +953,22 @@ var CSS = `
 .wsp-workspace-picker-menu-icon{width:100%;height:100%;flex-basis:auto;font-size:14px}
 /* RC.2 has no row gap; the title adds 4px after our 6px margin. Move only the glyph. */
 .wsp-session-icon{margin-right:6px;transform:translateX(5px)}
-.wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.5;max-width:580px}
-.wsp-panel *{box-sizing:border-box}
-.wsp-panel h2{font-size:18px;font-weight:600;margin:0 0 16px}
-.wsp-panel p{margin:8px 0;color:var(--dsw-alias-label-secondary)}
-.wsp-panel button,.wsp-panel input,.wsp-panel select{font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-1);border-radius:8px;padding:8px 12px}
-.wsp-panel button{cursor:pointer}
-.wsp-panel button:hover{background:var(--dsw-alias-bg-overlay)}
-.wsp-panel button:focus-visible,.wsp-panel input:focus-visible,.wsp-panel select:focus-visible{outline:2px solid var(--dsw-alias-border-l4);outline-offset:2px}
-.wsp-panel button:disabled{opacity:.5;cursor:default}
-.wsp-panel button[aria-pressed=true]{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-overlay)}
-.wsp-panel label{display:block;margin:12px 0 4px}
-.wsp-panel input[type=text],.wsp-panel select{width:100%}
-.wsp-panel input[type=color]{width:44px;height:36px;padding:3px;cursor:pointer}
+.wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.4;max-width:560px}
+.wsp-panel>h2{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.45px;margin:0 0 7px}
+.wsp-settings-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0 0 20px}
+.wsp-settings-group{margin:0 0 15px}
+.wsp-settings-group>h3{font-size:12px;line-height:17px;font-weight:600;margin:0 0 7px}
+.wsp-settings-card{border:1px solid var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l4));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-layer-2));overflow:hidden}
+.wsp-settings-feature{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:53px;padding:10px 13px}
+.wsp-settings-feature+.wsp-settings-feature{border-top:1px solid var(--dsw-alias-border-l3)}
+.wsp-settings-feature-copy{min-width:0}
+.wsp-settings-feature-label{font-size:12px;line-height:17px}
+.wsp-settings-feature-description{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary);margin-top:1px}
+.wsp-settings-recovery{border-top:1px solid var(--dsw-alias-border-l3);margin-top:20px;padding-top:12px}
+.wsp-settings-recovery>summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery>summary:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color);outline-offset:3px}
+.wsp-settings-recovery-body{margin:12px 0 0 14px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery-body>p{margin:0 0 9px}
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */
@@ -1007,8 +1011,6 @@ var CSS = `
 .wsp-drop-title{font-size:16px;line-height:24px}
 .wsp-hidden-file{display:none}
 .wsp-error{color:var(--dsw-alias-state-error-primary);margin:10px 0}
-.wsp-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.wsp-toggle button{min-width:60px}
 /* The profile editor uses the native Modal shell, not the broad wsp-panel settings rules. */
 .wsp-profile-dialog{width:min(388px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
 .wsp-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
@@ -1036,9 +1038,29 @@ var CSS = `
 @media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;
 
+// locale/en.json
+var en_default = {
+  meta: {
+    title: "Tinker",
+    description: "Workspace appearance, model logos, manual unread reminders and sidebar branding."
+  }
+};
+
+// locale/ru.json
+var ru_default = {
+  meta: {
+    title: "Tinker",
+    description: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspaces, \u043B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439, \u0440\u0443\u0447\u043D\u044B\u0435 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438 \u0438 \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438."
+  }
+};
+
 // src/locales.js
 var en = {
   language: "en",
+  settingsDescription: en_default.meta.description,
+  settingsAppearance: "Appearance",
+  settingsModelLogos: "AI model logos",
+  settingsChats: "Chats",
   appearance: "Appearance",
   changeAppearance: "Change workspace appearance",
   close: "Close",
@@ -1072,19 +1094,25 @@ var en = {
   cancel: "Cancel",
   reset: "Restore default",
   loading: "Loading...",
-  workspaces: "Workspace icons and appearance menu",
-  composer: "Model logos in the selector and list",
-  sessions: "Model logos beside chats",
-  unread: "Mark chats unread",
+  workspaces: "Workspace appearance",
+  workspacesDescription: 'Adds "Appearance" option to set custom workspace icons',
+  composer: "In the model picker",
+  composerDescription: "Show logos in the selector and model list",
+  sessions: "Beside chats",
+  sessionsDescription: "Show the selected model logo beside each chat in left sidebar",
+  unread: "Mark as unread",
+  unreadDescription: "Keep a reminder until the chat is reopened",
   markUnread: "Mark as unread",
   unreadLabel: "Unread reminder",
   unreadFailed: "Could not save the reminder.",
   unreadRecovery: "Unread reminders could not be read. Back up before resetting.",
   unreadResetConfirm: "Remove only manual unread reminders? Appearance and chats will not change.",
-  branding: "Hide sidebar branding",
+  branding: "Hide Deepseek Harness logo",
+  brandingDescription: "Keep navigation without the sidebar brand",
   profileFeature: "Profile appearance",
-  profileCustomize: "Customize profile",
-  profileDialogTitle: "DeepSeek Harness profile settings",
+  profileFeatureDescription: 'Adds "Appearance" option to set local profile name and picture',
+  profileCustomize: "Appearance",
+  profileDialogTitle: "DeepSeek Harness profile appearance",
   profileDescription: "Customize how your profile appears in the bottom-left corner of DeepSeek Harness. Your DeepSeek account details are not changed.",
   profileName: "Profile name",
   profileReset: "Reset to DeepSeek account details",
@@ -1097,7 +1125,7 @@ var en = {
   profileUnsupportedVersion: "Saved profile appearance uses an unsupported version. It has not been replaced. Use a compatible Tinker version before retrying.",
   profileNameInvalid: "Profile name must be text of up to 80 characters.",
   profileImageInvalid: "This is not a supported local PNG copy. Choose the image again.",
-  profileEnabledInvalid: "Profile appearance could not be switched. Retry with On or Off.",
+  profileEnabledInvalid: "Profile appearance could not be switched. Retry reading profile appearance.",
   profileSaveError: "Profile appearance could not be saved. Your changes are still in this dialog.",
   profileImageType: "Choose a PNG, JPEG, WebP, GIF or AVIF image.",
   profileImageFileSize: "Image exceeds 5 MB.",
@@ -1110,7 +1138,10 @@ var en = {
   editWorkspace: "Workspace appearance",
   chooseWorkspace: "Choose a Workspace",
   adapterHint: "Compatible with DSH 0.2.0 RC.2. Each feature can be disabled independently. Interface changes in later DSH versions may require an update.",
-  recoveryHint: "Storage recovery only, not settings transfer. Keep the original data or pre-upgrade copy for recovery.",
+  recoveryTitle: "Advanced: recovery copy",
+  recoveryHint: "A limited recovery copy, not a full backup",
+  recoveryScope: "Includes Workspace appearance and five feature flags only. Profile appearance and unread reminders are separate and are not included.",
+  recoverySource: "Copy may contain data saved before an update. No import is available.",
   backup: "Save recovery copy",
   retry: "Retry reading saved settings",
   resetAll: "Reset plugin settings",
@@ -1118,6 +1149,10 @@ var en = {
 };
 var ru = {
   language: "ru",
+  settingsDescription: ru_default.meta.description,
+  settingsAppearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
+  settingsModelLogos: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0418\u0418",
+  settingsChats: "\u0427\u0430\u0442\u044B",
   appearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
   changeAppearance: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
   close: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
@@ -1151,19 +1186,25 @@ var ru = {
   cancel: "\u041E\u0442\u043C\u0435\u043D\u0430",
   reset: "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E",
   loading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430...",
-  workspaces: "\u0418\u043A\u043E\u043D\u043A\u0438 \u0438 \u043C\u0435\u043D\u044E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F Workspaces",
-  composer: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0432 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u0435 \u0438 \u0441\u043F\u0438\u0441\u043A\u0435",
-  sessions: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0440\u044F\u0434\u043E\u043C \u0441 \u0447\u0430\u0442\u0430\u043C\u0438",
-  unread: "\u041F\u043E\u043C\u0435\u0442\u0438\u0442\u044C \u0447\u0430\u0442\u044B \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u043C\u0438",
+  workspaces: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspaces",
+  workspacesDescription: "\u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0443\u043D\u043A\u0442 \xAB\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435\xBB \u0434\u043B\u044F \u0441\u0432\u043E\u0438\u0445 \u0437\u043D\u0430\u0447\u043A\u043E\u0432 Workspace",
+  composer: "\u0412 \u0432\u044B\u0431\u043E\u0440\u0435 \u043C\u043E\u0434\u0435\u043B\u0438",
+  composerDescription: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u0432 \u0441\u0435\u043B\u0435\u043A\u0442\u043E\u0440\u0435 \u0438 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u043E\u0434\u0435\u043B\u0435\u0439",
+  sessions: "\u0420\u044F\u0434\u043E\u043C \u0441 \u0447\u0430\u0442\u0430\u043C\u0438",
+  sessionsDescription: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438 \u0443 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0447\u0430\u0442\u0430 \u0432 \u043B\u0435\u0432\u043E\u0439 \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438",
+  unread: "\u041C\u0435\u0442\u043A\u0430 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438",
+  unreadDescription: "\u041D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435 \u0434\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0433\u043E \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u044F \u0447\u0430\u0442\u0430",
   markUnread: "\u041F\u043E\u043C\u0435\u0442\u0438\u0442\u044C \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u043C",
   unreadLabel: "\u041D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0435 \u043D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435",
   unreadFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043C\u0435\u0442\u043A\u0443.",
   unreadRecovery: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u043E\u043F\u0438\u044E \u043F\u0435\u0440\u0435\u0434 \u0441\u0431\u0440\u043E\u0441\u043E\u043C.",
   unreadResetConfirm: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0440\u0443\u0447\u043D\u044B\u0435 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438? \u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0438 \u0447\u0430\u0442\u044B \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442\u0441\u044F.",
-  branding: "\u0421\u043A\u0440\u044B\u0442\u044C \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0432 \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438",
+  branding: "\u0421\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043B\u043E\u0433\u043E\u0442\u0438\u043F Deepseek Harness",
+  brandingDescription: "\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F, \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F",
   profileFeature: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
-  profileCustomize: "\u041D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043F\u0440\u043E\u0444\u0438\u043B\u044C",
-  profileDialogTitle: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u043F\u0440\u043E\u0444\u0438\u043B\u044F DeepSeek Harness",
+  profileFeatureDescription: "\u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0443\u043D\u043A\u0442 \xAB\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435\xBB \u0434\u043B\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u0438\u043C\u0435\u043D\u0438 \u0438 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileCustomize: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
+  profileDialogTitle: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F DeepSeek Harness",
   profileDescription: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0432 \u043B\u0435\u0432\u043E\u043C \u043D\u0438\u0436\u043D\u0435\u043C \u0443\u0433\u043B\u0443 DeepSeek Harness. \u041D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u0430\u043C\u043E\u0433\u043E \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 DeepSeek.",
   profileName: "\u0418\u043C\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
   profileReset: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u043A \u0434\u0430\u043D\u043D\u044B\u043C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 DeepSeek",
@@ -1176,7 +1217,7 @@ var ru = {
   profileUnsupportedVersion: "\u0412\u0435\u0440\u0441\u0438\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044F. \u0414\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u0438\u043C\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E Tinker \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u044B\u043C \u0447\u0442\u0435\u043D\u0438\u0435\u043C.",
   profileNameInvalid: "\u0418\u043C\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u0442\u0435\u043A\u0441\u0442\u043E\u043C \u0434\u043E 80 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432.",
   profileImageInvalid: "\u042D\u0442\u043E \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u0430\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u0430\u044F PNG-\u043A\u043E\u043F\u0438\u044F. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.",
-  profileEnabledInvalid: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \xAB\u0412\u043A\u043B.\xBB \u0438\u043B\u0438 \xAB\u0412\u044B\u043A\u043B.\xBB \u0437\u0430\u043D\u043E\u0432\u043E.",
+  profileEnabledInvalid: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0447\u0442\u0435\u043D\u0438\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F.",
   profileSaveError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u0412\u0430\u0448\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C \u0432 \u044D\u0442\u043E\u043C \u043E\u043A\u043D\u0435.",
   profileImageType: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 PNG, JPEG, WebP, GIF \u0438\u043B\u0438 AVIF.",
   profileImageFileSize: "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 5 \u041C\u0411.",
@@ -1189,7 +1230,10 @@ var ru = {
   editWorkspace: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
   chooseWorkspace: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 Workspace",
   adapterHint: "\u0421\u043E\u0432\u043C\u0435\u0441\u0442\u0438\u043C\u043E\u0441\u0442\u044C: DSH 0.2.0 RC.2. \u041A\u0430\u0436\u0434\u0430\u044F \u0444\u0443\u043D\u043A\u0446\u0438\u044F \u043E\u0442\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E. \u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0438\u043D\u0442\u0435\u0440\u0444\u0435\u0439\u0441\u0430 \u0432 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0445 \u0432\u0435\u0440\u0441\u0438\u044F\u0445 DSH \u043C\u043E\u0433\u0443\u0442 \u043F\u043E\u0442\u0440\u0435\u0431\u043E\u0432\u0430\u0442\u044C \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043F\u043B\u0430\u0433\u0438\u043D\u0430.",
-  recoveryHint: "\u0422\u043E\u043B\u044C\u043A\u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 \u0434\u0430\u043D\u043D\u044B\u0445, \u043D\u0435 \u043F\u0435\u0440\u0435\u043D\u043E\u0441 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u0438\u0441\u0445\u043E\u0434\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u043B\u0438 \u043A\u043E\u043F\u0438\u044E \u0434\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F.",
+  recoveryTitle: "\u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E: \u043A\u043E\u043F\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F",
+  recoveryHint: "\u041A\u043E\u043F\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F, \u043D\u0435 \u043F\u043E\u043B\u043D\u044B\u0439 \u0431\u044D\u043A\u0430\u043F",
+  recoveryScope: "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspaces \u0438 \u043F\u044F\u0442\u044C \u0444\u043B\u0430\u0433\u043E\u0432 \u0444\u0443\u043D\u043A\u0446\u0438\u0439. \u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0438 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E \u0438 \u0432 \u043A\u043E\u043F\u0438\u044E \u043D\u0435 \u0432\u0445\u043E\u0434\u044F\u0442.",
+  recoverySource: "\u041A\u043E\u043F\u0438\u044F \u043C\u043E\u0436\u0435\u0442 \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435, \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F. \u0418\u043C\u043F\u043E\u0440\u0442\u0430 \u043D\u0435\u0442.",
   backup: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043A\u043E\u043F\u0438\u044E \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F",
   retry: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u0447\u0442\u0435\u043D\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A",
   resetAll: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u043B\u0430\u0433\u0438\u043D\u0430",
@@ -6279,6 +6323,29 @@ function createProfileAdapter({ document: doc, preferences, translate, onEdit, o
   };
 }
 
+// src/settings-icon.jsx
+var import_react5 = __toESM(require("react"), 1);
+function SettingsSectionIcon({ size = 16 }) {
+  return /* @__PURE__ */ import_react5.default.createElement(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: size,
+      height: size,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.57830973",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": "true",
+      focusable: "false",
+      "data-framing": "centered-22-of-24"
+    },
+    /* @__PURE__ */ import_react5.default.createElement("g", { transform: "translate(12 12) scale(1.077101642) translate(-11.539062500 -12.460937500)" }, /* @__PURE__ */ import_react5.default.createElement("g", { transform: "translate(12 12) rotate(45)" }, /* @__PURE__ */ import_react5.default.createElement("path", { d: "M-2.48 -10.015968V-7.279999999999999A2.48 2.48 0 0 0 2.48 -7.279999999999999V-10.015968A4.72 4.72 0 0 1 2.1 -1.772897V11A2.1 2.1 0 0 1-2.1 11V-1.772897A4.72 4.72 0 0 1 -2.48 -10.015968Z" })))
+  );
+}
+
 // src/client.jsx
 var inject = ["slots", "locale", "sessions", "workspaces", "modelDirectories", "remote", "remote.session"];
 var NS = "workspacePlus";
@@ -6290,8 +6357,11 @@ function download(text, name) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1e3);
 }
-function Settings({ prefs, profilePrefs, reminders, workspaces, ui, t, close }) {
-  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = (0, import_react5.useState)("");
+function SettingsFeature({ label, description, checked, onChange, disabled = false }) {
+  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature-copy" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature-label" }, label), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature-description" }, description)), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Switch, { label, checked, onChange, disabled }));
+}
+function Settings({ prefs, profilePrefs, reminders, t }) {
+  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = (0, import_react6.useState)("");
   async function safe(fn) {
     try {
       await fn();
@@ -6300,15 +6370,10 @@ function Settings({ prefs, profilePrefs, reminders, workspaces, ui, t, close }) 
       setError(String(e.code ?? "").startsWith("profile") ? t(e.code) : e.message);
     }
   }
-  return /* @__PURE__ */ import_react5.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react5.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react5.default.createElement("p", null, t("adapterHint")), ["workspaces", "composer", "sessions", "unread", "branding"].map((key) => /* @__PURE__ */ import_react5.default.createElement("div", { key, className: "wsp-toggle" }, /* @__PURE__ */ import_react5.default.createElement("span", null, t(key)), /* @__PURE__ */ import_react5.default.createElement("button", { role: "switch", "aria-label": t(key), "aria-checked": state.features[key], onClick: () => safe(() => prefs.toggle(key, !state.features[key])) }, t(state.features[key] ? "on" : "off")))), /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-toggle" }, /* @__PURE__ */ import_react5.default.createElement("span", null, t("profileFeature")), /* @__PURE__ */ import_react5.default.createElement("button", { role: "switch", "aria-label": t("profileFeature"), "aria-checked": profileState.enabled, disabled: Boolean(profileState.error), onClick: () => safe(() => profilePrefs.toggle(!profileState.enabled)) }, t(profileState.enabled ? "on" : "off"))), profileState.error && /* @__PURE__ */ import_react5.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => profilePrefs.retry()) }, t("retry"))), /* @__PURE__ */ import_react5.default.createElement("label", { htmlFor: "wsp-workspace" }, t("editWorkspace")), /* @__PURE__ */ import_react5.default.createElement("select", { id: "wsp-workspace", value: "", onChange: (e) => {
-    if (e.target.value) {
-      const id = e.target.value;
-      close?.();
-      queueMicrotask(() => ui.set({ target: { id } }));
-    }
-  } }, /* @__PURE__ */ import_react5.default.createElement("option", { value: "" }, t("chooseWorkspace")), list.items.map((w) => /* @__PURE__ */ import_react5.default.createElement("option", { key: w.workspaceId, value: w.workspaceId }, w.title))), (state.error || error) && /* @__PURE__ */ import_react5.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => {
+  const feature = (key) => /* @__PURE__ */ import_react6.default.createElement(SettingsFeature, { key, label: t(key), description: t(key + "Description"), checked: state.features[key], onChange: (next) => safe(() => prefs.toggle(key, next)) });
+  return /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react6.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react6.default.createElement("p", { className: "wsp-settings-description" }, t("settingsDescription")), /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react6.default.createElement("h3", null, t("settingsAppearance")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-card" }, feature("workspaces"), /* @__PURE__ */ import_react6.default.createElement(SettingsFeature, { label: t("profileFeature"), description: t("profileFeatureDescription"), checked: profileState.enabled, disabled: Boolean(profileState.error), onChange: (next) => safe(() => profilePrefs.toggle(next)) }), feature("branding")), profileState.error && /* @__PURE__ */ import_react6.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => profilePrefs.retry()) }, t("retry")))), /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react6.default.createElement("h3", null, t("settingsModelLogos")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-card" }, feature("composer"), feature("sessions"))), /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react6.default.createElement("h3", null, t("settingsChats")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-card" }, feature("unread"))), (state.error || error) && /* @__PURE__ */ import_react6.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react6.default.createElement("details", { className: "wsp-settings-recovery" }, /* @__PURE__ */ import_react6.default.createElement("summary", null, t("recoveryTitle")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-recovery-body" }, /* @__PURE__ */ import_react6.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react6.default.createElement("p", null, t("recoveryScope")), /* @__PURE__ */ import_react6.default.createElement("p", null, t("recoverySource")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react6.default.createElement(import_react6.default.Fragment, null, /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("resetConfirm"))) prefs.resetAll();
-  }) }, t("resetAll"))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react5.default.createElement("button", { onClick: () => safe(() => {
+  }) }, t("resetAll")))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react6.default.createElement(import_react6.default.Fragment, null, /* @__PURE__ */ import_react6.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("unreadResetConfirm"))) return reminders.resetAll();
   }) }, t("resetAll")))));
 }
@@ -6377,12 +6442,12 @@ function apply(ctx) {
   registerSidebarFeatures(ctx, { prefs, reminders, namespace: NS });
   function Overlay(props) {
     const { target, profileTarget } = useStore(ui), profileState = useStore(profilePrefs);
-    if (profileTarget && profileState.enabled) return /* @__PURE__ */ import_react5.default.createElement(ProfileDialog, { prefs: profilePrefs, baseline: profileTarget.baseline, anchor: profileTarget.anchor, t: props.t, onClose: closeProfile });
-    return target ? /* @__PURE__ */ import_react5.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
+    if (profileTarget && profileState.enabled) return /* @__PURE__ */ import_react6.default.createElement(ProfileDialog, { prefs: profilePrefs, baseline: profileTarget.baseline, anchor: profileTarget.anchor, t: props.t, onClose: closeProfile });
+    return target ? /* @__PURE__ */ import_react6.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
   }
   function Composer({ directory, sessionId }) {
-    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react5.useRef)(null);
-    (0, import_react5.useEffect)(() => {
+    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react6.useRef)(null);
+    (0, import_react6.useEffect)(() => {
       currentModels.set((s) => ({ ...s, [sessionId]: state.pending ?? state.current }));
       return () => currentModels.set((s) => {
         const next = { ...s };
@@ -6390,18 +6455,19 @@ function apply(ctx) {
         return next;
       });
     }, [sessionId, state.current, state.pending]);
-    (0, import_react5.useLayoutEffect)(() => {
+    (0, import_react6.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachComposerIcon(marker.current, state.pending ?? state.current);
     }, [state.current, state.pending, settings.features.composer]);
-    (0, import_react5.useLayoutEffect)(() => {
+    (0, import_react6.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachModelMenuIcons(marker.current, directory);
     }, [directory, settings.features.composer]);
-    return /* @__PURE__ */ import_react5.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
+    return /* @__PURE__ */ import_react6.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "workspace-plus-dialog", order: 90, locale: NS }, Overlay));
-  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react5.default.createElement(Settings, { prefs, profilePrefs, reminders, ui, workspaces: ctx.workspaces, t: props.t, close: props.close })));
+  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react6.default.createElement(Settings, { prefs, profilePrefs, reminders, t: props.t })));
+  ctx.slots.inject("settings.section.icon", () => ctx.slots.register({ name: "settings.section.icon", id: "workspace-plus" }, SettingsSectionIcon));
   ctx.slots.inject("conversation.input.right", () => ctx.slots.register({
     name: "conversation.input.right",
     id: "workspace-plus-model",

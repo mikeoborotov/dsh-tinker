@@ -1,1 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="4" y="4" width="56" height="56" rx="14" fill="#4176e6"/><path d="M16 21h14l5 5h13v22H16z" fill="none" stroke="white" stroke-width="3" stroke-linejoin="round"/><path d="M32 32v12m-6-6h12" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title desc" data-framing="centered-60-of-64">
+  <title id="title">Tinker — ключ №13, полукруглый вырез</title>
+  <desc id="desc">Практичные улучшения под себя. Квадратная векторная иконка с прозрачным фоном.</desc>
+  <defs>
+    <linearGradient id="blue" x1="12" y1="4" x2="47" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6BC8FF" />
+      <stop offset=".46" stop-color="#5193F5" />
+      <stop offset="1" stop-color="#4D60D7" />
+    </linearGradient>
+    <linearGradient id="teal" x1="25" y1="5" x2="44" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#42DBA3" />
+      <stop offset=".55" stop-color="#20B6AD" />
+      <stop offset="1" stop-color="#0B969E" />
+    </linearGradient>
+    <linearGradient id="mint" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#71F1CE" />
+      <stop offset="1" stop-color="#22B4AB" />
+    </linearGradient>
+  </defs>
+
+    <defs>
+      <linearGradient id="wrench-colors" x1="0" y1="-32" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#42DBA3" />
+        <stop offset=".34" stop-color="#25BBA9" />
+        <stop offset=".405" stop-color="#22B5AC" />
+        <stop offset=".43" stop-color="#26B2B5" />
+        <stop offset=".455" stop-color="#34A8D2" />
+        <stop offset=".48" stop-color="#449EEA" />
+        <stop offset=".505" stop-color="#5193F5" />
+        <stop offset="1" stop-color="#4D60D7" />
+      </linearGradient>
+      <mask id="wrench-cutouts" maskUnits="userSpaceOnUse" x="-24" y="-52" width="48" height="94">
+        <rect x="-24" y="-52" width="48" height="94" fill="white" />
+        <path d="M-6.8-50H6.8V-19.6A6.8 6.8 0 0 1-6.8-19.6Z" fill="black" />
+        <circle cx="0" cy="29" r="3.1" fill="black" />
+      </mask>
+    </defs>
+    <g transform="translate(32 32) scale(1.172877214) translate(-30.546875000 -33.453125000)"><g transform="translate(32 32) rotate(45)">
+      <g mask="url(#wrench-cutouts)" fill="url(#wrench-colors)">
+        <path d="M-6.5-9H6.5V29A6.5 6.5 0 0 1-6.5 29Z" />
+        <circle cx="0" cy="-16" r="12.8" />
+        <path d="M-3 9V23" fill="none" stroke="#C6E9FF" stroke-width="1.4" stroke-linecap="round" opacity=".35" />
+      </g>
+    </g>
+</g></svg>

@@ -1,0 +1,19 @@
+{
+  "dshTag": "dsh-v0.2.0-rc.2",
+  "dshCommit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+  "license": "LICENSE",
+  "files": [
+    {
+      "path": "packages/client/ui-primitives/src/Switch.tsx",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Switch.tsx",
+      "bytes": 1523,
+      "sha256": "9f0f6db0de338793711b4333e87dcd2b82d06d8ad43aa362eb67efc63573ccb1"
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Switch.module.css",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/Switch.module.css",
+      "bytes": 1147,
+      "sha256": "74229d867e805e0bb52e921bce35049e94b34a3ebb8997aaf2de9e6a1fcd456b"
+    }
+  ]
+}

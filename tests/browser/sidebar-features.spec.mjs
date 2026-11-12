@@ -90,10 +90,10 @@ test('native running/warning/completion/archive status takes precedence; manual 
 });
 
 test('feature disable removes action and green marker but retains saved unread reminder',async({page})=>{
-  await mount(page); await mark(page,'s2'); await page.getByRole('switch',{name:'Mark chats unread'}).click();
+  await mount(page); await mark(page,'s2'); await page.getByRole('switch',{name:'Mark as unread'}).click();
   await expect(reminder(page,'s2')).toHaveCount(0); await expect(page.getByRole('button',{name:'Mark as unread',exact:true})).toHaveCount(0);
   expect(await page.evaluate(()=>window.sidebarFixture.unread().s2)).toBe(true);
-  await page.getByRole('switch',{name:'Mark chats unread'}).click(); await expect(reminder(page,'s2')).toBeVisible();
+  await page.getByRole('switch',{name:'Mark as unread'}).click(); await expect(reminder(page,'s2')).toBeVisible();
 });
 
 test('RU labels, write failure and corrupt-state recovery are visible instead of false success',async({page})=>{
@@ -116,10 +116,10 @@ for (const platform of ['web','windows','darwin']) {
     await fresh.click(); expect(await page.evaluate(()=>window.sidebarFixture.starts())).toBe(1);
     await page.getByRole('button',{name:'Collapse sidebar'}).click(); await expect(page.getByRole('button',{name:'Expand sidebar'})).toBeVisible();
     await page.getByRole('button',{name:'Expand sidebar'}).click(); await expect(page.locator('[data-wsp-brand-row]')).toHaveCSS('height','0px');
-    await page.getByRole('switch',{name:'Hide sidebar branding'}).click();
+    await page.getByRole('switch',{name:'Hide Deepseek Harness logo'}).click();
     await expect(page.locator('[data-wsp-brand-row]')).toHaveCount(0); await expect(page.getByText('DeepSeek Harness',{exact:true})).toBeVisible();
     const before=await fresh.evaluate(el=>el.getBoundingClientRect().top+window.scrollY); expect(before-after).toBeGreaterThan(platform==='windows'?35:45);
-    await page.getByRole('switch',{name:'Hide sidebar branding'}).click(); await expect(page.locator('[data-wsp-brand-row]')).toHaveCSS('height','0px');
+    await page.getByRole('switch',{name:'Hide Deepseek Harness logo'}).click(); await expect(page.locator('[data-wsp-brand-row]')).toHaveCSS('height','0px');
     if(platform==='web') {
       await page.evaluate(()=>window.scrollTo(0,0));
       await expect(fresh).toBeVisible();
