@@ -1,0 +1,15 @@
+{
+  "source": "Installed 0.2.2-rc.1 app.asar program, build c59d10aff167ad7eefead4b3a9082fb57c8fbfe8",
+  "files": [
+    {
+      "entry": "dsh/node_modules/@deepseek-ai/cordis/lib/index.js",
+      "bytes": 64121,
+      "sha256": "627409afa06a265f7253200d3bc4648e88805c39fd3768568eb9b9518a31fe8f"
+    },
+    {
+      "entry": "dsh/node_modules/@deepseek-ai/cosmokit/lib/index.js",
+      "bytes": 17160,
+      "sha256": "ba44c0871656e4c7cac2c3c8a2ff644e0d2eb9d6bda7f6355866d686d513268e"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "tag": "dsh-v0.2.0-rc.2",
+  "commit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+  "files": [
+    {
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/LICENSE",
+      "bytes": 1065,
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "path": "packages/client/shortcuts/src/binding.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/binding.ts",
+      "bytes": 6124,
+      "sha256": "d5a05f440aa2115ab906ff87a44bf01baf93b3078b3e5304355bf6e9546e85c5"
+    },
+    {
+      "path": "packages/client/shortcuts/src/configuration.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/configuration.ts",
+      "bytes": 13604,
+      "sha256": "d43a5b11e20c94b30398ffad0cde8037caa3c913d95b5877e2b4c4539c4ab67c"
+    },
+    {
+      "path": "packages/client/shortcuts/src/persistence.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/persistence.ts",
+      "bytes": 7370,
+      "sha256": "55f463b75739b285a654ae3517d9151571aa5aa1b674427075cc351ecabccb09"
+    },
+    {
+      "path": "packages/client/shortcuts/src/native.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/native.ts",
+      "bytes": 1296,
+      "sha256": "07d8f94e011d377e6eb944a0f5cffb88c9ca5e4038fe06f7a6643855926076ef"
+    },
+    {
+      "path": "packages/client/shortcuts/src/protocol.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/protocol.ts",
+      "bytes": 214,
+      "sha256": "982aaf97945f8f41df647edc01ad7eb4c1aca9a60909c6ba50dc4b1484182877"
+    },
+    {
+      "path": "packages/client/shortcuts/src/client/types.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/client/types.ts",
+      "bytes": 6430,
+      "sha256": "6a1eca21c8e000c5c2b8a0eede33e6984a37269648872a9309da2990dd8759f8"
+    },
+    {
+      "path": "packages/client/shortcuts/src/client/registry.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/client/registry.ts",
+      "bytes": 9632,
+      "sha256": "73c5e66a8e49235537a893cd1273321932ca69afab0a98da6c6641715756b47e"
+    },
+    {
+      "path": "packages/client/shortcuts/src/client/dom.ts",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/shortcuts/src/client/dom.ts",
+      "bytes": 5998,
+      "sha256": "068ecc2f5a2d65a1d67aeaa345490dbfc7b7ca08afe1afd811eba665942c8e6f"
+    }
+  ]
+}

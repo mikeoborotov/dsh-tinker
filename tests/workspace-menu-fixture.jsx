@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Menu } from '@deepseek-ai/dsh-client-ui-primitives';
+import { Menu, Toast } from '@deepseek-ai/dsh-client-ui-primitives';
+import { capturedMenuOverlay } from './native-workspace-rc1/MenuOverlay.js';
+import { capturedSlotOutlet } from './native-workspace-rc1/SlotOutlet.js';
 import { createDOMAdapter } from '../src/adapters.js';
 import { createStore } from '../src/store.js';
 import { nativeWorkspaceMenuLabels } from '../src/appearance-menu.js';
@@ -15,8 +17,23 @@ const labels = {
 };
 const glyph = <svg width="16" height="16" aria-hidden="true"><path d="M2 2h12v12H2z" /></svg>;
 let root, adapter, config, preferences, workspaceList;
-let calls = {}, edits = [], nativeRefs = [], controls = {};
+let calls = {}, edits = [], nativeRefs = [], nativeContent, controls = {};
 const noopSubscribe = () => () => {};
+const slotHost = { subscribe: noopSubscribe, getVersion: () => 0,
+  specOf: slot => ({ inline: slot === 'contextMenu.icon', kind: 'keyed', scope: 'root' }) };
+const NativeSlotOutlet = capturedSlotOutlet({
+  useHost: () => slotHost, useLocaleRevision() {}, useScopeBinding: () => ({ key: undefined }),
+  // Static slot service data, not a model of the outlet's DOM protocol.
+  renderOutletContent: (_host, slot) => slot === 'contextMenu.icon' ? glyph : config.content ? <span>Native contribution</span> : null,
+});
+function renderSlot(slotKey, ownerProps, opts) { return <NativeSlotOutlet {...{ slotKey, ownerProps, opts }} declaredInline={slotKey === 'contextMenu.icon'} />; }
+const AnchorContext = React.createContext(null);
+function AnchoredPinnedMenu(props) {
+  // RC.2's Menu has no current returnFocus prop; bridge only its anchor API.
+  const anchor = React.useContext(AnchorContext);
+  return <Menu {...props} anchor={anchor} />;
+}
+const NativeMenuOverlay = capturedMenuOverlay({ Menu: AnchoredPinnedMenu, Toast });
 
 function WorkspaceRow({ id }) {
   const [open, setOpen] = useState(false), [requested, setRequested] = useState(false);
@@ -34,8 +51,7 @@ function WorkspaceRow({ id }) {
     }, config.delay);
   };
   const copy = labels[config.lang];
-  // Current renderSlot(contextMenu.icon) is an inline SlotOutlet, not a direct SVG.
-  const icon = config.variant === 'legacy' ? glyph : <span data-slot="contextMenu.icon" style={{ display: 'contents' }}>{glyph}</span>;
+  const icon = glyph; // Current icons are resolved by captured menuEntries -> actual SlotOutlet below.
   let items = [
     { id: 'rename', label: copy.rename, icon },
     ...(config.variant === 'legacy' || config.reveal === false ? [] : [{ id: 'reveal', label: copy.reveal[config.finder ? 1 : 0], icon }]),
@@ -44,12 +60,20 @@ function WorkspaceRow({ id }) {
   ];
   if (config.reordered) items = [items.at(-1), ...items.slice(0, -1)];
   if (config.separator) items.splice(items.findIndex(item => item.id === 'delete'), 0, { type: 'separator', id: 'separator' });
+  const anchor = <button id={'workspace-trigger-' + id} type="button" data-context-menu-trigger={config.variant === 'legacy' ? undefined : true} aria-haspopup="menu" aria-expanded={open || requested}
+    aria-label={'Workspace actions ' + id} onClick={toggle}>...</button>;
+  const select = action => { calls[id + ':' + action] = (calls[id + ':' + action] ?? 0) + 1; close(); };
+  const actions = items.filter(item => item.type !== 'separator').map(item => ({ ...item, icon: { key: 'fixture.' + item.id }, separatorBefore: item.id === 'delete' && config.separator }));
+  const rect = document.getElementById('workspace-trigger-' + id)?.getBoundingClientRect();
   return <div role="treeitem" data-row-key={'workspace:' + id} aria-expanded="true">
     <span>{glyph}</span><span>{glyph}</span><span>Workspace {id}</span><span>
-      <Menu open={open} portal autoFocus items={items} onClose={close}
-        onSelect={action => { calls[id + ':' + action] = (calls[id + ':' + action] ?? 0) + 1; close(); }}
-        anchor={<button id={'workspace-trigger-' + id} type="button" data-context-menu-trigger={config.variant === 'legacy' ? undefined : true} aria-haspopup="menu" aria-expanded={open || requested}
-          aria-label={'Workspace actions ' + id} onClick={toggle}>...</button>} />
+      {config.variant === 'legacy' ? <Menu open={open} portal autoFocus items={items} onClose={close} onSelect={select} anchor={anchor} />
+        : <AnchorContext.Provider value={anchor}><NativeMenuOverlay
+          useStore={selector => selector({ target: open ? { kind: 'workspace', value: { workspaceId: id } } : null,
+            point: { x: rect?.left ?? 0, y: rect?.bottom ?? 0 }, items: actions, notice: null, occurrence: 0, closing: false, replacing: false })}
+          useCatalog={selector => selector([])} actions={{ notify() {} }} renderSlot={renderSlot} close={close} select={select}
+          returnFocus={() => document.getElementById('workspace-trigger-' + id)} />
+        </AnchorContext.Provider>}
       <button aria-label={'New session ' + id} onClick={() => { calls.newSession = (calls.newSession ?? 0) + 1; }}>+</button>
     </span>
   </div>;
@@ -84,12 +108,15 @@ window.workspaceMenuFixture = {
   cancel(id = 'w1') { controls[id].close(); },
   latePopup(id = 'w1') { controls[id].open(); }, // Adversarial late native popup after cancellation, counter-only.
   captureNative() {
+    nativeContent = document.querySelector('[role="menu"] [data-slot="contextMenu.content"]');
     nativeRefs = [...document.querySelectorAll('[role="menu"] button[role="menuitem"]')].filter(button => !button.hasAttribute('data-wsp-owned'))
       .map(button => ({ button, wrapper: button.parentElement, label: button.textContent,
         icon: button.firstElementChild, outlet: button.firstElementChild.firstElementChild,
         glyph: button.firstElementChild.querySelector('svg') }));
   },
   nativeIdentity() { return nativeRefs.map(({ button, wrapper, label }) => ({ label, connected: button.isConnected, sameWrapper: button.parentElement === wrapper })); },
+  nativeContentIdentity() { return { same: document.querySelector('[role="menu"] [data-slot="contextMenu.content"]') === nativeContent,
+    connected: nativeContent?.isConnected, children: nativeContent?.childNodes.length }; },
   nativeIconIdentity() { return nativeRefs.map(({ button, label, icon, outlet, glyph }) => ({ label,
     sameIcon: button.firstElementChild === icon, sameOutlet: icon.firstElementChild === outlet,
     sameGlyph: outlet.firstElementChild === glyph, connected: icon.isConnected && outlet.isConnected && glyph.isConnected })); },

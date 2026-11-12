@@ -1,7 +1,17 @@
 import { test, expect } from '@playwright/test';
 import { buildFixture } from '../build-fixture.mjs';
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 let fixture;
 test.beforeAll(async () => { fixture = await buildFixture('tests/workspace-menu-fixture.jsx'); });
+test('captured current native overlay and outlet source hashes are locked', async () => {
+  const base = new URL('../native-workspace-rc1/', import.meta.url);
+  const provenance = JSON.parse(await readFile(new URL('provenance.json', base), 'utf8'));
+  for (const fragment of provenance.capturedFragments) {
+    const source = (await readFile(new URL(fragment.path, base), 'utf8')).replaceAll('\r\n', '\n');
+    expect(createHash('sha256').update(source).digest('hex')).toBe(fragment.fixtureNormalizedSha256);
+  }
+});
 async function mount(page, options = {}) {
   await page.route('**/*', route => route.abort());
   await page.setContent('<!doctype html><html><body></body></html>');
@@ -53,6 +63,8 @@ for (const reveal of [true, false]) test('current inline slot icons preserve nat
   expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIconIdentity())).toEqual((reveal
     ? ['Rename', 'Show in folder', 'Delete workspace'] : ['Rename', 'Delete workspace'])
     .map(label => ({ label, sameIcon: true, sameOutlet: true, sameGlyph: true, connected: true })));
+  expect(await page.evaluate(() => window.workspaceMenuFixture.nativeContentIdentity())).toEqual({ same: true, connected: true, children: 0 });
+  await expect(page.locator('[role="menu"] [data-slot="contextMenu.content"]')).toHaveCount(1);
   await expect(page.locator('[data-wsp-menu] [data-slot]')).toHaveCount(0);
   await expect(page.locator('[data-wsp-menu] > span:first-child > svg')).toHaveCount(1);
 });
@@ -206,16 +218,33 @@ test('legacy native namespace works when optional reveal namespace is unavailabl
 });
 
 test('known async contributions retain native identity; unknown late contributions remove only our row', async ({ page }) => {
-  await mount(page, { variant: 'legacy' });
+  await mount(page, { reveal: false });
   await open(page);
   await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);
   await page.evaluate(() => window.workspaceMenuFixture.captureNative());
-  await page.evaluate(() => window.workspaceMenuFixture.configure({ variant: 'current' }));
+  await page.evaluate(() => window.workspaceMenuFixture.configure({ reveal: true }));
   await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Show in folder', 'Appearance', 'Delete workspace']);
   expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIdentity())).toEqual(['Rename', 'Delete workspace'].map(label => ({ label, connected: true, sameWrapper: true })));
   await page.evaluate(() => window.workspaceMenuFixture.configure({ extra: true }));
   await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Show in folder', 'Other command', 'Delete workspace']);
   expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIdentity())).toEqual(['Rename', 'Delete workspace'].map(label => ({ label, connected: true, sameWrapper: true })));
+});
+
+test('a late native content contribution relinquishes only Appearance, then reopens cleanly', async ({ page }) => {
+  await mount(page);
+  await open(page);
+  await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);
+  await page.evaluate(() => window.workspaceMenuFixture.captureNative());
+  await page.evaluate(() => window.workspaceMenuFixture.configure({ content: true }));
+  await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="contextMenu.content"]')).toHaveText('Native contribution');
+  expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIdentity())).toEqual(['Rename', 'Show in folder', 'Delete workspace']
+    .map(label => ({ label, connected: true, sameWrapper: true })));
+  await page.evaluate(() => window.workspaceMenuFixture.configure({ content: false }));
+  await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await open(page);
+  await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);
 });
 
 // Counter-only negative fixtures: deliberately invalid/unowned menus are not native captures.
@@ -248,7 +277,8 @@ test('two fresh menus are ambiguous and cannot acquire an Appearance after one d
 });
 
 for (const change of ['duplicate-label', 'unknown-label', 'unknown-layout', 'wrong-controls', 'removed-workspace', 'cancelled-trigger',
-  'wrong-slot-name', 'multiple-slot-children', 'non-native-slot-child', 'nested-slot-svg', 'div-slot', 'slot-error', 'interactive-slot', 'interactive-svg', 'wrong-slot-display']) test('rejects ' + change, async ({ page }) => {
+  'wrong-slot-name', 'multiple-slot-children', 'non-native-slot-child', 'nested-slot-svg', 'div-slot', 'slot-error', 'interactive-slot', 'interactive-svg', 'wrong-slot-display',
+  'nonempty-content', 'foreign-content', 'duplicate-content', 'misplaced-content', 'styled-content', 'malformed-content', 'wrong-content-tag', 'text-content']) test('rejects ' + change, async ({ page }) => {
   await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
   await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));
   await mount(page);
@@ -276,6 +306,15 @@ for (const change of ['duplicate-label', 'unknown-label', 'unknown-layout', 'wro
     if (change === 'interactive-slot') outlet.setAttribute('tabindex', '0');
     if (change === 'interactive-svg') outlet.firstElementChild.setAttribute('tabindex', '0');
     if (change === 'wrong-slot-display') outlet.style.display = 'inline';
+    const content = document.querySelector('[role="menu"] [data-slot="contextMenu.content"]');
+    if (change === 'nonempty-content') content.append(document.createElement('span'));
+    if (change === 'foreign-content') content.dataset.slot = 'foreign.content';
+    if (change === 'duplicate-content') content.after(content.cloneNode(true));
+    if (change === 'misplaced-content') content.parentElement.prepend(content);
+    if (change === 'styled-content') content.style.color = 'red';
+    if (change === 'malformed-content') content.setAttribute('role', 'group');
+    if (change === 'wrong-content-tag') { const span = document.createElement('span'); span.dataset.slot = 'contextMenu.content'; span.style.display = 'contents'; content.replaceWith(span); }
+    if (change === 'text-content') content.textContent = 'Unknown contribution';
   }, change);
   await page.clock.runFor(350);
   await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);

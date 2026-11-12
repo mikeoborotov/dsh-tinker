@@ -44,6 +44,14 @@ export function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
   for (const wrapper of viewport.children) {
     if (ownedButton && wrapper === ownedButton.parentElement && wrapper.hasAttribute('data-wsp-menu-wrapper') && wrapper.hasAttribute('data-wsp-owned') && wrapper.children.length === 1) continue;
     if (wrapper.tagName !== 'DIV') return null;
+    if (wrapper.hasAttribute('data-slot')) {
+      // MenuOverlay always renders its keyed content outlet, even without a contribution.
+      // Only its single empty terminal anchor is known; populated/foreign outlets fail closed.
+      if (wrapper !== viewport.lastChild || wrapper.dataset.slot !== 'contextMenu.content'
+        || wrapper.style.display !== 'contents' || wrapper.style.length !== 1
+        || wrapper.attributes.length !== 2 || wrapper.childNodes.length !== 0) return null;
+      continue;
+    }
     if (wrapper.getAttribute('role') === 'separator' && !wrapper.children.length) continue;
     const children = [...wrapper.children];
     const button = children.at(-1);

@@ -307,6 +307,10 @@ function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
   for (const wrapper of viewport.children) {
     if (ownedButton && wrapper === ownedButton.parentElement && wrapper.hasAttribute("data-wsp-menu-wrapper") && wrapper.hasAttribute("data-wsp-owned") && wrapper.children.length === 1) continue;
     if (wrapper.tagName !== "DIV") return null;
+    if (wrapper.hasAttribute("data-slot")) {
+      if (wrapper !== viewport.lastChild || wrapper.dataset.slot !== "contextMenu.content" || wrapper.style.display !== "contents" || wrapper.style.length !== 1 || wrapper.attributes.length !== 2 || wrapper.childNodes.length !== 0) return null;
+      continue;
+    }
     if (wrapper.getAttribute("role") === "separator" && !wrapper.children.length) continue;
     const children = [...wrapper.children];
     const button = children.at(-1);
@@ -5340,6 +5344,87 @@ function attachSidebarBranding(marker) {
   };
 }
 
+// src/unread-shortcuts.js
+var UNREAD_COMMAND_ID = "workspace-plus.session.mark-unread";
+var binding = Object.freeze({ code: "KeyU", modifiers: Object.freeze(["control", "alt"]) });
+var UNREAD_DEFAULT_PROFILES = Object.freeze({
+  "desktop:windows": binding,
+  "desktop:linux": binding,
+  "desktop:macos": null,
+  "web:windows": binding,
+  "web:linux": null,
+  "web:macos": null
+});
+function createUnreadShortcut(ctx, { prefs, reminders, t }) {
+  return {
+    id: UNREAD_COMMAND_ID,
+    label: () => t("markUnread"),
+    aliases: ["mark session unread"],
+    defaults: Object.fromEntries(Object.entries(UNREAD_DEFAULT_PROFILES).filter(([, value]) => value !== null)),
+    regions: ["page", "editable"],
+    modals: ["sidebar"],
+    resolve(context) {
+      const settings = prefs.getSnapshot(), state = reminders.getSnapshot();
+      const current = Object.values(ctx.sessions.list.getSnapshot().byId ?? {}).find((row) => (row.retainedBy?.mainView ?? 0) > 0);
+      if (!settings.features.unread || settings.error || state.error || ctx.shortcuts.config.getSnapshot().status !== "ready" || !current || current.blank || typeof current.id !== "string" || !current.id || !["page", "editable"].includes(context.region) || context.modal !== null && context.modal !== "sidebar" || ctx.layout.panelInfo.getSnapshot().activePanelId !== null) return { status: "blocked", reason: "unavailable" };
+      const sessionId = current.id;
+      return { status: "handled", run() {
+        try {
+          void Promise.resolve(reminders.markUnread(sessionId)).catch((reason) => reminders.reportError(reason));
+        } catch (reason) {
+          reminders.reportError(reason);
+        }
+      } };
+    }
+  };
+}
+function registerUnreadShortcuts(ctx, options) {
+  const hint = createStore(void 0);
+  if (typeof ctx.inject !== "function") return hint;
+  ctx.inject(["shortcuts", "layout"], function unreadShortcuts(scope) {
+    scope.effect(() => {
+      const api = scope.shortcuts;
+      let remove;
+      const publish = () => {
+        const row = api.catalog.getSnapshot().find((entry) => entry.id === UNREAD_COMMAND_ID);
+        const active = remove && api.config.getSnapshot().status === "ready" && row?.binding && row.issue === null && row.conflicts.length === 0 && row.keys.length > 0;
+        hint.set(active ? row : void 0);
+      };
+      const sync = () => {
+        if (options.prefs.getSnapshot().features.unread) {
+          if (!remove) {
+            try {
+              remove = api.register(createUnreadShortcut(scope, options));
+            } catch (reason) {
+              hint.set(void 0);
+              console.warn("Unread shortcut registration unavailable:", reason);
+              return;
+            }
+          }
+        } else {
+          const off = remove;
+          remove = void 0;
+          off?.();
+        }
+        publish();
+      };
+      const offCatalog = api.catalog.subscribe(publish), offConfig = api.config.subscribe(publish);
+      const offPrefs = options.prefs.subscribe(sync);
+      sync();
+      return () => {
+        offPrefs();
+        offCatalog();
+        offConfig();
+        const off = remove;
+        remove = void 0;
+        off?.();
+        hint.set(void 0);
+      };
+    }, "workspace-plus: unread shortcut");
+  });
+  return hint;
+}
+
 // src/session-actions.jsx
 var SESSION_ACTION_CSS = `
 .wsp-session-action-root{display:contents}
@@ -5354,11 +5439,12 @@ function UnreadIcon({ size = 16 }) {
   return /* @__PURE__ */ import_react3.default.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
 }
 function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
+  const unreadShortcut = registerUnreadShortcuts(ctx, { prefs, reminders, t: (key) => ctx.locale.bind(namespace)(key) });
   function MenuItem({ sessionId, useMenuOpenState, t }) {
-    const settings = useStore(prefs), state = useStore(reminders);
+    const settings = useStore(prefs), state = useStore(reminders), shortcut = useStore(unreadShortcut);
     const [, setOpen] = useMenuOpenState();
     if (!settings.features.unread) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("div", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.MenuItemButton, { icon: /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null), onSelect: () => {
+    return /* @__PURE__ */ import_react3.default.createElement("div", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.MenuItemButton, { icon: /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null), shortcut, onSelect: () => {
       setOpen(false);
       void reminders.markUnread(sessionId).catch((reason) => reminders.reportError(reason));
     } }, t("markUnread")), state.error && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, state.error));

@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { MenuItemButton, StateDot, Tooltip, Toast } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useStore } from './use-store.js';
 import { attachSidebarBranding } from './sidebar-branding.js';
+import { registerUnreadShortcuts } from './unread-shortcuts.js';
 
 export const SESSION_ACTION_CSS = `
 .wsp-session-action-root{display:contents}
@@ -21,12 +22,13 @@ function UnreadIcon({ size = 16 }) {
 }
 
 export function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
+  const unreadShortcut = registerUnreadShortcuts(ctx, { prefs, reminders, t: key => ctx.locale.bind(namespace)(key) });
   function MenuItem({ sessionId, useMenuOpenState, t }) {
-    const settings = useStore(prefs), state = useStore(reminders);
+    const settings = useStore(prefs), state = useStore(reminders), shortcut = useStore(unreadShortcut);
     const [, setOpen] = useMenuOpenState();
     if (!settings.features.unread) return null;
     return <div data-wsp-owned="">
-      <MenuItemButton icon={<UnreadIcon />} onSelect={() => {
+      <MenuItemButton icon={<UnreadIcon />} shortcut={shortcut} onSelect={() => {
         // Native Menu returns keyboard focus only for a synchronous selection close.
         // Green state still publishes solely after the durable locked write; failure
         // uses a native Toast, not a success indicator or an unmounted menu message.
