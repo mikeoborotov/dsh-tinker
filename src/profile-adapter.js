@@ -1,3 +1,5 @@
+import { APPEARANCE_BRUSH_SVG } from './appearance-icon.js';
+
 // Compatibility adapter, not an account extension API. Guarded against the
 // AccountMenu markup shipped in DSH 0.2.2-rc.1 (MIT):
 // https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.2.2-rc.1/packages/client/ui-settings-account
@@ -27,7 +29,6 @@ const COPY = [
 const CLASSES = { trigger: '_5Qcc8a_trigger', anchor: '_5Qcc8a_anchor', root: '_5Qcc8a_root', avatar: '_5Qcc8a_avatar', label: '_5Qcc8a_label' };
 const SLOT = '[data-slot="settings.launcher"]';
 let nextOwner = 0;
-const BRUSH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m14 5 5 5M4 20l5-1 12-12a2.1 2.1 0 0 0-3-3L6 16l-2 4Z"/></svg>';
 
 /**
  * Decorate only the known native signed-in launcher and its own popup.
@@ -170,7 +171,7 @@ export function createProfileAdapter({ document: doc, preferences, translate, on
     const [settings, , auth] = shape.buttons;
     const wrapper = mark(doc.createElement('div')); wrapper.className = settings.parentElement.className; wrapper.setAttribute('data-wsp-profile-menu', '');
     const button = mark(doc.createElement('button')); button.type = 'button'; button.className = settings.className; button.setAttribute('role', 'menuitem'); button.disabled = auth.disabled;
-    const icon = mark(doc.createElement('span')); icon.className = settings.children[0].className; icon.setAttribute('data-wsp-profile-icon', ''); icon.setAttribute('aria-hidden', 'true'); icon.innerHTML = BRUSH;
+    const icon = mark(doc.createElement('span')); icon.className = settings.children[0].className; icon.setAttribute('data-wsp-profile-icon', ''); icon.setAttribute('aria-hidden', 'true'); icon.innerHTML = APPEARANCE_BRUSH_SVG;
     const label = mark(doc.createElement('span')); label.className = settings.children[1].className; label.textContent = translate('profileCustomize');
     button.append(icon, label); wrapper.append(button); auth.parentElement.before(wrapper);
     const record = { menu, wrapper, button, label, trigger: target.trigger };

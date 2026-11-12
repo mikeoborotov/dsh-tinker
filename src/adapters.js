@@ -91,7 +91,7 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
         record.wrapper.remove(); ownedMenus.delete(menu);
       } else {
         // Native async/reordered known contributions keep their nodes and their order.
-        if (record.button.parentElement.nextElementSibling !== parts.remove.wrapper) parts.remove.wrapper.before(record.button.parentElement);
+        if (record.button.parentElement.nextElementSibling !== parts.insertionAnchor) parts.insertionAnchor.before(record.button.parentElement);
         const caption = record.button.lastElementChild;
         if (caption.textContent !== t('appearance')) caption.textContent = t('appearance');
       }

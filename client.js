@@ -270,8 +270,10 @@ function findComposerTarget(scopes) {
   return null;
 }
 
+// src/appearance-icon.js
+var APPEARANCE_BRUSH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"/></svg>';
+
 // src/appearance-menu.js
-var BRUSH = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"/></svg>';
 var ENGLISH_LABELS = { rename: "Rename", remove: "Delete workspace", reveal: ["Show in folder", "Show in Finder"] };
 function nativeWorkspaceMenuLabels(locale) {
   const native = locale.bind("workspace");
@@ -328,14 +330,17 @@ function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
   if (rename.length !== 1 || remove.length !== 1) return null;
   const others = entries.filter((entry) => entry !== rename[0] && entry !== remove[0]);
   if (others.some((entry) => !(labels.reveal ?? []).includes(entry.caption))) return null;
-  return { rename: rename[0], remove: remove[0] };
+  let insertionAnchor = remove[0].wrapper;
+  let preceding = insertionAnchor.previousElementSibling;
+  if (ownedButton && preceding === ownedButton.parentElement) preceding = preceding.previousElementSibling;
+  if (preceding?.getAttribute("role") === "separator") insertionAnchor = preceding;
+  return { rename: rename[0], remove: remove[0], insertionAnchor };
 }
 function insertAppearanceItem(menu, id, label, onClick, labels) {
   const parts = workspaceMenuParts(menu, labels);
   if (!parts) return null;
   const doc = menu.ownerDocument;
   const { button: rename, icon: iconTemplate, text: labelTemplate } = parts.rename;
-  const remove = parts.remove.button;
   const wrapper = doc.createElement("div");
   wrapper.className = rename.parentElement.className;
   wrapper.setAttribute("data-wsp-owned", "");
@@ -349,14 +354,14 @@ function insertAppearanceItem(menu, id, label, onClick, labels) {
   const icon = doc.createElement("span");
   icon.className = iconTemplate.className;
   icon.setAttribute("aria-hidden", "true");
-  icon.innerHTML = BRUSH;
+  icon.innerHTML = APPEARANCE_BRUSH_SVG;
   const text = doc.createElement("span");
   text.className = labelTemplate.className;
   text.textContent = label;
   button.append(icon, text);
   button.addEventListener("click", onClick);
   wrapper.append(button);
-  remove.parentElement.before(wrapper);
+  parts.insertionAnchor.before(wrapper);
   return button;
 }
 
@@ -494,7 +499,7 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
         record2.wrapper.remove();
         ownedMenus.delete(menu2);
       } else {
-        if (record2.button.parentElement.nextElementSibling !== parts.remove.wrapper) parts.remove.wrapper.before(record2.button.parentElement);
+        if (record2.button.parentElement.nextElementSibling !== parts.insertionAnchor) parts.insertionAnchor.before(record2.button.parentElement);
         const caption = record2.button.lastElementChild;
         if (caption.textContent !== t("appearance")) caption.textContent = t("appearance");
       }
@@ -5939,7 +5944,6 @@ var COPY = [
 var CLASSES = { trigger: "_5Qcc8a_trigger", anchor: "_5Qcc8a_anchor", root: "_5Qcc8a_root", avatar: "_5Qcc8a_avatar", label: "_5Qcc8a_label" };
 var SLOT2 = '[data-slot="settings.launcher"]';
 var nextOwner = 0;
-var BRUSH2 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m14 5 5 5M4 20l5-1 12-12a2.1 2.1 0 0 0-3-3L6 16l-2 4Z"/></svg>';
 function createProfileAdapter({ document: doc, preferences, translate, onEdit, onUnavailable = () => {
 } }) {
   const win = doc.defaultView, owner = String(++nextOwner), ownedSelector = `[data-wsp-profile-owned="${owner}"]`;
@@ -6127,7 +6131,7 @@ function createProfileAdapter({ document: doc, preferences, translate, onEdit, o
     icon.className = settings.children[0].className;
     icon.setAttribute("data-wsp-profile-icon", "");
     icon.setAttribute("aria-hidden", "true");
-    icon.innerHTML = BRUSH2;
+    icon.innerHTML = APPEARANCE_BRUSH_SVG;
     const label = mark(doc.createElement("span"));
     label.className = settings.children[1].className;
     label.textContent = translate("profileCustomize");
