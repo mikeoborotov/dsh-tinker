@@ -1,13 +1,16 @@
 import { fillAppearance, markSVG, selectionOf, vendorName } from './icons.js';
 import { composerBoundary, findComposerTarget } from './composer-target.js';
-import { insertAppearanceItem } from './appearance-menu.js';
+import { insertAppearanceItem, workspaceMenuParts } from './appearance-menu.js';
 
 const OWNED = 'data-wsp-owned';
 const rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
-export function createDOMAdapter({ document: doc, preferences, sessions, workspaces, currentModels, onEdit, translate: t }) {
+// RC.1 prepares for up to 1000ms (20ms prepare overlaps resolution), then enters in 40ms.
+// Keep a bounded 100ms render/frame grace only for its explicit trigger lifecycle.
+const NATIVE_WORKSPACE_MENU_WAIT_MS = 1100;
+export function createDOMAdapter({ document: doc, preferences, sessions, workspaces, currentModels, onEdit, translate: t, workspaceMenuLabels }) {
   const win = doc.defaultView;
   let disposed = false, frame = 0, pendingMenu = null, menuTimer = 0;
-  const restorations = new Map(), sessionIcons = new Map(), requested = new Set(), queue = [];
+  const restorations = new Map(), sessionIcons = new Map(), ownedMenus = new Map(), requested = new Set(), queue = [];
   let inflight = 0;
   const stats = { workspaceRows: 0, sessionRows: 0, incompatibleRows: 0 };
   function schedule() {
@@ -70,23 +73,54 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
     if (rect.height && rect.bottom > 0 && rect.top < win.innerHeight) ensureProjection(id);
     stats.sessionRows++;
   }
+  function cancelMenu() { pendingMenu = null; win.clearTimeout(menuTimer); }
+  function knownWorkspace(anchor, id) {
+    const row = anchor.closest('[data-row-key]');
+    return anchor.isConnected && row?.getAttribute('data-row-key') === 'workspace:' + id && row.querySelector('button') === anchor
+      && workspaces.list.getSnapshot()?.items?.some(workspace => workspace.workspaceId === id);
+  }
+  function menuLabels() {
+    try { return workspaceMenuLabels?.(); } catch { return null; }
+  }
   function scanMenu(state) {
-    if (!pendingMenu || !state.features.workspaces) return;
-    const { anchor, id, existing } = pendingMenu;
-    if (!anchor.isConnected) { pendingMenu = null; return; }
-    const candidates = [...doc.querySelectorAll('[role="menu"]')].filter(menu => !existing.has(menu));
-    const menu = candidates.find(el => {
-      const buttons = el.querySelectorAll('button[role="menuitem"]');
-      return buttons.length === 2 && el.getBoundingClientRect().height > 0;
-    });
-    if (!menu || menu.querySelector('[data-wsp-menu]')) return;
-    insertAppearanceItem(menu, id, t('appearance'), e => {
-      e.stopPropagation();
-      // Let the native owner close its menu and restore focus first.
-      if (anchor.isConnected) anchor.click();
-      pendingMenu = null;
-      win.queueMicrotask(() => { if (!disposed) onEdit(id, anchor); });
-    });
+    if (!pendingMenu && !ownedMenus.size) return;
+    const labels = menuLabels();
+    for (const [menu, record] of ownedMenus) {
+      const parts = menu.isConnected && record.button.isConnected && workspaceMenuParts(menu, labels, record.button);
+      if (!state.features.workspaces || !parts || !knownWorkspace(record.anchor, record.id) || record.anchor.getAttribute('aria-expanded') === 'false') {
+        record.wrapper.remove(); ownedMenus.delete(menu);
+      } else {
+        // Native async/reordered known contributions keep their nodes and their order.
+        if (record.button.parentElement.nextElementSibling !== parts.remove.wrapper) parts.remove.wrapper.before(record.button.parentElement);
+        const caption = record.button.lastElementChild;
+        if (caption.textContent !== t('appearance')) caption.textContent = t('appearance');
+      }
+    }
+    if (!pendingMenu) return;
+    const { anchor, id, existing, nativeLifecycle } = pendingMenu;
+    if (!state.features.workspaces || !knownWorkspace(anchor, id) || anchor.getAttribute('aria-expanded') === 'false'
+      || (nativeLifecycle && !anchor.matches('[data-context-menu-trigger][aria-haspopup="menu"][aria-expanded="true"]'))) { cancelMenu(); return; }
+    const controlledId = anchor.getAttribute('aria-controls');
+    const candidates = [...doc.querySelectorAll('[role="menu"]')].filter(menu => !existing.has(menu)
+      && (!controlledId || menu.id === controlledId) && menu.getBoundingClientRect().height > 0 && win.getComputedStyle(menu).visibility !== 'hidden');
+    // A click is not ownership of whichever compatible menu happens to appear first.
+    if (candidates.length > 1) { cancelMenu(); return; }
+    const menu = candidates[0];
+    if (!menu || !workspaceMenuParts(menu, labels)) return;
+    const button = insertAppearanceItem(menu, id, t('appearance'), event => {
+      event.stopPropagation();
+      if (disposed || !menu.isConnected || !button.isConnected || !preferences.getSnapshot().features.workspaces || !knownWorkspace(anchor, id)
+        || anchor.getAttribute('aria-expanded') === 'false' || ownedMenus.get(menu)?.button !== button || !workspaceMenuParts(menu, menuLabels(), button)) return;
+      cancelMenu();
+      // The native owner closes its menu; restore the trigger before mounting our dialog.
+      anchor.click();
+      win.queueMicrotask(() => {
+        if (!disposed && preferences.getSnapshot().features.workspaces && knownWorkspace(anchor, id)) {
+          anchor.focus({ preventScroll: true }); onEdit(id, anchor);
+        }
+      });
+    }, labels);
+    if (button) { ownedMenus.set(menu, { button, wrapper: button.parentElement, anchor, id }); cancelMenu(); }
   }
   function scan() {
     const state = preferences.getSnapshot();
@@ -96,30 +130,37 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
     for (const row of doc.querySelectorAll(rows)) {
       if (row.getAttribute('data-row-key').startsWith('workspace:')) scanWorkspace(row, state); else scanSession(row, state);
     }
-    if (!state.features.workspaces) { for (const wrapper of doc.querySelectorAll('[data-wsp-menu-wrapper]')) wrapper.remove(); }
     scanMenu(state);
   }
   function onClick(event) {
     const button = event.target instanceof win.Element ? event.target.closest('button') : null;
     const row = button?.closest('[data-row-key^="workspace:"]');
-    if (!row || row.querySelector('button') !== button || !preferences.getSnapshot().features.workspaces) return;
+    if (!row || row.querySelector('button') !== button || !preferences.getSnapshot().features.workspaces || button.getAttribute('aria-expanded') === 'true') { cancelMenu(); return; }
     const id = row.getAttribute('data-row-key').slice('workspace:'.length);
-    if (!workspaces.list.getSnapshot()?.items?.some(w => w.workspaceId === id)) return;
-    pendingMenu = { id, anchor: button, existing: new Set(doc.querySelectorAll('[role="menu"]')) };
+    if (!knownWorkspace(button, id)) { cancelMenu(); return; }
+    const nativeLifecycle = button.matches('[data-context-menu-trigger][aria-haspopup="menu"][aria-expanded]');
+    const owner = pendingMenu = { id, anchor: button, existing: new Set(doc.querySelectorAll('[role="menu"]')), nativeLifecycle };
     win.clearTimeout(menuTimer);
-    menuTimer = win.setTimeout(() => { scanMenu(preferences.getSnapshot()); pendingMenu = null; }, 300);
+    menuTimer = win.setTimeout(() => {
+      if (pendingMenu !== owner) return;
+      scanMenu(preferences.getSnapshot());
+      if (pendingMenu === owner) pendingMenu = null;
+    }, nativeLifecycle ? NATIVE_WORKSPACE_MENU_WAIT_MS : 300);
     schedule();
   }
+  function onKeyDown(event) { if (event.key === 'Escape') cancelMenu(); }
   const observer = new win.MutationObserver(records => {
     if (records.some(r => {
       if (r.target instanceof win.Element && r.target.closest('[' + OWNED + ']')) return false;
+      if (r.type === 'attributes' && r.attributeName === 'aria-expanded' && r.target.tagName !== 'BUTTON') return false;
       const changed = [...r.addedNodes, ...r.removedNodes];
       return r.type === 'attributes' || changed.some(n => !(n instanceof win.Element && n.hasAttribute(OWNED)));
     })) schedule();
   });
-  observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-row-key'] });
+  observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-row-key', 'aria-expanded'] });
   const unsub = [preferences.subscribe(schedule), sessions.list.subscribe(schedule), workspaces.list.subscribe(schedule), ...(currentModels ? [currentModels.subscribe(schedule)] : [])];
   doc.addEventListener('click', onClick, true);
+  doc.addEventListener('keydown', onKeyDown, true);
   doc.addEventListener('scroll', schedule, true);
   scan();
   return {
@@ -127,10 +168,10 @@ export function createDOMAdapter({ document: doc, preferences, sessions, workspa
     reconnect() { requested.clear(); schedule(); },
     dispose() {
       disposed = true; observer.disconnect(); win.cancelAnimationFrame(frame); win.clearTimeout(menuTimer);
-      for (const fn of unsub) fn(); doc.removeEventListener('click', onClick, true); doc.removeEventListener('scroll', schedule, true);
+      for (const fn of unsub) fn(); doc.removeEventListener('click', onClick, true); doc.removeEventListener('keydown', onKeyDown, true); doc.removeEventListener('scroll', schedule, true);
       for (const record of restorations.values()) restore(record); restorations.clear();
       for (const icon of sessionIcons.values()) icon.remove(); sessionIcons.clear();
-      for (const wrapper of doc.querySelectorAll('[data-wsp-menu-wrapper]')) wrapper.remove();
+      for (const record of ownedMenus.values()) record.wrapper.remove(); ownedMenus.clear();
       queue.length = 0; pendingMenu = null;
     },
   };

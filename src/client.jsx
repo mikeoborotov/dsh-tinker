@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPreferences, createStore } from './store.js';
 import { ICON_IDS } from './icons.js';
 import { createDOMAdapter, attachComposerIcon } from './adapters.js';
+import { nativeWorkspaceMenuLabels } from './appearance-menu.js';
 import { attachModelMenuIcons } from './model-menu.js';
 import { createWorkspacePickerAdapter } from './workspace-picker.js';
 import { CSS } from './styles.js';
@@ -57,7 +58,7 @@ export function apply(ctx) {
   const t = locale.bind(NS);
   ctx.effect(() => { const style = document.createElement('style'); style.dataset.wspOwned = ''; style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS + PROFILE_ADAPTER_CSS; document.head.append(style); return () => style.remove(); });
   ctx.effect(() => {
-    const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t });
+    const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t, workspaceMenuLabels: () => nativeWorkspaceMenuLabels(locale) });
     const unsubscribe = ctx.on('connection/reset', () => adapter.reconnect());
     return () => { unsubscribe(); adapter.dispose(); };
   });

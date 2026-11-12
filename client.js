@@ -272,15 +272,66 @@ function findComposerTarget(scopes) {
 
 // src/appearance-menu.js
 var BRUSH = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"/></svg>';
-function insertAppearanceItem(menu, id, label, onClick) {
+var ENGLISH_LABELS = { rename: "Rename", remove: "Delete workspace", reveal: ["Show in folder", "Show in Finder"] };
+function nativeWorkspaceMenuLabels(locale) {
+  const native = locale.bind("workspace");
+  let reveal = [];
+  try {
+    const open = locale.bind("open-in-app");
+    reveal = [open("menu.reveal"), open("menu.finder")];
+  } catch {
+  }
+  const rename = native("rename"), remove = native("delete.workspace");
+  return rename === "rename" || remove === "delete.workspace" ? void 0 : { rename, remove, reveal };
+}
+function knownMenuIcon(icon) {
+  if (icon?.tagName !== "SPAN" || icon.children.length !== 1) return false;
+  let glyph = icon.firstElementChild;
+  if (glyph.tagName === "SPAN") {
+    const outlet = glyph;
+    if (outlet.getAttribute("data-slot") !== "contextMenu.icon" || outlet.style.display !== "contents" || outlet.matches("[data-slot-error], [tabindex], [contenteditable], [role]") || outlet.children.length !== 1) return false;
+    glyph = outlet.firstElementChild;
+    if ([...outlet.childNodes].some((node) => node !== glyph && (node.nodeType !== 3 || node.textContent.trim()))) return false;
+  }
+  const unsafe = "a, button, input, select, textarea, foreignObject, script, iframe, [contenteditable], [tabindex], [data-slot-error]";
+  return glyph.tagName.toLowerCase() === "svg" && glyph.namespaceURI === "http://www.w3.org/2000/svg" && !glyph.matches(unsafe) && !glyph.querySelector(unsafe);
+}
+function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
+  const owned = [...menu.querySelectorAll("[data-wsp-menu]")];
+  if (menu.getAttribute("role") !== "menu" || menu.querySelector('[role="menu"]') || (ownedButton ? owned.length !== 1 || owned[0] !== ownedButton : owned.length !== 0)) return null;
+  const viewports = [...menu.children].filter((el) => el.tagName === "DIV" && el.getAttribute("role") === "presentation");
+  if (viewports.length !== 1) return null;
+  const viewport = viewports[0];
+  if ([...menu.children].some((el) => el !== viewport && !(el.tagName === "DIV" && el.getAttribute("aria-hidden") === "true" && !el.children.length))) return null;
+  const entries = [];
+  for (const wrapper of viewport.children) {
+    if (ownedButton && wrapper === ownedButton.parentElement && wrapper.hasAttribute("data-wsp-menu-wrapper") && wrapper.hasAttribute("data-wsp-owned") && wrapper.children.length === 1) continue;
+    if (wrapper.tagName !== "DIV") return null;
+    if (wrapper.getAttribute("role") === "separator" && !wrapper.children.length) continue;
+    const children = [...wrapper.children];
+    const button = children.at(-1);
+    if (!button || button.tagName !== "BUTTON" || button.getAttribute("role") !== "menuitem" || button.hasAttribute("aria-haspopup") || button.hasAttribute("data-wsp-owned")) return null;
+    if (children.length !== 1 && !(children.length === 2 && children[0].getAttribute("role") === "separator" && !children[0].children.length)) return null;
+    const [icon, text, shortcut] = button.children;
+    if (button.children.length < 2 || button.children.length > 3 || !knownMenuIcon(icon) || text.tagName !== "SPAN" || text.children.length) return null;
+    if (shortcut && (shortcut.tagName !== "SPAN" || shortcut.getAttribute("aria-hidden") !== "true" || shortcut.querySelector("button, a, input"))) return null;
+    entries.push({ button, wrapper, icon, text, caption: text.textContent.trim() });
+  }
+  if (entries.length !== 2 && entries.length !== 3) return null;
+  if (!labels?.rename || !labels?.remove || labels.rename === labels.remove) return null;
+  const rename = entries.filter((entry) => entry.caption === labels.rename);
+  const remove = entries.filter((entry) => entry.caption === labels.remove);
+  if (rename.length !== 1 || remove.length !== 1) return null;
+  const others = entries.filter((entry) => entry !== rename[0] && entry !== remove[0]);
+  if (others.some((entry) => !(labels.reveal ?? []).includes(entry.caption))) return null;
+  return { rename: rename[0], remove: remove[0] };
+}
+function insertAppearanceItem(menu, id, label, onClick, labels) {
+  const parts = workspaceMenuParts(menu, labels);
+  if (!parts) return null;
   const doc = menu.ownerDocument;
-  const buttons = [...menu.querySelectorAll('button[role="menuitem"]')].filter((b) => b.closest('[role="menu"]') === menu);
-  if (buttons.length !== 2) return null;
-  const [rename, remove] = buttons;
-  const iconTemplate = rename.querySelector(":scope > span:has(> svg)");
-  const labelTemplate = [...rename.children].find((el) => el.tagName === "SPAN" && el !== iconTemplate);
-  const wrapped = rename.parentElement !== menu && rename.parentElement?.parentElement === remove.parentElement?.parentElement;
-  if (!iconTemplate || !labelTemplate || !wrapped || rename.parentElement === remove.parentElement) return null;
+  const { button: rename, icon: iconTemplate, text: labelTemplate } = parts.rename;
+  const remove = parts.remove.button;
   const wrapper = doc.createElement("div");
   wrapper.className = rename.parentElement.className;
   wrapper.setAttribute("data-wsp-owned", "");
@@ -308,10 +359,11 @@ function insertAppearanceItem(menu, id, label, onClick) {
 // src/adapters.js
 var OWNED = "data-wsp-owned";
 var rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
-function createDOMAdapter({ document: doc, preferences, sessions, workspaces, currentModels, onEdit, translate: t }) {
+var NATIVE_WORKSPACE_MENU_WAIT_MS = 1100;
+function createDOMAdapter({ document: doc, preferences, sessions, workspaces, currentModels, onEdit, translate: t, workspaceMenuLabels }) {
   const win = doc.defaultView;
   let disposed = false, frame = 0, pendingMenu = null, menuTimer = 0;
-  const restorations = /* @__PURE__ */ new Map(), sessionIcons = /* @__PURE__ */ new Map(), requested = /* @__PURE__ */ new Set(), queue = [];
+  const restorations = /* @__PURE__ */ new Map(), sessionIcons = /* @__PURE__ */ new Map(), ownedMenus = /* @__PURE__ */ new Map(), requested = /* @__PURE__ */ new Set(), queue = [];
   let inflight = 0;
   const stats = { workspaceRows: 0, sessionRows: 0, incompatibleRows: 0 };
   function schedule() {
@@ -414,27 +466,65 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
     if (rect.height && rect.bottom > 0 && rect.top < win.innerHeight) ensureProjection(id);
     stats.sessionRows++;
   }
+  function cancelMenu() {
+    pendingMenu = null;
+    win.clearTimeout(menuTimer);
+  }
+  function knownWorkspace(anchor, id) {
+    const row = anchor.closest("[data-row-key]");
+    return anchor.isConnected && row?.getAttribute("data-row-key") === "workspace:" + id && row.querySelector("button") === anchor && workspaces.list.getSnapshot()?.items?.some((workspace) => workspace.workspaceId === id);
+  }
+  function menuLabels() {
+    try {
+      return workspaceMenuLabels?.();
+    } catch {
+      return null;
+    }
+  }
   function scanMenu(state) {
-    if (!pendingMenu || !state.features.workspaces) return;
-    const { anchor, id, existing } = pendingMenu;
-    if (!anchor.isConnected) {
-      pendingMenu = null;
+    if (!pendingMenu && !ownedMenus.size) return;
+    const labels = menuLabels();
+    for (const [menu2, record2] of ownedMenus) {
+      const parts = menu2.isConnected && record2.button.isConnected && workspaceMenuParts(menu2, labels, record2.button);
+      if (!state.features.workspaces || !parts || !knownWorkspace(record2.anchor, record2.id) || record2.anchor.getAttribute("aria-expanded") === "false") {
+        record2.wrapper.remove();
+        ownedMenus.delete(menu2);
+      } else {
+        if (record2.button.parentElement.nextElementSibling !== parts.remove.wrapper) parts.remove.wrapper.before(record2.button.parentElement);
+        const caption = record2.button.lastElementChild;
+        if (caption.textContent !== t("appearance")) caption.textContent = t("appearance");
+      }
+    }
+    if (!pendingMenu) return;
+    const { anchor, id, existing, nativeLifecycle } = pendingMenu;
+    if (!state.features.workspaces || !knownWorkspace(anchor, id) || anchor.getAttribute("aria-expanded") === "false" || nativeLifecycle && !anchor.matches('[data-context-menu-trigger][aria-haspopup="menu"][aria-expanded="true"]')) {
+      cancelMenu();
       return;
     }
-    const candidates = [...doc.querySelectorAll('[role="menu"]')].filter((menu2) => !existing.has(menu2));
-    const menu = candidates.find((el) => {
-      const buttons = el.querySelectorAll('button[role="menuitem"]');
-      return buttons.length === 2 && el.getBoundingClientRect().height > 0;
-    });
-    if (!menu || menu.querySelector("[data-wsp-menu]")) return;
-    insertAppearanceItem(menu, id, t("appearance"), (e) => {
-      e.stopPropagation();
-      if (anchor.isConnected) anchor.click();
-      pendingMenu = null;
+    const controlledId = anchor.getAttribute("aria-controls");
+    const candidates = [...doc.querySelectorAll('[role="menu"]')].filter((menu2) => !existing.has(menu2) && (!controlledId || menu2.id === controlledId) && menu2.getBoundingClientRect().height > 0 && win.getComputedStyle(menu2).visibility !== "hidden");
+    if (candidates.length > 1) {
+      cancelMenu();
+      return;
+    }
+    const menu = candidates[0];
+    if (!menu || !workspaceMenuParts(menu, labels)) return;
+    const button = insertAppearanceItem(menu, id, t("appearance"), (event) => {
+      event.stopPropagation();
+      if (disposed || !menu.isConnected || !button.isConnected || !preferences.getSnapshot().features.workspaces || !knownWorkspace(anchor, id) || anchor.getAttribute("aria-expanded") === "false" || ownedMenus.get(menu)?.button !== button || !workspaceMenuParts(menu, menuLabels(), button)) return;
+      cancelMenu();
+      anchor.click();
       win.queueMicrotask(() => {
-        if (!disposed) onEdit(id, anchor);
+        if (!disposed && preferences.getSnapshot().features.workspaces && knownWorkspace(anchor, id)) {
+          anchor.focus({ preventScroll: true });
+          onEdit(id, anchor);
+        }
       });
-    });
+    }, labels);
+    if (button) {
+      ownedMenus.set(menu, { button, wrapper: button.parentElement, anchor, id });
+      cancelMenu();
+    }
   }
   function scan() {
     const state = preferences.getSnapshot();
@@ -451,35 +541,45 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       if (row.getAttribute("data-row-key").startsWith("workspace:")) scanWorkspace(row, state);
       else scanSession(row, state);
     }
-    if (!state.features.workspaces) {
-      for (const wrapper of doc.querySelectorAll("[data-wsp-menu-wrapper]")) wrapper.remove();
-    }
     scanMenu(state);
   }
   function onClick(event) {
     const button = event.target instanceof win.Element ? event.target.closest("button") : null;
     const row = button?.closest('[data-row-key^="workspace:"]');
-    if (!row || row.querySelector("button") !== button || !preferences.getSnapshot().features.workspaces) return;
+    if (!row || row.querySelector("button") !== button || !preferences.getSnapshot().features.workspaces || button.getAttribute("aria-expanded") === "true") {
+      cancelMenu();
+      return;
+    }
     const id = row.getAttribute("data-row-key").slice("workspace:".length);
-    if (!workspaces.list.getSnapshot()?.items?.some((w) => w.workspaceId === id)) return;
-    pendingMenu = { id, anchor: button, existing: new Set(doc.querySelectorAll('[role="menu"]')) };
+    if (!knownWorkspace(button, id)) {
+      cancelMenu();
+      return;
+    }
+    const nativeLifecycle = button.matches('[data-context-menu-trigger][aria-haspopup="menu"][aria-expanded]');
+    const owner = pendingMenu = { id, anchor: button, existing: new Set(doc.querySelectorAll('[role="menu"]')), nativeLifecycle };
     win.clearTimeout(menuTimer);
     menuTimer = win.setTimeout(() => {
+      if (pendingMenu !== owner) return;
       scanMenu(preferences.getSnapshot());
-      pendingMenu = null;
-    }, 300);
+      if (pendingMenu === owner) pendingMenu = null;
+    }, nativeLifecycle ? NATIVE_WORKSPACE_MENU_WAIT_MS : 300);
     schedule();
+  }
+  function onKeyDown(event) {
+    if (event.key === "Escape") cancelMenu();
   }
   const observer = new win.MutationObserver((records) => {
     if (records.some((r) => {
       if (r.target instanceof win.Element && r.target.closest("[" + OWNED + "]")) return false;
+      if (r.type === "attributes" && r.attributeName === "aria-expanded" && r.target.tagName !== "BUTTON") return false;
       const changed = [...r.addedNodes, ...r.removedNodes];
       return r.type === "attributes" || changed.some((n) => !(n instanceof win.Element && n.hasAttribute(OWNED)));
     })) schedule();
   });
-  observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-row-key"] });
+  observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-row-key", "aria-expanded"] });
   const unsub = [preferences.subscribe(schedule), sessions.list.subscribe(schedule), workspaces.list.subscribe(schedule), ...currentModels ? [currentModels.subscribe(schedule)] : []];
   doc.addEventListener("click", onClick, true);
+  doc.addEventListener("keydown", onKeyDown, true);
   doc.addEventListener("scroll", schedule, true);
   scan();
   return {
@@ -495,12 +595,14 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       win.clearTimeout(menuTimer);
       for (const fn of unsub) fn();
       doc.removeEventListener("click", onClick, true);
+      doc.removeEventListener("keydown", onKeyDown, true);
       doc.removeEventListener("scroll", schedule, true);
       for (const record2 of restorations.values()) restore(record2);
       restorations.clear();
       for (const icon of sessionIcons.values()) icon.remove();
       sessionIcons.clear();
-      for (const wrapper of doc.querySelectorAll("[data-wsp-menu-wrapper]")) wrapper.remove();
+      for (const record2 of ownedMenus.values()) record2.wrapper.remove();
+      ownedMenus.clear();
       queue.length = 0;
       pendingMenu = null;
     }
@@ -5240,15 +5342,16 @@ function attachSidebarBranding(marker) {
 
 // src/session-actions.jsx
 var SESSION_ACTION_CSS = `
-.wsp-session-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:inherit}
+.wsp-session-action-root{display:contents}
+.wsp-session-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;margin:-4px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:inherit}
 .wsp-session-action:hover{color:var(--dsw-alias-label-primary)}
-.wsp-session-action:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:2px;border-radius:3px}
+.wsp-session-action:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px;border-radius:3px}
 .wsp-session-action:disabled{opacity:.5;cursor:default}
 .wsp-manual-unread{display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .wsp-unread-error{display:block;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;max-width:260px}
 `;
-function UnreadIcon() {
-  return /* @__PURE__ */ import_react3.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
+function UnreadIcon({ size = 16 }) {
+  return /* @__PURE__ */ import_react3.default.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
 }
 function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
   function MenuItem({ sessionId, useMenuOpenState, t }) {
@@ -5263,7 +5366,7 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
   function RowAction({ sessionId, t }) {
     const settings = useStore(prefs), state = useStore(reminders), [error, setError] = (0, import_react3.useState)("");
     if (!settings.features.unread) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Tooltip, { label: t("markUnread"), side: "bottom", align: "end", delayMs: 500 }, /* @__PURE__ */ import_react3.default.createElement("button", { type: "button", className: "wsp-session-action", "aria-label": t("markUnread"), onClick: async (event) => {
+    return /* @__PURE__ */ import_react3.default.createElement("span", { "data-wsp-owned": "", className: "wsp-session-action-root" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Tooltip, { label: t("markUnread"), side: "bottom", align: "end", delayMs: 500 }, /* @__PURE__ */ import_react3.default.createElement("button", { type: "button", className: "wsp-session-action", "aria-label": t("markUnread"), onClick: async (event) => {
       event.stopPropagation();
       try {
         await reminders.markUnread(sessionId);
@@ -5272,7 +5375,7 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
         setError(t("unreadFailed") + " " + reason.message);
         reminders.reportError(reason);
       }
-    } }, /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null))), (error || state.error) && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, error || state.error));
+    } }, /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, { size: 14 }))), (error || state.error) && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, error || state.error));
   }
   function Leading({ sessionId, t }) {
     const settings = useStore(prefs), state = useStore(reminders);
@@ -6135,7 +6238,7 @@ function apply(ctx) {
     return () => style.remove();
   });
   ctx.effect(() => {
-    const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t });
+    const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t, workspaceMenuLabels: () => nativeWorkspaceMenuLabels(locale) });
     const unsubscribe = ctx.on("connection/reset", () => adapter.reconnect());
     return () => {
       unsubscribe();

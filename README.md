@@ -2,7 +2,7 @@
 
 Tinker is a web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It adds workspace appearance, model logos and manual unread reminders to the existing interface. It does not send model requests or change prompts or credentials.
 
-The latest published npm version is **dsh-tinker 0.1.5**. This development checkout also includes **unreleased local profile customization**, available in a separately built **Tinker (develop)** package.
+The latest published npm version is **dsh-tinker 0.1.5**. Local profile customization and the current workspace-menu/hover-layout fixes in this checkout are **unreleased development changes**, available in a separately built **Tinker (develop)** package.
 
 ## Features
 
@@ -30,9 +30,9 @@ See the host's [Plugin Manager instructions](https://github.com/deepseek-ai/deep
 | Area | Requirement or actual coverage |
 | --- | --- |
 | Host version | The package declares `>=0.2.0-rc.2 <0.3.0-0`. This is an install range, not a claim that every version was tested. |
-| UI adapters | Workspace/model/chat adapters target DSH 0.2.0-rc.2 markup. The guarded profile adapter targets the 0.2.2-rc.1 account launcher/menu. Later core/interface changes may require updated adapters. |
-| Automated browser tests | Windows, using exact vendored RC.2 UI primitives and SidebarRoot sources. Profile tests add a source-shaped 0.2.2-rc.1 account/menu model. Navigation and Cordis lifecycle are fixture stand-ins. |
-| Live installation | The unreleased profile feature still needs manual testing in an installed host. Offline fixture results are not live GUI verification. |
+| UI adapters | Workspace menus recognize the known Rename/Delete and Rename/Show in folder/Delete patterns through 0.2.2-rc.1. Hover unread actions follow its native 24 px button / 14 px icon geometry. Other model/chat adapters retain their RC.2 targets; the guarded profile adapter targets the 0.2.2-rc.1 account launcher. Later interface changes may require updates. |
+| Automated browser tests | Windows, with pinned 0.2.0-rc.2 UI primitives and scoped 0.2.2-rc.1 hover source slices. Current workspace/account menus also use source-shaped fixtures. Navigation and Cordis lifecycle are stand-ins, not a complete running Host. |
+| Live installation | Profile customization received an initial manual Desktop smoke test. The newer workspace-menu and hover-layout fixes still need installed-host testing; offline fixtures are not live GUI verification. |
 | Newer core / Codex | Newer core versions and newer Codex Subscription releases are not verified. Model-selector adapters target native RC.2 and Codex Subscription 2.5.2 markup. |
 | macOS | Physical Mac not verified. Offline tests cover the native darwin markup branch, not OS window behavior. |
 | Unread reminders | Require Web Locks in a secure browser context (HTTPS or loopback). Without it, writes report an error rather than risking lost updates. |

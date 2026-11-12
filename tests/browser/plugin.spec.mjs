@@ -43,7 +43,7 @@ test('workspace appearance reset and disposal restore native UI',async({page})=>
 });
 test('menu is added only after its own workspace trigger; UI responds to keyboard',async({page})=>{
  await page.locator('#menu-anchor').click();
- await page.evaluate(()=>{const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete</span></button></div></div>';document.body.append(m);});
+ await page.evaluate(()=>{const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete workspace</span></button></div></div>';document.body.append(m);});
  await expect(page.getByRole('menuitem',{name:'Appearance'})).toBeVisible();
  await page.getByRole('menuitem',{name:'Appearance'}).click();await expect(page.getByRole('dialog')).toBeVisible();
  await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);

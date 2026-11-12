@@ -25,11 +25,11 @@ test('session logo has balanced gaps without moving status, title or time', asyn
 });
 async function openMenu(page) {
  await page.locator('#menu-anchor').click();
- await page.evaluate(() => { const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div class="native-wrap"><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div class="native-wrap"><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete</span></button></div></div>';document.body.append(m); });
+ await page.evaluate(() => { const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div class="native-wrap"><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div class="native-wrap"><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete workspace</span></button></div></div>';document.body.append(m); });
  await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeVisible();
 }
 test('Appearance sits between Rename and Delete inside the native viewport', async ({page}) => {
- await openMenu(page); await expect(page.getByRole('menuitem')).toHaveText(['Rename','Appearance','Delete']);
+ await openMenu(page); await expect(page.getByRole('menuitem')).toHaveText(['Rename','Appearance','Delete workspace']);
  const same = await page.evaluate(() => {const b=document.querySelector('[data-wsp-menu]'),r=document.querySelector('.native-item');return b.parentElement.parentElement===r.parentElement.parentElement;});expect(same).toBe(true);
 });
 test('Appearance uses the native row typography, hover, radius and brush icon', async ({page}) => {
