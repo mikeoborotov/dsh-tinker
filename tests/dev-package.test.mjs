@@ -17,10 +17,14 @@ const require = createRequire(import.meta.url);
 const source = marker => `import React from 'react';
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import icons from './workspace-icons.json';
+const STORAGE_KEY = 'dsh-workspace-plus:v1';
+const LEGACY_BACKUP_KEY = STORAGE_KEY + ':legacy-backup';
+const UNREAD_STORAGE_KEY = 'dsh-workspace-plus:unread:v1';
+const UNREAD_CHANGE_EVENT = 'workspace-plus:unread-change';
 export const inject = ['slots'];
 export function apply(ctx) {
   ctx.slots.register({ name: 'settings.section', id: 'workspace-plus', label: 'Tinker' }, () => <h2>Tinker</h2>);
-  return [Modal, icons.length, ${JSON.stringify(marker)}, 'dsh-workspace-plus:v1', 'dsh-workspace-plus:v1:legacy-backup', 'dsh-workspace-plus:unread:v1', 'workspace-plus:unread-change'];
+  return [Modal, icons.length, ${JSON.stringify(marker)}, STORAGE_KEY, LEGACY_BACKUP_KEY, UNREAD_STORAGE_KEY, UNREAD_CHANGE_EVENT];
 }\n`;
 
 async function fixture(run) {
@@ -149,6 +153,19 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   assert.match(secondClient, /fresh-source-B/);
   assert.doesNotMatch(secondClient, /fresh-source-A|STALE_CLIENT/);
   assert.equal(sha256(await readFile(result.tarball)), result.sha256, 'The previous archive must remain untouched');
+}));
+
+test('derived historical backup key is accepted but an altered suffix is rejected', { timeout: 60_000 }, async () => fixture(async (root, temporaryParent) => {
+  const result = await packDev({ sourceRoot: root, temporaryParent });
+  const files = readPackageTarball(await readFile(result.tarball));
+  const client = files.get('client.js').toString();
+  const declaration = 'var LEGACY_BACKUP_KEY = STORAGE_KEY + ":legacy-backup";';
+  assert.ok(client.includes(declaration), 'Exercise the actual non-minified esbuild representation');
+  assert.ok(!client.includes('dsh-workspace-plus:v1:legacy-backup'), 'The complete key is not a compiled literal');
+  assert.equal(verifyDevPackage(files, result.version).name, DEV_NAME);
+  const changed = new Map(files);
+  changed.set('client.js', Buffer.from(client.replace(declaration, 'var LEGACY_BACKUP_KEY = STORAGE_KEY + ":changed-backup";') + '\n// dsh-workspace-plus:v1:legacy-backup\n'));
+  assert.throws(() => verifyDevPackage(changed, result.version), /historical data contract/);
 }));
 
 test('title drift and broken source fail without output or leftover staging', { timeout: 60_000 }, async () => fixture(async (root, temporaryParent) => {

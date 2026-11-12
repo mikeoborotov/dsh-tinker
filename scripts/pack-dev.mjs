@@ -136,7 +136,20 @@ export function verifyDevPackage(files, version) {
   assert.equal(typeof registration.factory, 'function');
   assert.match(client, /label: "Tinker \(develop\)"/);
   assert.ok(client.split(DEV_TITLE).length >= 3, 'Both staged Settings titles must be compiled');
-  for (const key of preservedKeys) assert.ok(client.includes(key), 'Missing historical data contract: ' + key);
+  // esbuild preserves the backup key as STORAGE_KEY + ":legacy-backup", not one literal.
+  // Accept only known string declarations/concatenation, without executing the factory or apply.
+  const factorySource = Function.prototype.toString.call(registration.factory);
+  const names = ['STORAGE_KEY', 'LEGACY_BACKUP_KEY', 'UNREAD_STORAGE_KEY', 'UNREAD_CHANGE_EVENT'];
+  const values = new Map();
+  for (const [i, name] of names.entries()) {
+    const declarations = [...factorySource.matchAll(new RegExp('^\\s*var ' + name + ' = ([^\\r\\n]+);$', 'gm'))];
+    assert.equal(declarations.length, 1, 'Missing or ambiguous historical data contract: ' + name);
+    const expression = declarations[0][1].match(/^(?:(STORAGE_KEY) \+ )?("(?:[^"\\\r\n]|\\.)*")$/);
+    assert.ok(expression && (!expression[1] || name === 'LEGACY_BACKUP_KEY'), 'Unsupported historical data contract expression: ' + name);
+    const value = (expression[1] ? values.get(expression[1]) : '') + JSON.parse(expression[2]);
+    assert.equal(value, preservedKeys[i], 'Changed historical data contract: ' + name);
+    values.set(name, value);
+  }
   return manifest;
 }
 
