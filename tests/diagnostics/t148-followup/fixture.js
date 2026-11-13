@@ -33,6 +33,7 @@ window.t148followup = {
     const slots = new nativeRenderer.SlotRegistry(ctx);
     slots.install(nativeRenderer.__createSlotRenderer());
     locale = new nativeLocale.LocaleRuntime(ctx, undefined, { languages: [lang], preference: lang });
+    if (lang === 'ru') locale.addLanguage({ id: 'ru', label: 'Русский', fallback: 'en' });
     ctx.provide('locale', locale);
     slots.installLocale(locale);
     locale.register('workspace', nativeWorkspace.__dictionaries);

@@ -40,13 +40,14 @@ test('public package, lock, patch and compiled factory share the Tinker identity
   const exports = registration.factory(name => {
     externals.add(name);
     if (name === 'react') return require(name);
+    if (name === 'react-dom') return { createPortal() { assert.fail('factory registration must not render a portal'); } };
     assert.equal(name, '@deepseek-ai/dsh-client-ui-primitives');
     return {}; // Host UI components are not rendered in this Node identity check.
   });
   assert.deepEqual(Object.keys(exports).sort(), ['apply', 'inject']);
   assert.equal(typeof exports.apply, 'function');
   assert.deepEqual(Array.from(exports.inject), ['slots', 'locale', 'sessions', 'workspaces', 'modelDirectories', 'remote', 'remote.session']);
-  assert.deepEqual([...externals].sort(), ['@deepseek-ai/dsh-client-ui-primitives', 'react']);
+  assert.deepEqual([...externals].sort(), ['@deepseek-ai/dsh-client-ui-primitives', 'react', 'react-dom']);
   for (const value of [STORAGE_KEY, UNREAD_STORAGE_KEY, UNREAD_CHANGE_EVENT]) assert.ok(client.includes(value));
   assert.match(client, /label: "Tinker"/);
   assert.doesNotMatch(client, /Workspace Plus/);

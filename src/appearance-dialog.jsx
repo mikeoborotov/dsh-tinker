@@ -1,10 +1,11 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Button, Menu, IconChevronDownOutlineRegular, IconFolderCloseRegular, observeComposition } from '@deepseek-ai/dsh-client-ui-primitives';
 import { ICONS, ICON_IDS, PALETTE, fillAppearance } from './icons.js';
 import { validateAppearance } from './store.js';
 import { useStore } from './use-store.js';
 import { EMOJI_GROUPS, normalizeSearch, searchEmoji } from './emoji-catalog.js';
 import { IMAGE_ACCEPT, imageData } from './image-upload.js';
+import { ColorPicker } from './color-picker.jsx';
 
 const DEFAULT_ICON = { kind: 'icon', icon: 'folder', color: PALETTE[0] };
 const PAGE_SIZE = 120;
@@ -43,14 +44,22 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   const [iconQuery, setIconQuery] = useState(''), [emojiQuery, setEmojiQuery] = useState('');
   const [emojiGroup, setEmojiGroup] = useState('all'), [emojiLimit, setEmojiLimit] = useState(PAGE_SIZE);
   const [categoryOpen, setCategoryOpen] = useState(false), categoryTrigger = useRef(null);
-  const [categoryAutoFocus, setCategoryAutoFocus] = useState(false);
+  const [categoryAutoFocus, setCategoryAutoFocus] = useState(false), [categoryWidth, setCategoryWidth] = useState(0);
+  const categorySizeClass = 'wsp-category-size-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const categoryGeneration = useRef(0), categoryState = useRef(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorTrigger = useRef(null), colorDialog = useRef(null), colorBaseline = useRef(null);
   const [dragging, setDragging] = useState(false);
   const uploadGeneration = useRef(0), dragDepth = useRef(0), uploadInput = useRef(null), compositionObserver = useRef(null);
   const language = String(lang ?? t('language')), russian = language.startsWith('ru'), targetAvailable = Boolean(workspace);
   categoryState.current = { open: categoryOpen, kind, language, targetId: target.id, available: targetAvailable };
   const categoryItems = [{ id: 'all', label: t('allEmoji') }, ...EMOJI_GROUPS.map(group => ({ id: group.id, label: russian ? group.ru : group.en }))];
+  function measureCategoryWidth() {
+    const width = categoryTrigger.current?.getBoundingClientRect().width;
+    if (Number.isFinite(width) && width > 0) setCategoryWidth(width);
+  }
   function openCategory() {
+    measureCategoryWidth();
     categoryGeneration.current++; setCategoryAutoFocus(false); setCategoryOpen(true);
   }
   function closeCategory(restoreFocus = false) {
@@ -59,17 +68,27 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setCategoryAutoFocus(false); setCategoryOpen(false);
     if (restoreFocus) categoryTrigger.current?.focus({ preventScroll: true });
   }
-  const close = () => { closeCategory(); uploadGeneration.current++; ui.set({ target: null }); };
+  function openColorPicker() {
+    closeCategory(); colorBaseline.current = { icon: { ...drafts.icon }, restoring }; setColorPickerOpen(true);
+  }
+  function closeColorPicker(rollback = false) {
+    if (rollback && colorBaseline.current) {
+      const baseline = colorBaseline.current;
+      setDrafts(previous => ({ ...previous, icon: baseline.icon })); setRestoring(baseline.restoring);
+    }
+    colorBaseline.current = null; setColorPickerOpen(false);
+  }
+  const close = () => { closeColorPicker(); closeCategory(); uploadGeneration.current++; ui.set({ target: null }); };
   function setAppearance(next) {
     setRestoring(false); setKind(next.kind); setDrafts(previous => ({ ...previous, [next.kind]: next }));
   }
   function selectKind(next) {
-    closeCategory();
+    closeColorPicker(); closeCategory();
     if (next === kind) return;
     uploadGeneration.current++; setLoading(false); setError(''); setDragging(false); dragDepth.current = 0; setRestoring(false); setKind(next);
   }
   function restoreDefault() {
-    closeCategory();
+    closeColorPicker(); closeCategory();
     uploadGeneration.current++; setLoading(false); setError(''); setDragging(false); dragDepth.current = 0;
     setRestoring(true);
   }
@@ -93,9 +112,20 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   }, []);
   useEffect(() => { if (list.phase === 'ready' && !workspace) close(); }, [workspace, list.phase]);
   useEffect(() => { setEmojiLimit(PAGE_SIZE); }, [emojiQuery, emojiGroup]);
+  useLayoutEffect(() => {
+    const trigger = categoryTrigger.current;
+    if (kind !== 'emoji' || !targetAvailable || !trigger) { setCategoryWidth(0); return; }
+    let active = true;
+    const measure = () => { if (active && trigger.isConnected) measureCategoryWidth(); };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(trigger);
+    window.addEventListener('resize', measure);
+    return () => { active = false; observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [kind, language, target.id, targetAvailable]);
   useEffect(() => {
     // Locale changes withdraw the old popup; only return its own keyboard focus.
-    closeCategory(categoryOpen && Boolean(document.activeElement?.closest('.wsp-emoji-category-menu')));
+    closeColorPicker(); closeCategory(categoryOpen && Boolean(document.activeElement?.closest('.wsp-emoji-category-menu')));
   }, [language]);
   useEffect(() => {
     if (!categoryOpen || kind !== 'emoji' || !targetAvailable || !categoryState.current.open) return;
@@ -137,11 +167,19 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     className="wsp-appearance-dialog" contentClassName="wsp-appearance-content"
     onKeyDownCapture={event => {
       const composing = compositionObserver.current?.guards(event.nativeEvent);
+      const inColorPicker = colorDialog.current?.contains(event.target);
       if (composing) {
+        // Own form commands yield to IME; editable text keeps its browser commit.
+        if (inColorPicker) {
+          event.stopPropagation();
+          if (event.target.tagName !== 'INPUT' || event.target.type !== 'text') event.preventDefault();
+        }
         // Ignoring a composing key alone still lets Enter click a native button.
         if (event.key === 'Enter' && event.target.tagName === 'BUTTON') event.preventDefault();
         return;
       }
+      // The portaled owned form handles HEX Enter before Workspace's text Save.
+      if (inColorPicker) return;
       // The composition guard is consumptive: this owner must consult it once.
       if (!categoryOpen && event.key === 'ArrowDown' && event.target === categoryTrigger.current) {
         event.preventDefault(); event.stopPropagation(); openCategory(); return;
@@ -179,7 +217,10 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
             <div className="wsp-appearance-palette" role="group" aria-label={t('selectIconColor')}>
               {PALETTE.map(color => <Button key={color} className="wsp-color-swatch" title={color} aria-label={color}
                 aria-pressed={color === appearance.color} style={{ '--wsp-art-color': color }} onClick={() => setAppearance({ ...appearance, color })} />)}
-              <input className="wsp-custom-color" type="color" aria-label={t('customColor')} title={t('customColor')} value={appearance.color} onChange={event => setAppearance({ ...appearance, color: event.target.value })} />
+              <Button ref={colorTrigger} className="wsp-custom-color" aria-label={t('customColor')} title={t('customColor')} aria-haspopup="dialog" aria-expanded={colorPickerOpen}
+                onClick={() => colorPickerOpen ? closeColorPicker() : openColorPicker()} />
+              {colorPickerOpen && <ColorPicker anchorRef={colorTrigger} dialogRef={colorDialog} color={drafts.icon.color} t={t}
+                onChange={color => setAppearance({ ...drafts.icon, color })} onApply={() => closeColorPicker()} onCancel={() => closeColorPicker(true)} onDismiss={() => closeColorPicker()} />}
             </div>
           </div>
           <label className="wsp-field-label" htmlFor="wsp-icon-search">{t('selectIcon')}</label>
@@ -198,8 +239,9 @@ export function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           <div className="wsp-search-category">
             <input id="wsp-emoji-search" className="wsp-appearance-input" type="search" data-modal-autofocus aria-label={t('searchEmoji')} placeholder={t('searchEmoji')}
               value={emojiQuery} onChange={event => setEmojiQuery(event.target.value)} />
+            {categoryWidth > 0 && <style>{`.${categorySizeClass}{width:${categoryWidth}px}`}</style>}
             <Menu open={categoryOpen} portal align="start" side="bottom" autoFocus={categoryAutoFocus} selection="check"
-              className="wsp-category-anchor" listClassName="wsp-emoji-category-menu" items={categoryItems} selectedId={emojiGroup}
+              className="wsp-category-anchor" listClassName={'wsp-emoji-category-menu ' + categorySizeClass} items={categoryItems} selectedId={emojiGroup}
               onSelect={id => { setEmojiGroup(id); closeCategory(); }} onClose={() => closeCategory()}
               anchor={<Button ref={categoryTrigger} className="wsp-category-trigger" variant="outline" aria-label={t('emojiCategory')} aria-describedby="wsp-category-value"
                 aria-haspopup="menu" aria-expanded={categoryOpen} onClick={() => categoryOpen ? closeCategory() : openCategory()}>

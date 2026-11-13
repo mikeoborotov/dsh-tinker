@@ -1,0 +1,13 @@
+{
+  "dshTag": "dsh-v0.2.0-rc.2",
+  "dshCommit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+  "license": "LICENSE",
+  "files": [
+    {
+      "path": "packages/client/ui-primitives/src/useAnchoredPosition.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-primitives/src/useAnchoredPosition.ts",
+      "bytes": 4196,
+      "sha256": "7a98a11f845fb6252f33c6f526712b46dcb2d9729f44c2394005f58b5c6e0b15"
+    }
+  ]
+}

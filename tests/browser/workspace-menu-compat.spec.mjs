@@ -25,12 +25,12 @@ async function open(page, id = 'w1') {
   await expect(page.getByRole('menu')).toBeVisible();
 }
 
-for (const variant of ['legacy', 'current']) test(variant + ' preserves native actions and inserts Appearance before Delete', async ({ page }, testInfo) => {
+for (const variant of ['legacy', 'current']) test(variant + ' preserves native actions and inserts Appearance immediately after Rename', async ({ page }, testInfo) => {
   await mount(page, { variant });
   await open(page);
   await page.evaluate(() => window.workspaceMenuFixture.captureNative());
   await expect(page.getByRole('menuitem')).toHaveText(variant === 'legacy'
-    ? ['Rename', 'Appearance', 'Delete workspace'] : ['Rename', 'Show in folder', 'Appearance', 'Delete workspace']);
+    ? ['Rename', 'Appearance', 'Delete workspace'] : ['Rename', 'Appearance', 'Show in folder', 'Delete workspace']);
   expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIdentity())).toEqual((variant === 'legacy'
     ? ['Rename', 'Delete workspace'] : ['Rename', 'Show in folder', 'Delete workspace']).map(label => ({ label, connected: true, sameWrapper: true })));
   expect((await page.evaluate(() => window.workspaceMenuFixture.snapshot())).calls).toEqual({});
@@ -59,7 +59,7 @@ for (const reveal of [true, false]) test('current inline slot icons preserve nat
   await page.evaluate(() => window.workspaceMenuFixture.captureNative());
   await page.clock.runFor(350);
   await expect(page.getByRole('menuitem')).toHaveText(reveal
-    ? ['Rename', 'Show in folder', 'Appearance', 'Delete workspace'] : ['Rename', 'Appearance', 'Delete workspace']);
+    ? ['Rename', 'Appearance', 'Show in folder', 'Delete workspace'] : ['Rename', 'Appearance', 'Delete workspace']);
   expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIconIdentity())).toEqual((reveal
     ? ['Rename', 'Show in folder', 'Delete workspace'] : ['Rename', 'Delete workspace'])
     .map(label => ({ label, sameIcon: true, sameOutlet: true, sameGlyph: true, connected: true })));
@@ -80,7 +80,7 @@ for (const delay of [0, 450, 1000]) test('native opening after resolution delay=
   await expect(page.getByRole('menu')).toBeVisible();
   await page.clock.runFor(64);
   expect((await page.evaluate(() => window.workspaceMenuFixture.snapshot())).items)
-    .toEqual(['Rename', 'Show in folder', 'Appearance', 'Delete workspace']);
+    .toEqual(['Rename', 'Appearance', 'Show in folder', 'Delete workspace']);
 });
 
 for (const options of [{ delay: 1400 }, { variant: 'legacy', delay: 450 }]) test('opening beyond bounded budget stays unowned ' + JSON.stringify(options), async ({ page }) => {
@@ -139,8 +139,10 @@ test('native keyboard, cancel, workspace id and reopen remain correct', async ({
   await page.keyboard.press('Home');
   await expect(page.getByRole('menuitem', { name: 'Rename', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('menuitem', { name: 'Show in folder', exact: true })).toBeFocused();
+  await expect(page.getByRole('menuitem', { name: 'Appearance', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: 'Show in folder', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowUp');
   await expect(page.getByRole('menuitem', { name: 'Appearance', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('menu')).toHaveCount(0);
@@ -154,10 +156,28 @@ test('native keyboard, cancel, workspace id and reopen remain correct', async ({
   await expect(page.getByRole('menuitem', { name: 'Appearance', exact: true })).toBeVisible();
 });
 
-test('locale and known reordered native contributions use semantic Delete anchor', async ({ page }) => {
+test('locale and known reordered native contributions keep native order around semantic Rename', async ({ page }) => {
   await mount(page, { lang: 'ru', reordered: true, finder: true });
   await open(page);
-  await expect(page.getByRole('menuitem')).toHaveText(['Оформление', 'Удалить рабочую область', 'Переименовать', 'Показать в Finder']);
+  await expect(page.getByRole('menuitem')).toHaveText(['Удалить рабочую область', 'Переименовать', 'Оформление', 'Показать в Finder']);
+});
+
+test('terminal Rename without a following native sibling retains the existing safe Delete fallback', async ({ page }) => {
+  await mount(page, { variant: 'legacy', reordered: true });
+  await open(page);
+  await expect(page.getByRole('menuitem')).toHaveText(['Appearance', 'Delete workspace', 'Rename']);
+});
+
+for (const kind of ['session', 'profile']) test(kind + ' row cannot become a workspace menu owner', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));
+  await mount(page);
+  await page.locator('[data-row-key="workspace:w1"]').evaluate((row, kind) => row.setAttribute('data-row-key', kind + ':w1'), kind);
+  await open(page);
+  await page.clock.runFor(1100);
+  await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Show in folder', 'Delete workspace']);
+  await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);
+  expect((await page.evaluate(() => window.workspaceMenuFixture.snapshot())).edits).toEqual([]);
 });
 
 test('unknown extra contribution is left unchanged rather than claiming any menu', async ({ page }) => {
@@ -223,7 +243,7 @@ test('known async contributions retain native identity; unknown late contributio
   await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);
   await page.evaluate(() => window.workspaceMenuFixture.captureNative());
   await page.evaluate(() => window.workspaceMenuFixture.configure({ reveal: true }));
-  await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Show in folder', 'Appearance', 'Delete workspace']);
+  await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Appearance', 'Show in folder', 'Delete workspace']);
   expect(await page.evaluate(() => window.workspaceMenuFixture.nativeIdentity())).toEqual(['Rename', 'Delete workspace'].map(label => ({ label, connected: true, sameWrapper: true })));
   await page.evaluate(() => window.workspaceMenuFixture.configure({ extra: true }));
   await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Show in folder', 'Other command', 'Delete workspace']);
@@ -276,7 +296,7 @@ test('two fresh menus are ambiguous and cannot acquire an Appearance after one d
   await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);
 });
 
-for (const change of ['duplicate-label', 'unknown-label', 'unknown-layout', 'wrong-controls', 'removed-workspace', 'cancelled-trigger',
+for (const change of ['missing-rename', 'duplicate-label', 'unknown-label', 'unknown-layout', 'wrong-controls', 'removed-workspace', 'cancelled-trigger',
   'wrong-slot-name', 'multiple-slot-children', 'non-native-slot-child', 'nested-slot-svg', 'div-slot', 'slot-error', 'interactive-slot', 'interactive-svg', 'wrong-slot-display',
   'nonempty-content', 'foreign-content', 'duplicate-content', 'misplaced-content', 'styled-content', 'malformed-content', 'wrong-content-tag', 'text-content']) test('rejects ' + change, async ({ page }) => {
   await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
@@ -293,6 +313,7 @@ for (const change of ['duplicate-label', 'unknown-label', 'unknown-layout', 'wro
   await expect(page.getByRole('menu')).toBeVisible();
   await page.evaluate(change => {
     const buttons = [...document.querySelectorAll('[role="menu"] button[role="menuitem"]')];
+    if (change === 'missing-rename') buttons[0].lastElementChild.textContent = 'Other command';
     if (change === 'duplicate-label') buttons[1].lastElementChild.textContent = 'Rename';
     if (change === 'unknown-label') buttons[1].lastElementChild.textContent = 'Other command';
     if (change === 'unknown-layout') buttons[1].parentElement.append(document.createElement('input'));

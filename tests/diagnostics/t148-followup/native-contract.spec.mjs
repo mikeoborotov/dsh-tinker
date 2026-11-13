@@ -52,5 +52,5 @@ for (const change of ['remove-only-empty', 'foreign-empty', 'nonempty-exact', 'e
   expect(result.nativeButtonsUnchanged).toBe(true);
   expect(result.after).toBe(change === 'remove-only-empty');
   expect(result.inserted).toBe(change === 'remove-only-empty');
-  if (change === 'remove-only-empty') await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Show in folder', 'Appearance', 'Delete workspace']);
+  if (change === 'remove-only-empty') await expect(page.getByRole('menuitem')).toHaveText(['Rename', 'Appearance', 'Show in folder', 'Delete workspace']);
 });

@@ -24,10 +24,35 @@ async function expectNativeUnchanged(page){expect(await page.evaluate(()=>{
   return {deleteSame:remove===ref.remove,wrapperSame:remove.parentElement===ref.wrapper,iconSame:remove.firstElementChild===ref.icon,glyphSame:remove.querySelector('svg')===ref.glyph,sepSame:menu.querySelector('[role="separator"]')===ref.sep,sepParent:ref.sep?.parentElement===ref.parent,sepHTML:ref.sep?.outerHTML===ref.html};
 })).toEqual({deleteSame:true,wrapperSame:true,iconSame:true,glyphSame:true,sepSame:true,sepParent:true,sepHTML:true});}
 
-for(const reveal of [true,false])test(`Appearance precedes original native sibling separator and remains stable, reveal=${reveal}`,async({page})=>{
+for(const [lang,copy] of Object.entries({
+  en:['Rename','Appearance','Show in folder','Delete workspace'],
+  ru:['Переименовать','Оформление','Показать в папке','Удалить рабочую область'],
+}))test(`T165 native adapter order and owned identity remain stable in ${lang}`,async({page})=>{
+  await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));
+  await mountWorkspace(page,{lang});await openWorkspace(page);await page.evaluate(()=>window.workspaceMenuFixture.captureNative());await page.clock.runFor(64);
+  const wanted=[...copy.slice(0,3),'separator',copy[3],'content'];expect(await rawOrder(page)).toEqual(wanted);
+  await expect(page.locator('[data-wsp-menu="w1"][data-wsp-owned]')).toHaveCount(1);
+  await expect(page.locator('[data-wsp-menu-wrapper="w1"][data-wsp-owned]')).toHaveCount(1);
+  const nativeLabels=[copy[0],copy[2],copy[3]];
+  expect(await page.evaluate(()=>window.workspaceMenuFixture.nativeIdentity())).toEqual(nativeLabels.map(label=>({label,connected:true,sameWrapper:true})));
+  expect(await page.evaluate(()=>window.workspaceMenuFixture.nativeIconIdentity())).toEqual(nativeLabels.map(label=>({label,sameIcon:true,sameOutlet:true,sameGlyph:true,connected:true})));
+  expect(await page.evaluate(()=>window.workspaceMenuFixture.nativeContentIdentity())).toEqual({same:true,connected:true,children:0});
+  await page.evaluate(()=>{window.t165Own=document.querySelector('[data-wsp-menu]');window.workspaceMenuFixture.setWorkspaces(['w1','w2']);});await page.clock.runFor(200);
+  expect(await rawOrder(page)).toEqual(wanted);expect(await page.evaluate(()=>document.querySelector('[data-wsp-menu]')===window.t165Own)).toBe(true);
+  await page.evaluate(()=>window.workspaceMenuFixture.toggle(false));await page.clock.runFor(64);await expect(page.locator('[data-wsp-menu], [data-wsp-menu-wrapper]')).toHaveCount(0);
+  await page.evaluate(()=>window.workspaceMenuFixture.toggle(true));await page.clock.runFor(64);await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);
+  await page.keyboard.press('Escape');await openWorkspace(page);await page.clock.runFor(64);expect(await rawOrder(page)).toEqual(wanted);await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);
+  const other=lang==='en'?'ru':'en';await page.evaluate(lang=>window.workspaceMenuFixture.configure({lang}),other);
+  await expect(page.getByRole('menuitem',{name:other==='en'?'Rename':'Переименовать',exact:true})).toHaveCount(1);
+  await page.evaluate(()=>document.dispatchEvent(new Event('scroll',{bubbles:true})));await page.clock.runFor(64);
+  expect(await rawOrder(page)).toEqual(other==='en'?['Rename','Appearance','Show in folder','separator','Delete workspace','content']:['Переименовать','Оформление','Показать в папке','separator','Удалить рабочую область','content']);
+  expect((await page.evaluate(()=>window.workspaceMenuFixture.snapshot())).calls).toEqual({});
+});
+
+for(const reveal of [true,false])test(`Appearance immediately follows Rename before the untouched native separator, reveal=${reveal}`,async({page})=>{
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));
   await mountWorkspace(page,{reveal});await openWorkspace(page);await captureNative(page);await page.clock.runFor(64);
-  const wanted=['Rename',...(reveal?['Show in folder']:[]),'Appearance','separator','Delete workspace','content'];
+  const wanted=['Rename','Appearance',...(reveal?['Show in folder']:[]),'separator','Delete workspace','content'];
   expect(await rawOrder(page)).toEqual(wanted);await expectNativeUnchanged(page);
   await page.evaluate(()=>window.workspaceMenuFixture.setWorkspaces(['w1','w2']));await page.clock.runFor(200);expect(await rawOrder(page)).toEqual(wanted);await expectNativeUnchanged(page);
   await page.getByRole('menuitem',{name:'Delete workspace',exact:true}).locator('svg').click();expect((await page.evaluate(()=>window.workspaceMenuFixture.snapshot())).calls).toEqual({'w1:delete':1});
@@ -36,13 +61,13 @@ for(const reveal of [true,false])test(`Appearance precedes original native sibli
 test('owned row in the old after-separator position is repaired without moving native nodes',async({page})=>{
   await mountWorkspace(page);await openWorkspace(page);await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);await captureNative(page);
   await page.evaluate(()=>{const own=document.querySelector('[data-wsp-menu]').parentElement;window.refineNative.wrapper.before(own);window.workspaceMenuFixture.setWorkspaces(['w1','w2']);});
-  await expect.poll(()=>rawOrder(page)).toEqual(['Rename','Show in folder','Appearance','separator','Delete workspace','content']);await expectNativeUnchanged(page);
+  await expect.poll(()=>rawOrder(page)).toEqual(['Rename','Appearance','Show in folder','separator','Delete workspace','content']);await expectNativeUnchanged(page);
 });
 
 test('known dynamic contribution preserves anchor and nodes; unknown content relinquishes only owned row',async({page})=>{
   await mountWorkspace(page,{reveal:false});await openWorkspace(page);await expect(page.locator('[data-wsp-menu]')).toHaveCount(1);await captureNative(page);
   await page.evaluate(()=>window.workspaceMenuFixture.configure({reveal:true}));
-  await expect.poll(()=>rawOrder(page)).toEqual(['Rename','Show in folder','Appearance','separator','Delete workspace','content']);await expectNativeUnchanged(page);
+  await expect.poll(()=>rawOrder(page)).toEqual(['Rename','Appearance','Show in folder','separator','Delete workspace','content']);await expectNativeUnchanged(page);
   await page.evaluate(()=>window.workspaceMenuFixture.configure({content:true}));await expect(page.locator('[data-wsp-menu]')).toHaveCount(0);await expectNativeUnchanged(page);
 });
 

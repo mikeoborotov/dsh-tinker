@@ -15,3 +15,7 @@ export { ShortcutKeys } from './native-rc2/packages/client/ui-primitives/src/Sho
 export { isDarwinDesktop } from './native-rc2/packages/client/ui-primitives/src/darwin-desktop.ts';
 export { IconNewChatOutlineMedium, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular } from './native-rc2/packages/client/ui-primitives/src/icons/index.tsx';
 export { observeComposition } from './native-rc2/packages/client/ui-primitives/src/keyboard-composition.ts';
+export { MenuSurface } from './native-rc2/packages/client/ui-primitives/src/MenuSurface.tsx';
+export { useModalLayer } from './native-rc2/packages/client/ui-primitives/src/useModalLayer.ts';
+export { useAnchoredPosition } from './native-rc2/packages/client/ui-primitives/src/useAnchoredPosition.ts';
+export { useDismissOnOutsidePointer } from './native-rc2/packages/client/ui-primitives/src/useDismissOnOutsidePointer.ts';

@@ -36,8 +36,8 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react6 = __toESM(require("react"), 1);
-var import_dsh_client_ui_primitives4 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_react7 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives5 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/store.js
 var STORAGE_KEY = "dsh-workspace-plus:v1";
@@ -335,6 +335,9 @@ function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
   let preceding = insertionAnchor.previousElementSibling;
   if (ownedButton && preceding === ownedButton.parentElement) preceding = preceding.previousElementSibling;
   if (preceding?.getAttribute("role") === "separator") insertionAnchor = preceding;
+  let following = rename[0].wrapper.nextElementSibling;
+  if (ownedButton && following === ownedButton.parentElement) following = following.nextElementSibling;
+  if (following) insertionAnchor = following;
   return { rename: rename[0], remove: remove[0], insertionAnchor };
 }
 function insertAppearanceItem(menu, id, label, onClick, labels) {
@@ -996,7 +999,7 @@ var CSS = `
 .wsp-category-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-category-trigger>svg{flex:none}
 /* Portal card sizing only. Menu owns material, rows, hover, checks and keyboard. */
-.wsp-emoji-category-menu{width:240px;min-width:0;max-width:calc(100vw - 24px)}
+.wsp-emoji-category-menu{min-width:0;max-width:calc(100vw - 24px)}
 /* Native Workspace Rename uses this raw-input shape, not the smaller public Input. */
 .wsp-appearance-input{width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;outline:none}
 .wsp-appearance-input:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
@@ -1004,14 +1007,36 @@ var CSS = `
 .wsp-appearance-input option{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .wsp-field-label{display:block;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
 .wsp-color-section{display:flex;flex-direction:column;gap:6px}
-.wsp-appearance-palette{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:4px 2px}
+.wsp-appearance-palette{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:7px}
 .wsp-appearance-palette .wsp-color-swatch{width:28px;height:28px;padding:0;border-radius:50%;corner-shape:round;background:var(--wsp-art-color)}
 .wsp-appearance-palette .wsp-color-swatch:hover:not(:disabled){background:var(--wsp-art-color)}
 .wsp-color-swatch[aria-pressed=true]{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
-.wsp-custom-color{width:28px;height:28px;padding:0;border:1px solid var(--dsw-alias-border-l4);border-radius:50%;corner-shape:round;background:transparent;cursor:pointer;overflow:hidden}
-.wsp-custom-color::-webkit-color-swatch-wrapper{padding:0}
-.wsp-custom-color::-webkit-color-swatch{border:0;border-radius:50%}
-.wsp-custom-color::-moz-color-swatch{border:0;border-radius:50%}
+.wsp-appearance-palette .wsp-custom-color,.wsp-appearance-palette .wsp-custom-color:hover:not(:disabled),.wsp-appearance-palette .wsp-custom-color:active:not(:disabled){width:28px;height:28px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:conic-gradient(#ff0000 0deg,#ffff00 60deg,#00ff00 120deg,#00ffff 180deg,#0000ff 240deg,#ff00ff 300deg,#ff0000 360deg);box-shadow:none;cursor:pointer}
+.wsp-custom-color:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
+.wsp-color-picker{z-index:1100;box-sizing:border-box;display:flex;flex-direction:column;width:510px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 12px - max(12px,var(--dsh-frame-overlay-top,12px)));overflow:hidden;border:.5px solid var(--dsw-alias-border-l3);border-radius:16px;corner-shape:round;box-shadow:var(--dsw-elevation-prominent);font:inherit;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary);outline:none}
+.wsp-color-picker *{box-sizing:border-box}
+.wsp-color-picker-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0;flex:none}
+.wsp-color-picker-header h3{margin:0;font-size:14px;line-height:22px;font-weight:600}
+.wsp-color-picker-header .wsp-color-close{width:28px;height:28px;padding:0;color:var(--dsw-alias-label-secondary)}
+.wsp-color-picker-content{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:20px;padding:14px 16px 16px;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-color-plane{position:relative;min-width:0;height:248px;border-radius:12px;corner-shape:round;background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),var(--wsp-hue);overflow:hidden;cursor:crosshair;touch-action:none;outline:none}
+.wsp-color-handle{position:absolute;width:14px;height:14px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}
+.wsp-color-controls{display:flex;flex-direction:column;gap:13px;min-width:0}
+.wsp-color-channel{display:flex;flex-direction:column;gap:7px;min-width:0}
+.wsp-color-channel>span{display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
+.wsp-color-channel output{font-size:10px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
+.wsp-color-range{appearance:none;width:100%;height:16px;border:0;border-radius:12px;margin:0;cursor:pointer;touch-action:none;outline:none}
+.wsp-color-range::-webkit-slider-thumb{appearance:none;width:16px;height:20px;border:2px solid #fff;border-radius:8px;background:transparent;box-shadow:0 1px 4px #0009}
+.wsp-color-range::-moz-range-thumb{width:12px;height:16px;border:2px solid #fff;border-radius:8px;background:transparent;box-shadow:0 1px 4px #0009}
+.wsp-color-hex-field{min-width:0}
+.wsp-color-hex-field>label{display:block;margin-bottom:7px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
+.wsp-color-hex-row{display:flex;align-items:center;gap:10px;min-width:0}
+.wsp-color-current{width:38px;height:38px;flex:none;border-radius:10px}
+.wsp-color-hex{width:100%;min-width:0;height:40px;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:12px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;outline:none}
+.wsp-color-plane:focus-visible,.wsp-color-range:focus-visible,.wsp-color-hex:focus-visible{outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-color-error{margin:7px 0 0;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:16px}
+.wsp-color-picker-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:.5px solid var(--dsw-alias-border-l3);flex:none}
+@media(max-width:520px){.wsp-color-picker-content{gap:14px;padding-left:14px;padding-right:14px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.wsp-color-current{width:28px;height:34px}.wsp-color-hex-row{gap:6px}.wsp-color-hex{padding:7px 8px;font-size:12px}.wsp-color-channel>span{font-size:10px}}
 .wsp-choice-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:40px;align-content:start;gap:6px;flex:1;min-height:80px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
 .wsp-choice-grid .wsp-choice{height:40px;min-width:0;width:100%;padding:0}
 .wsp-choice[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l4)}
@@ -1095,6 +1120,12 @@ var en = {
   image: "Image",
   color: "Color",
   customColor: "Custom color",
+  colorHue: "Hue",
+  colorSaturation: "Saturation",
+  colorBrightness: "Brightness",
+  colorArea: "Saturation and brightness",
+  applyColor: "Apply",
+  colorHexError: "Enter a HEX color such as #4176e6.",
   searchIcons: "Search icons",
   searchEmoji: "Search emoji",
   emojiCategory: "Emoji category",
@@ -1192,6 +1223,12 @@ var ru = {
   image: "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
   color: "\u0426\u0432\u0435\u0442",
   customColor: "\u0421\u0432\u043E\u0439 \u0446\u0432\u0435\u0442",
+  colorHue: "\u0422\u043E\u043D",
+  colorSaturation: "\u041D\u0430\u0441\u044B\u0449\u0435\u043D\u043D\u043E\u0441\u0442\u044C",
+  colorBrightness: "\u042F\u0440\u043A\u043E\u0441\u0442\u044C",
+  colorArea: "\u041D\u0430\u0441\u044B\u0449\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u0438 \u044F\u0440\u043A\u043E\u0441\u0442\u044C",
+  applyColor: "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C",
+  colorHexError: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 HEX-\u0446\u0432\u0435\u0442, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 #4176e6.",
   searchIcons: "\u041F\u043E\u0438\u0441\u043A \u0438\u043A\u043E\u043D\u043E\u043A",
   searchEmoji: "\u041F\u043E\u0438\u0441\u043A emoji",
   emojiCategory: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F emoji",
@@ -1276,8 +1313,8 @@ for (const icon of ICONS) {
 var dictionaries = { en, ru, zh: en };
 
 // src/appearance-dialog.jsx
-var import_react2 = __toESM(require("react"), 1);
-var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_react3 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/use-store.js
 var import_react = require("react");
@@ -4994,49 +5031,249 @@ async function imageData(file) {
   }
 }
 
+// src/color-picker.jsx
+var import_react2 = __toESM(require("react"), 1);
+var import_react_dom = require("react-dom");
+var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+
+// src/colors.js
+var clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+function normalizeHex(value) {
+  if (typeof value !== "string") return null;
+  let hex = value.trim().replace(/^#/, "");
+  if (/^[0-9a-f]{3}$/i.test(hex)) hex = [...hex].map((char) => char + char).join("");
+  return /^[0-9a-f]{6}$/i.test(hex) ? "#" + hex.toLowerCase() : null;
+}
+function hexToHsv(value) {
+  const hex = normalizeHex(value);
+  if (!hex) return null;
+  const [r, g, b] = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+  let hue = 0;
+  if (delta) {
+    if (max === r) hue = (g - b) / delta;
+    else if (max === g) hue = (b - r) / delta + 2;
+    else hue = (r - g) / delta + 4;
+    hue *= 60;
+  }
+  return { h: (hue + 360) % 360, s: max ? delta / max * 100 : 0, v: max * 100 };
+}
+function hsvToHex(value) {
+  if (!value || typeof value !== "object") return null;
+  let { h, s, v } = value;
+  if (![h, s, v].every((channel) => typeof channel === "number" && Number.isFinite(channel))) return null;
+  h = (h % 360 + 360) % 360;
+  s = clamp(s, 0, 100) / 100;
+  v = clamp(v, 0, 100) / 100;
+  const c = v * s, x = c * (1 - Math.abs(h / 60 % 2 - 1)), m = v - c;
+  const channels = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60)];
+  return "#" + channels.map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, "0")).join("");
+}
+
+// src/color-picker.jsx
+var clamp2 = (value, min, max) => Math.min(max, Math.max(min, value));
+function ColorPicker({ anchorRef, dialogRef, color, onChange, onApply, onCancel, onDismiss, t }) {
+  const [hsv, setHsv] = (0, import_react2.useState)(() => hexToHsv(color));
+  const [text, setText] = (0, import_react2.useState)(color), [invalid, setInvalid] = (0, import_react2.useState)(false);
+  const drag = (0, import_react2.useRef)(null), id = "wsp-color-" + (0, import_react2.useId)().replace(/[^a-zA-Z0-9_-]/g, "");
+  const position = (0, import_dsh_client_ui_primitives.useAnchoredPosition)({ open: true, anchorRef, panelRef: dialogRef, side: "bottom", align: "start", gap: 8, margin: 12 });
+  (0, import_dsh_client_ui_primitives.useModalLayer)(dialogRef, position !== null, onCancel);
+  (0, import_dsh_client_ui_primitives.useDismissOnOutsidePointer)(anchorRef, true, (next) => {
+    if (!next) onDismiss();
+  }, dialogRef);
+  (0, import_react2.useEffect)(() => () => {
+    const current = drag.current;
+    if (current?.element.hasPointerCapture(current.id)) current.element.releasePointerCapture(current.id);
+    drag.current = null;
+  }, []);
+  function update(next) {
+    const value = hsvToHex(next);
+    if (!value) return;
+    setHsv(next);
+    setText(value);
+    setInvalid(false);
+    onChange(value);
+  }
+  function commit() {
+    const value = normalizeHex(text);
+    if (!value) {
+      setInvalid(true);
+      return;
+    }
+    setText(value);
+    setInvalid(false);
+    onChange(value);
+    onApply();
+  }
+  function movePointer(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    update({ ...hsv, s: clamp2((event.clientX - rect.left) / rect.width * 100, 0, 100), v: clamp2((1 - (event.clientY - rect.top) / rect.height) * 100, 0, 100) });
+  }
+  function endDrag(event) {
+    const current = drag.current;
+    if (current?.id !== event.pointerId) return;
+    drag.current = null;
+    if (current.element.hasPointerCapture(current.id)) current.element.releasePointerCapture(current.id);
+  }
+  const saturationStart = hsvToHex({ ...hsv, s: 0 }), saturationEnd = hsvToHex({ ...hsv, s: 100 });
+  const brightnessEnd = hsvToHex({ ...hsv, v: 100 });
+  return (0, import_react_dom.createPortal)(/* @__PURE__ */ import_react2.default.createElement(
+    import_dsh_client_ui_primitives.MenuSurface,
+    {
+      ref: dialogRef,
+      className: "wsp-color-picker",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": id + "-title",
+      tabIndex: -1,
+      style: { position: "fixed", ...position, visibility: position ? "visible" : "hidden" }
+    },
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-picker-header" }, /* @__PURE__ */ import_react2.default.createElement("h3", { id: id + "-title" }, t("customColor")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { className: "wsp-color-close", size: "sm", "aria-label": t("close"), onClick: onCancel }, /* @__PURE__ */ import_react2.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 24 24", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement("path", { d: "m6 6 12 12M18 6 6 18", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" })))),
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-picker-content" }, /* @__PURE__ */ import_react2.default.createElement(
+      "div",
+      {
+        className: "wsp-color-plane",
+        role: "slider",
+        tabIndex: 0,
+        "aria-label": t("colorArea"),
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+        "aria-valuenow": Math.round(hsv.s),
+        "aria-valuetext": `${t("colorSaturation")}: ${Math.round(hsv.s)}%, ${t("colorBrightness")}: ${Math.round(hsv.v)}%`,
+        style: { "--wsp-hue": `hsl(${hsv.h} 100% 50%)` },
+        onPointerDown: (event) => {
+          if (event.button !== 0 || drag.current) return;
+          event.preventDefault();
+          event.currentTarget.focus({ preventScroll: true });
+          drag.current = { id: event.pointerId, element: event.currentTarget };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          movePointer(event);
+        },
+        onPointerMove: (event) => {
+          if (drag.current?.id === event.pointerId) movePointer(event);
+        },
+        onPointerUp: endDrag,
+        onPointerCancel: endDrag,
+        onLostPointerCapture: () => {
+          drag.current = null;
+        },
+        onKeyDown: (event) => {
+          if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          const step = event.shiftKey ? 10 : 1;
+          update({
+            ...hsv,
+            s: clamp2(hsv.s + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), 0, 100),
+            v: clamp2(hsv.v + (event.key === "ArrowUp" ? step : event.key === "ArrowDown" ? -step : 0), 0, 100)
+          });
+        }
+      },
+      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-color-handle", style: { left: hsv.s + "%", top: 100 - hsv.v + "%" } })
+    ), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-controls" }, [
+      { key: "h", label: "colorHue", max: 359, track: "linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)" },
+      { key: "s", label: "colorSaturation", max: 100, track: `linear-gradient(to right,${saturationStart},${saturationEnd})` },
+      { key: "v", label: "colorBrightness", max: 100, track: `linear-gradient(to right,#000,${brightnessEnd})` }
+    ].map((channel) => /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-color-channel", key: channel.key }, /* @__PURE__ */ import_react2.default.createElement("span", null, t(channel.label), /* @__PURE__ */ import_react2.default.createElement("output", null, Math.round(hsv[channel.key]), channel.key === "h" ? "\xB0" : "%")), /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        type: "range",
+        className: "wsp-color-range",
+        "aria-label": t(channel.label),
+        min: 0,
+        max: channel.max,
+        step: 1,
+        value: Math.round(hsv[channel.key]),
+        style: { backgroundImage: channel.track },
+        onChange: (event) => update({ ...hsv, [channel.key]: Number(event.target.value) })
+      }
+    ))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-hex-field" }, /* @__PURE__ */ import_react2.default.createElement("label", { htmlFor: id + "-hex" }, "HEX"), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-hex-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-color-current", "aria-hidden": "true", style: { backgroundColor: color } }), /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        id: id + "-hex",
+        className: "wsp-color-hex",
+        type: "text",
+        "aria-label": "HEX",
+        "data-modal-autofocus": true,
+        autoComplete: "off",
+        spellCheck: false,
+        value: text,
+        "aria-invalid": invalid,
+        "aria-describedby": invalid ? id + "-error" : void 0,
+        onChange: (event) => {
+          const raw = event.target.value, value = normalizeHex(raw);
+          setText(raw);
+          setInvalid(false);
+          if (value) {
+            setHsv(hexToHsv(value));
+            onChange(value);
+          }
+        },
+        onKeyDown: (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+            commit();
+          }
+        }
+      }
+    )), invalid && /* @__PURE__ */ import_react2.default.createElement("p", { id: id + "-error", className: "wsp-color-error", role: "status" }, t("colorHexError"))))),
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-picker-footer" }, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", onClick: onCancel }, t("cancel")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "primary", onClick: commit }, t("applyColor")))
+  ), document.body);
+}
+
 // src/appearance-dialog.jsx
 var DEFAULT_ICON = { kind: "icon", icon: "folder", color: PALETTE[0] };
 var PAGE_SIZE = 120;
 var hasFiles = (event) => [...event.dataTransfer?.types ?? []].includes("Files");
 function Artwork({ appearance }) {
-  const ref = (0, import_react2.useRef)(null);
-  (0, import_react2.useLayoutEffect)(() => {
+  const ref = (0, import_react3.useRef)(null);
+  (0, import_react3.useLayoutEffect)(() => {
     if (ref.current) fillAppearance(ref.current, appearance);
   }, [appearance]);
-  return /* @__PURE__ */ import_react2.default.createElement("span", { ref, className: "wsp-icon", "aria-hidden": "true" });
+  return /* @__PURE__ */ import_react3.default.createElement("span", { ref, className: "wsp-icon", "aria-hidden": "true" });
 }
 function Preview({ appearance }) {
-  return appearance ? /* @__PURE__ */ import_react2.default.createElement(Artwork, { appearance }) : /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-icon wsp-native-folder", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.IconFolderCloseRegular, { size: 16 }));
+  return appearance ? /* @__PURE__ */ import_react3.default.createElement(Artwork, { appearance }) : /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-icon wsp-native-folder", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }));
 }
 function KindGlyph({ kind }) {
-  return /* @__PURE__ */ import_react2.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", focusable: "false" }, kind === "icon" ? /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("path", { d: "m7 3 4 7H3Z" }), /* @__PURE__ */ import_react2.default.createElement("rect", { x: "3", y: "14", width: "7", height: "7", rx: "1" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "17", cy: "17", r: "4" })) : kind === "emoji" ? /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ import_react2.default.createElement("path", { d: "M8 14a4.5 4.5 0 0 0 8 0" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "9", cy: "9", r: ".5" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "15", cy: "9", r: ".5" })) : /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "8", cy: "8", r: "1.5" }), /* @__PURE__ */ import_react2.default.createElement("path", { d: "m3 17 5-5 4 4 4-6 5 7" })));
+  return /* @__PURE__ */ import_react3.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", focusable: "false" }, kind === "icon" ? /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement("path", { d: "m7 3 4 7H3Z" }), /* @__PURE__ */ import_react3.default.createElement("rect", { x: "3", y: "14", width: "7", height: "7", rx: "1" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "17", cy: "17", r: "4" })) : kind === "emoji" ? /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ import_react3.default.createElement("path", { d: "M8 14a4.5 4.5 0 0 0 8 0" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "9", cy: "9", r: ".5" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "15", cy: "9", r: ".5" })) : /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement("rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "8", cy: "8", r: "1.5" }), /* @__PURE__ */ import_react3.default.createElement("path", { d: "m3 17 5-5 4 4 4-6 5 7" })));
 }
 function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   const list = useStore(workspaces.list);
   const workspace = list.items.find((item) => item.workspaceId === target.id);
-  const saved = (0, import_react2.useRef)(prefs.appearance(target.id)).current;
+  const saved = (0, import_react3.useRef)(prefs.appearance(target.id)).current;
   const initial = saved ?? DEFAULT_ICON;
-  const [restoring, setRestoring] = (0, import_react2.useState)(!saved);
-  const [kind, setKind] = (0, import_react2.useState)(initial.kind);
-  const [drafts, setDrafts] = (0, import_react2.useState)(() => ({
+  const [restoring, setRestoring] = (0, import_react3.useState)(!saved);
+  const [kind, setKind] = (0, import_react3.useState)(initial.kind);
+  const [drafts, setDrafts] = (0, import_react3.useState)(() => ({
     icon: DEFAULT_ICON,
     emoji: { kind: "emoji", emoji: "\u{1F4BB}" },
     image: { kind: "image", data: "" },
     [initial.kind]: initial
   }));
   const appearance = drafts[kind];
-  const [error, setError] = (0, import_react2.useState)(""), [loading, setLoading] = (0, import_react2.useState)(false);
-  const [iconQuery, setIconQuery] = (0, import_react2.useState)(""), [emojiQuery, setEmojiQuery] = (0, import_react2.useState)("");
-  const [emojiGroup, setEmojiGroup] = (0, import_react2.useState)("all"), [emojiLimit, setEmojiLimit] = (0, import_react2.useState)(PAGE_SIZE);
-  const [categoryOpen, setCategoryOpen] = (0, import_react2.useState)(false), categoryTrigger = (0, import_react2.useRef)(null);
-  const [categoryAutoFocus, setCategoryAutoFocus] = (0, import_react2.useState)(false);
-  const categoryGeneration = (0, import_react2.useRef)(0), categoryState = (0, import_react2.useRef)(null);
-  const [dragging, setDragging] = (0, import_react2.useState)(false);
-  const uploadGeneration = (0, import_react2.useRef)(0), dragDepth = (0, import_react2.useRef)(0), uploadInput = (0, import_react2.useRef)(null), compositionObserver = (0, import_react2.useRef)(null);
+  const [error, setError] = (0, import_react3.useState)(""), [loading, setLoading] = (0, import_react3.useState)(false);
+  const [iconQuery, setIconQuery] = (0, import_react3.useState)(""), [emojiQuery, setEmojiQuery] = (0, import_react3.useState)("");
+  const [emojiGroup, setEmojiGroup] = (0, import_react3.useState)("all"), [emojiLimit, setEmojiLimit] = (0, import_react3.useState)(PAGE_SIZE);
+  const [categoryOpen, setCategoryOpen] = (0, import_react3.useState)(false), categoryTrigger = (0, import_react3.useRef)(null);
+  const [categoryAutoFocus, setCategoryAutoFocus] = (0, import_react3.useState)(false), [categoryWidth, setCategoryWidth] = (0, import_react3.useState)(0);
+  const categorySizeClass = "wsp-category-size-" + (0, import_react3.useId)().replace(/[^a-zA-Z0-9_-]/g, "");
+  const categoryGeneration = (0, import_react3.useRef)(0), categoryState = (0, import_react3.useRef)(null);
+  const [colorPickerOpen, setColorPickerOpen] = (0, import_react3.useState)(false);
+  const colorTrigger = (0, import_react3.useRef)(null), colorDialog = (0, import_react3.useRef)(null), colorBaseline = (0, import_react3.useRef)(null);
+  const [dragging, setDragging] = (0, import_react3.useState)(false);
+  const uploadGeneration = (0, import_react3.useRef)(0), dragDepth = (0, import_react3.useRef)(0), uploadInput = (0, import_react3.useRef)(null), compositionObserver = (0, import_react3.useRef)(null);
   const language = String(lang ?? t("language")), russian = language.startsWith("ru"), targetAvailable = Boolean(workspace);
   categoryState.current = { open: categoryOpen, kind, language, targetId: target.id, available: targetAvailable };
   const categoryItems = [{ id: "all", label: t("allEmoji") }, ...EMOJI_GROUPS.map((group) => ({ id: group.id, label: russian ? group.ru : group.en }))];
+  function measureCategoryWidth() {
+    const width = categoryTrigger.current?.getBoundingClientRect().width;
+    if (Number.isFinite(width) && width > 0) setCategoryWidth(width);
+  }
   function openCategory() {
+    measureCategoryWidth();
     categoryGeneration.current++;
     setCategoryAutoFocus(false);
     setCategoryOpen(true);
@@ -5048,7 +5285,22 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setCategoryOpen(false);
     if (restoreFocus) categoryTrigger.current?.focus({ preventScroll: true });
   }
+  function openColorPicker() {
+    closeCategory();
+    colorBaseline.current = { icon: { ...drafts.icon }, restoring };
+    setColorPickerOpen(true);
+  }
+  function closeColorPicker(rollback = false) {
+    if (rollback && colorBaseline.current) {
+      const baseline = colorBaseline.current;
+      setDrafts((previous) => ({ ...previous, icon: baseline.icon }));
+      setRestoring(baseline.restoring);
+    }
+    colorBaseline.current = null;
+    setColorPickerOpen(false);
+  }
   const close = () => {
+    closeColorPicker();
     closeCategory();
     uploadGeneration.current++;
     ui.set({ target: null });
@@ -5059,6 +5311,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setDrafts((previous) => ({ ...previous, [next.kind]: next }));
   }
   function selectKind(next) {
+    closeColorPicker();
     closeCategory();
     if (next === kind) return;
     uploadGeneration.current++;
@@ -5070,6 +5323,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setKind(next);
   }
   function restoreDefault() {
+    closeColorPicker();
     closeCategory();
     uploadGeneration.current++;
     setLoading(false);
@@ -5078,15 +5332,15 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     dragDepth.current = 0;
     setRestoring(true);
   }
-  (0, import_react2.useLayoutEffect)(() => {
-    const observer = (0, import_dsh_client_ui_primitives.observeComposition)(document);
+  (0, import_react3.useLayoutEffect)(() => {
+    const observer = (0, import_dsh_client_ui_primitives2.observeComposition)(document);
     compositionObserver.current = observer;
     return () => {
       observer.dispose();
       compositionObserver.current = null;
     };
   }, []);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     const ignoreOutsideDrop = (event) => {
       if (hasFiles(event) || Array.from(event.dataTransfer?.types ?? []).includes("text/uri-list")) {
         event.preventDefault();
@@ -5104,16 +5358,37 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       });
     };
   }, []);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     if (list.phase === "ready" && !workspace) close();
   }, [workspace, list.phase]);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     setEmojiLimit(PAGE_SIZE);
   }, [emojiQuery, emojiGroup]);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useLayoutEffect)(() => {
+    const trigger = categoryTrigger.current;
+    if (kind !== "emoji" || !targetAvailable || !trigger) {
+      setCategoryWidth(0);
+      return;
+    }
+    let active = true;
+    const measure = () => {
+      if (active && trigger.isConnected) measureCategoryWidth();
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(trigger);
+    window.addEventListener("resize", measure);
+    return () => {
+      active = false;
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [kind, language, target.id, targetAvailable]);
+  (0, import_react3.useEffect)(() => {
+    closeColorPicker();
     closeCategory(categoryOpen && Boolean(document.activeElement?.closest(".wsp-emoji-category-menu")));
   }, [language]);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     if (!categoryOpen || kind !== "emoji" || !targetAvailable || !categoryState.current.open) return;
     const generation = categoryGeneration.current, trigger = categoryTrigger.current, targetId = target.id;
     let active = true;
@@ -5126,11 +5401,11 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       cancelAnimationFrame(frame);
     };
   }, [categoryOpen, kind, language, target.id, targetAvailable]);
-  const matchingIcons = (0, import_react2.useMemo)(() => {
+  const matchingIcons = (0, import_react3.useMemo)(() => {
     const terms = normalizeSearch(iconQuery).split(" ").filter(Boolean);
     return ICONS.filter((icon) => terms.every((term) => normalizeSearch(`${icon.id} ${icon.en} ${icon.ru}`).includes(term)));
   }, [iconQuery]);
-  const matchingEmoji = (0, import_react2.useMemo)(() => searchEmoji(emojiQuery, emojiGroup), [emojiQuery, emojiGroup]);
+  const matchingEmoji = (0, import_react3.useMemo)(() => searchEmoji(emojiQuery, emojiGroup), [emojiQuery, emojiGroup]);
   let valid = true;
   if (!restoring) try {
     validateAppearance(appearance, ICON_IDS);
@@ -5171,8 +5446,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       if (generation === uploadGeneration.current) setLoading(false);
     }
   }
-  return /* @__PURE__ */ import_react2.default.createElement(
-    import_dsh_client_ui_primitives.Modal,
+  return /* @__PURE__ */ import_react3.default.createElement(
+    import_dsh_client_ui_primitives2.Modal,
     {
       open: true,
       title: t("changeAppearance"),
@@ -5182,10 +5457,16 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       contentClassName: "wsp-appearance-content",
       onKeyDownCapture: (event) => {
         const composing = compositionObserver.current?.guards(event.nativeEvent);
+        const inColorPicker = colorDialog.current?.contains(event.target);
         if (composing) {
+          if (inColorPicker) {
+            event.stopPropagation();
+            if (event.target.tagName !== "INPUT" || event.target.type !== "text") event.preventDefault();
+          }
           if (event.key === "Enter" && event.target.tagName === "BUTTON") event.preventDefault();
           return;
         }
+        if (inColorPicker) return;
         if (!categoryOpen && event.key === "ArrowDown" && event.target === categoryTrigger.current) {
           event.preventDefault();
           event.stopPropagation();
@@ -5198,12 +5479,12 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           save();
         }
       },
-      footer: /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { className: "wsp-reset-action", variant: "ghost", onClick: restoreDefault }, t("reset")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : t("save")))
+      footer: /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { className: "wsp-reset-action", variant: "ghost", onClick: restoreDefault }, t("reset")), /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : t("save")))
     },
-    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-body" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-context" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-preview-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-preview-label", className: "wsp-field-label" }, t("previewLabel")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-list-preview", role: "group", "aria-labelledby": "wsp-preview-label" }, /* @__PURE__ */ import_react2.default.createElement(Preview, { appearance: restoring ? null : appearance }), /* @__PURE__ */ import_react2.default.createElement("span", { title: workspace?.title }, workspace?.title))), /* @__PURE__ */ import_react2.default.createElement("hr", { className: "wsp-preview-divider" }), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-kind-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-kind-label", className: "wsp-field-label" }, t("selectIconType")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-kind-tabs", role: "group", "aria-labelledby": "wsp-kind-label" }, ["icon", "emoji", "image"].map((value) => /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { key: value, className: "wsp-kind-choice", size: "sm", "aria-pressed": kind === value, onClick: () => selectKind(value) }, /* @__PURE__ */ import_react2.default.createElement(KindGlyph, { kind: value }), /* @__PURE__ */ import_react2.default.createElement("span", null, t(value))))))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-editor", onScrollCapture: (event) => {
+    /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-body" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-context" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-preview-section" }, /* @__PURE__ */ import_react3.default.createElement("span", { id: "wsp-preview-label", className: "wsp-field-label" }, t("previewLabel")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-list-preview", role: "group", "aria-labelledby": "wsp-preview-label" }, /* @__PURE__ */ import_react3.default.createElement(Preview, { appearance: restoring ? null : appearance }), /* @__PURE__ */ import_react3.default.createElement("span", { title: workspace?.title }, workspace?.title))), /* @__PURE__ */ import_react3.default.createElement("hr", { className: "wsp-preview-divider" }), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-kind-section" }, /* @__PURE__ */ import_react3.default.createElement("span", { id: "wsp-kind-label", className: "wsp-field-label" }, t("selectIconType")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-kind-tabs", role: "group", "aria-labelledby": "wsp-kind-label" }, ["icon", "emoji", "image"].map((value) => /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { key: value, className: "wsp-kind-choice", size: "sm", "aria-pressed": kind === value, onClick: () => selectKind(value) }, /* @__PURE__ */ import_react3.default.createElement(KindGlyph, { kind: value }), /* @__PURE__ */ import_react3.default.createElement("span", null, t(value))))))), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-editor", onScrollCapture: (event) => {
       if (categoryOpen && event.currentTarget.contains(event.target)) closeCategory(Boolean(document.activeElement?.closest(".wsp-emoji-category-menu")));
-    } }, kind === "icon" && /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-field-label" }, t("selectIconColor")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-palette", role: "group", "aria-label": t("selectIconColor") }, PALETTE.map((color) => /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Button,
+    } }, kind === "icon" && /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-color-section" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-field-label" }, t("selectIconColor")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-palette", role: "group", "aria-label": t("selectIconColor") }, PALETTE.map((color) => /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
       {
         key: color,
         className: "wsp-color-swatch",
@@ -5213,7 +5494,30 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         style: { "--wsp-art-color": color },
         onClick: () => setAppearance({ ...appearance, color })
       }
-    )), /* @__PURE__ */ import_react2.default.createElement("input", { className: "wsp-custom-color", type: "color", "aria-label": t("customColor"), title: t("customColor"), value: appearance.color, onChange: (event) => setAppearance({ ...appearance, color: event.target.value }) }))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-icon-search" }, t("selectIcon")), /* @__PURE__ */ import_react2.default.createElement(
+    )), /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
+      {
+        ref: colorTrigger,
+        className: "wsp-custom-color",
+        "aria-label": t("customColor"),
+        title: t("customColor"),
+        "aria-haspopup": "dialog",
+        "aria-expanded": colorPickerOpen,
+        onClick: () => colorPickerOpen ? closeColorPicker() : openColorPicker()
+      }
+    ), colorPickerOpen && /* @__PURE__ */ import_react3.default.createElement(
+      ColorPicker,
+      {
+        anchorRef: colorTrigger,
+        dialogRef: colorDialog,
+        color: drafts.icon.color,
+        t,
+        onChange: (color) => setAppearance({ ...drafts.icon, color }),
+        onApply: () => closeColorPicker(),
+        onCancel: () => closeColorPicker(true),
+        onDismiss: () => closeColorPicker()
+      }
+    ))), /* @__PURE__ */ import_react3.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-icon-search" }, t("selectIcon")), /* @__PURE__ */ import_react3.default.createElement(
       "input",
       {
         id: "wsp-icon-search",
@@ -5225,8 +5529,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         value: iconQuery,
         onChange: (event) => setIconQuery(event.target.value)
       }
-    ), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-choice-grid", role: "group", "aria-label": t("icon") }, matchingIcons.map((icon) => /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Button,
+    ), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-choice-grid", role: "group", "aria-label": t("icon") }, matchingIcons.map((icon) => /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
       {
         key: icon.id,
         className: "wsp-choice",
@@ -5235,8 +5539,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         "aria-pressed": appearance.icon === icon.id,
         onClick: () => setAppearance({ ...appearance, icon: icon.id })
       },
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-icon", style: { color: appearance.color }, dangerouslySetInnerHTML: { __html: icon.svg } })
-    ))), matchingIcons.length === 0 && /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults"))), kind === "emoji" && /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji-search" }, t("selectEmoji")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-search-category" }, /* @__PURE__ */ import_react2.default.createElement(
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-icon", style: { color: appearance.color }, dangerouslySetInnerHTML: { __html: icon.svg } })
+    ))), matchingIcons.length === 0 && /* @__PURE__ */ import_react3.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults"))), kind === "emoji" && /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react3.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji-search" }, t("selectEmoji")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-search-category" }, /* @__PURE__ */ import_react3.default.createElement(
       "input",
       {
         id: "wsp-emoji-search",
@@ -5248,8 +5552,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         value: emojiQuery,
         onChange: (event) => setEmojiQuery(event.target.value)
       }
-    ), /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Menu,
+    ), categoryWidth > 0 && /* @__PURE__ */ import_react3.default.createElement("style", null, `.${categorySizeClass}{width:${categoryWidth}px}`), /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Menu,
       {
         open: categoryOpen,
         portal: true,
@@ -5258,7 +5562,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         autoFocus: categoryAutoFocus,
         selection: "check",
         className: "wsp-category-anchor",
-        listClassName: "wsp-emoji-category-menu",
+        listClassName: "wsp-emoji-category-menu " + categorySizeClass,
         items: categoryItems,
         selectedId: emojiGroup,
         onSelect: (id) => {
@@ -5266,8 +5570,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           closeCategory();
         },
         onClose: () => closeCategory(),
-        anchor: /* @__PURE__ */ import_react2.default.createElement(
-          import_dsh_client_ui_primitives.Button,
+        anchor: /* @__PURE__ */ import_react3.default.createElement(
+          import_dsh_client_ui_primitives2.Button,
           {
             ref: categoryTrigger,
             className: "wsp-category-trigger",
@@ -5278,12 +5582,12 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
             "aria-expanded": categoryOpen,
             onClick: () => categoryOpen ? closeCategory() : openCategory()
           },
-          /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-category-value", className: "wsp-category-value" }, categoryItems.find((item) => item.id === emojiGroup)?.label),
-          /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.IconChevronDownOutlineRegular, { size: 16 })
+          /* @__PURE__ */ import_react3.default.createElement("span", { id: "wsp-category-value", className: "wsp-category-value" }, categoryItems.find((item) => item.id === emojiGroup)?.label),
+          /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.IconChevronDownOutlineRegular, { size: 16 })
         )
       }
-    )), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-choice-grid wsp-emoji-grid", role: "group", "aria-label": t("emojiCatalog") }, matchingEmoji.slice(0, emojiLimit).map((item) => /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Button,
+    )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-choice-grid wsp-emoji-grid", role: "group", "aria-label": t("emojiCatalog") }, matchingEmoji.slice(0, emojiLimit).map((item) => /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
       {
         key: item.emoji,
         className: "wsp-choice wsp-emoji-choice",
@@ -5293,7 +5597,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         onClick: () => setAppearance({ kind: "emoji", emoji: item.emoji })
       },
       item.emoji
-    ))), matchingEmoji.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults")) : /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-results-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, Math.min(emojiLimit, matchingEmoji.length), " / ", matchingEmoji.length), emojiLimit < matchingEmoji.length && /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { size: "sm", onClick: () => setEmojiLimit((value) => value + PAGE_SIZE) }, t("showMore"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji" }, t("customEmoji")), /* @__PURE__ */ import_react2.default.createElement("input", { id: "wsp-emoji", className: "wsp-appearance-input", type: "text", maxLength: 32, value: appearance.emoji, onChange: (event) => setAppearance({ kind: "emoji", emoji: event.target.value }) })), kind === "image" && /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-field-label" }, t("uploadImage")), /* @__PURE__ */ import_react2.default.createElement(
+    ))), matchingEmoji.length === 0 ? /* @__PURE__ */ import_react3.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults")) : /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-results-row" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-help" }, Math.min(emojiLimit, matchingEmoji.length), " / ", matchingEmoji.length), emojiLimit < matchingEmoji.length && /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { size: "sm", onClick: () => setEmojiLimit((value) => value + PAGE_SIZE) }, t("showMore"))), /* @__PURE__ */ import_react3.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji" }, t("customEmoji")), /* @__PURE__ */ import_react3.default.createElement("input", { id: "wsp-emoji", className: "wsp-appearance-input", type: "text", maxLength: 32, value: appearance.emoji, onChange: (event) => setAppearance({ kind: "emoji", emoji: event.target.value }) })), kind === "image" && /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-field-label" }, t("uploadImage")), /* @__PURE__ */ import_react3.default.createElement(
       "div",
       {
         className: "wsp-image-dropzone" + (dragging ? " wsp-is-dragging" : ""),
@@ -5328,10 +5632,10 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           }
         }
       },
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-drop-title" }, t("dropImage")),
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, t("orChooseImage")),
-      /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", "data-modal-autofocus": true, onClick: () => uploadInput.current?.click() }, t("upload")),
-      /* @__PURE__ */ import_react2.default.createElement(
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-drop-title" }, t("dropImage")),
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-help" }, t("orChooseImage")),
+      /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { variant: "outline", "data-modal-autofocus": true, onClick: () => uploadInput.current?.click() }, t("upload")),
+      /* @__PURE__ */ import_react3.default.createElement(
         "input",
         {
           ref: uploadInput,
@@ -5347,8 +5651,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           }
         }
       ),
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, t("imageHint"))
-    )), error && /* @__PURE__ */ import_react2.default.createElement("div", { role: "alert", className: "wsp-error" }, error)))
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-help" }, t("imageHint"))
+    )), error && /* @__PURE__ */ import_react3.default.createElement("div", { role: "alert", className: "wsp-error" }, error)))
   );
 }
 
@@ -5471,8 +5775,8 @@ function observeSessionOpenings(sessions, reminders) {
 }
 
 // src/session-actions.jsx
-var import_react3 = __toESM(require("react"), 1);
-var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_react4 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/sidebar-branding.js
 var BRANDING_CSS = `
@@ -5602,7 +5906,7 @@ var SESSION_ACTION_CSS = `
 .wsp-unread-error{display:block;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;max-width:260px}
 `;
 function UnreadIcon({ size = 16 }) {
-  return /* @__PURE__ */ import_react3.default.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
+  return /* @__PURE__ */ import_react4.default.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react4.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
 }
 function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
   const unreadShortcut = registerUnreadShortcuts(ctx, { prefs, reminders, t: (key) => ctx.locale.bind(namespace)(key) });
@@ -5610,15 +5914,15 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
     const settings = useStore(prefs), state = useStore(reminders), shortcut = useStore(unreadShortcut);
     const [, setOpen] = useMenuOpenState();
     if (!settings.features.unread) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("div", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.MenuItemButton, { icon: /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null), shortcut, onSelect: () => {
+    return /* @__PURE__ */ import_react4.default.createElement("div", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.MenuItemButton, { icon: /* @__PURE__ */ import_react4.default.createElement(UnreadIcon, null), shortcut, onSelect: () => {
       setOpen(false);
       void reminders.markUnread(sessionId).catch((reason) => reminders.reportError(reason));
-    } }, t("markUnread")), state.error && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, state.error));
+    } }, t("markUnread")), state.error && /* @__PURE__ */ import_react4.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, state.error));
   }
   function RowAction({ sessionId, t }) {
-    const settings = useStore(prefs), state = useStore(reminders), [error, setError] = (0, import_react3.useState)("");
+    const settings = useStore(prefs), state = useStore(reminders), [error, setError] = (0, import_react4.useState)("");
     if (!settings.features.unread) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { "data-wsp-owned": "", className: "wsp-session-action-root" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Tooltip, { label: t("markUnread"), side: "bottom", align: "end", delayMs: 500 }, /* @__PURE__ */ import_react3.default.createElement("button", { type: "button", className: "wsp-session-action", "aria-label": t("markUnread"), onClick: async (event) => {
+    return /* @__PURE__ */ import_react4.default.createElement("span", { "data-wsp-owned": "", className: "wsp-session-action-root" }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Tooltip, { label: t("markUnread"), side: "bottom", align: "end", delayMs: 500 }, /* @__PURE__ */ import_react4.default.createElement("button", { type: "button", className: "wsp-session-action", "aria-label": t("markUnread"), onClick: async (event) => {
       event.stopPropagation();
       try {
         await reminders.markUnread(sessionId);
@@ -5627,17 +5931,17 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
         setError(t("unreadFailed") + " " + reason.message);
         reminders.reportError(reason);
       }
-    } }, /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, { size: 14 }))), (error || state.error) && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, error || state.error));
+    } }, /* @__PURE__ */ import_react4.default.createElement(UnreadIcon, { size: 14 }))), (error || state.error) && /* @__PURE__ */ import_react4.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, error || state.error));
   }
   function Leading({ sessionId, t }) {
     const settings = useStore(prefs), state = useStore(reminders);
     if (!settings.features.unread || !Object.hasOwn(state.unread, sessionId)) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-manual-unread", "data-wsp-owned": "", role: "img", "aria-label": t("unreadLabel"), title: t("unreadLabel") }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.StateDot, { state: "done" }));
+    return /* @__PURE__ */ import_react4.default.createElement("span", { className: "wsp-manual-unread", "data-wsp-owned": "", role: "img", "aria-label": t("unreadLabel"), title: t("unreadLabel") }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.StateDot, { state: "done" }));
   }
   function FailureNotice({ t }) {
-    const state = useStore(reminders), [dismissed, setDismissed] = (0, import_react3.useState)(0);
+    const state = useStore(reminders), [dismissed, setDismissed] = (0, import_react4.useState)(0);
     if (!state.lastError || state.errorSequence === dismissed) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Toast, { key: state.errorSequence, text: t("unreadFailed") + " " + state.lastError, icon: /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null), holdMs: 8e3, onDone: () => setDismissed(state.errorSequence) }));
+    return /* @__PURE__ */ import_react4.default.createElement("span", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Toast, { key: state.errorSequence, text: t("unreadFailed") + " " + state.lastError, icon: /* @__PURE__ */ import_react4.default.createElement(UnreadIcon, null), holdMs: 8e3, onDone: () => setDismissed(state.errorSequence) }));
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
@@ -5646,9 +5950,9 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
     locale: namespace
   }, FailureNotice));
   function BrandName() {
-    const marker = (0, import_react3.useRef)(null);
-    (0, import_react3.useLayoutEffect)(() => marker.current ? attachSidebarBranding(marker.current) : void 0, []);
-    return /* @__PURE__ */ import_react3.default.createElement("span", { ref: marker, "data-wsp-owned": "" }, "DeepSeek Harness");
+    const marker = (0, import_react4.useRef)(null);
+    (0, import_react4.useLayoutEffect)(() => marker.current ? attachSidebarBranding(marker.current) : void 0, []);
+    return /* @__PURE__ */ import_react4.default.createElement("span", { ref: marker, "data-wsp-owned": "" }, "DeepSeek Harness");
   }
   ctx.slots.inject("sidebar.workspaces.session.menu.item", () => ctx.slots.register({
     name: "sidebar.workspaces.session.menu.item",
@@ -5830,29 +6134,29 @@ function createProfilePreferences(storage) {
 }
 
 // src/profile-dialog.jsx
-var import_react4 = __toESM(require("react"), 1);
-var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_react5 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives4 = require("@deepseek-ai/dsh-client-ui-primitives");
 var hasFiles2 = (event) => [...event.dataTransfer?.types ?? []].includes("Files") || Boolean(event.dataTransfer?.files?.length);
 var UPLOAD_ERRORS = { imageType: "profileImageType", imageFileSize: "profileImageFileSize", imageDecode: "profileImageDecode", imageSize: "profileImageSize" };
 var SAVE_ERRORS = /* @__PURE__ */ new Set(["profileReadError", "profileWriteError", "profileInvalidData", "profileUnsupportedVersion", "profileNameInvalid", "profileImageInvalid", "profileEnabledInvalid"]);
 var saveError = (reason) => SAVE_ERRORS.has(reason?.code ?? reason?.message) ? reason.code ?? reason.message : "profileSaveError";
 function ProfileIcon({ camera = false }) {
-  return /* @__PURE__ */ import_react4.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, camera ? /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M3 7h5l1.5-3h5L16 7h5v13H3Z", stroke: "currentColor", strokeWidth: "1.7", strokeLinejoin: "round" }), /* @__PURE__ */ import_react4.default.createElement("circle", { cx: "12", cy: "13", r: "3.5", stroke: "currentColor", strokeWidth: "1.7" })) : /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("circle", { cx: "12", cy: "8", r: "4", fill: "currentColor" }), /* @__PURE__ */ import_react4.default.createElement("path", { d: "M4 21v-2a8 8 0 0 1 16 0v2Z", fill: "currentColor" })));
+  return /* @__PURE__ */ import_react5.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, camera ? /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("path", { d: "M3 7h5l1.5-3h5L16 7h5v13H3Z", stroke: "currentColor", strokeWidth: "1.7", strokeLinejoin: "round" }), /* @__PURE__ */ import_react5.default.createElement("circle", { cx: "12", cy: "13", r: "3.5", stroke: "currentColor", strokeWidth: "1.7" })) : /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("circle", { cx: "12", cy: "8", r: "4", fill: "currentColor" }), /* @__PURE__ */ import_react5.default.createElement("path", { d: "M4 21v-2a8 8 0 0 1 16 0v2Z", fill: "currentColor" })));
 }
 function Avatar({ image }) {
-  const [failed, setFailed] = (0, import_react4.useState)(null);
-  return /* @__PURE__ */ import_react4.default.createElement("span", { className: "wsp-profile-avatar", "aria-hidden": "true" }, image && failed !== image ? /* @__PURE__ */ import_react4.default.createElement("img", { src: image, alt: "", referrerPolicy: "no-referrer", onError: () => setFailed(image) }) : /* @__PURE__ */ import_react4.default.createElement(ProfileIcon, null));
+  const [failed, setFailed] = (0, import_react5.useState)(null);
+  return /* @__PURE__ */ import_react5.default.createElement("span", { className: "wsp-profile-avatar", "aria-hidden": "true" }, image && failed !== image ? /* @__PURE__ */ import_react5.default.createElement("img", { src: image, alt: "", referrerPolicy: "no-referrer", onError: () => setFailed(image) }) : /* @__PURE__ */ import_react5.default.createElement(ProfileIcon, null));
 }
 function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, anchor, onClose }) {
-  const state = useStore(prefs), initial = (0, import_react4.useRef)(state).current;
-  const [draftName, setDraftName] = (0, import_react4.useState)(initial.name);
-  const [inputName, setInputName] = (0, import_react4.useState)(initial.name ?? baseline.name ?? "");
-  const [draftImage, setDraftImage] = (0, import_react4.useState)(initial.image);
-  const [error, setError] = (0, import_react4.useState)(""), [loading, setLoading] = (0, import_react4.useState)(false), [saving, setSaving] = (0, import_react4.useState)(false);
-  const [dragging, setDragging] = (0, import_react4.useState)(false);
-  const uploadInput = (0, import_react4.useRef)(null), portrait = (0, import_react4.useRef)(null), generation = (0, import_react4.useRef)(0), dragDepth = (0, import_react4.useRef)(0);
-  const active = (0, import_react4.useRef)(true), dirty = (0, import_react4.useRef)({ name: false, image: false }), savingNow = (0, import_react4.useRef)(false), uploadingNow = (0, import_react4.useRef)(false), composition = (0, import_react4.useRef)(null);
-  const errorId = (0, import_react4.useId)(), language = t("language");
+  const state = useStore(prefs), initial = (0, import_react5.useRef)(state).current;
+  const [draftName, setDraftName] = (0, import_react5.useState)(initial.name);
+  const [inputName, setInputName] = (0, import_react5.useState)(initial.name ?? baseline.name ?? "");
+  const [draftImage, setDraftImage] = (0, import_react5.useState)(initial.image);
+  const [error, setError] = (0, import_react5.useState)(""), [loading, setLoading] = (0, import_react5.useState)(false), [saving, setSaving] = (0, import_react5.useState)(false);
+  const [dragging, setDragging] = (0, import_react5.useState)(false);
+  const uploadInput = (0, import_react5.useRef)(null), portrait = (0, import_react5.useRef)(null), generation = (0, import_react5.useRef)(0), dragDepth = (0, import_react5.useRef)(0);
+  const active = (0, import_react5.useRef)(true), dirty = (0, import_react5.useRef)({ name: false, image: false }), savingNow = (0, import_react5.useRef)(false), uploadingNow = (0, import_react5.useRef)(false), composition = (0, import_react5.useRef)(null);
+  const errorId = (0, import_react5.useId)(), language = t("language");
   const errorCode = error || state.error;
   const validName = draftName === null || draftName.trim().length <= 80;
   const canSave = !loading && !saving && !state.error && validName;
@@ -5946,15 +6250,15 @@ function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, ancho
       }
     }
   }
-  (0, import_react4.useLayoutEffect)(() => {
-    const observer = (0, import_dsh_client_ui_primitives3.observeComposition)(document);
+  (0, import_react5.useLayoutEffect)(() => {
+    const observer = (0, import_dsh_client_ui_primitives4.observeComposition)(document);
     composition.current = observer;
     return () => {
       observer.dispose();
       composition.current = null;
     };
   }, []);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     active.current = true;
     const ignoreDrop = (event) => {
       if (hasFiles2(event) || [...event.dataTransfer?.types ?? []].includes("text/uri-list")) {
@@ -5979,14 +6283,14 @@ function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, ancho
       });
     };
   }, []);
-  (0, import_react4.useLayoutEffect)(() => {
+  (0, import_react5.useLayoutEffect)(() => {
     cancelUpload();
   }, [language]);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     syncUntouched(state);
   }, [state, baseline.name]);
-  return /* @__PURE__ */ import_react4.default.createElement(
-    import_dsh_client_ui_primitives3.Modal,
+  return /* @__PURE__ */ import_react5.default.createElement(
+    import_dsh_client_ui_primitives4.Modal,
     {
       open: true,
       title: t("profileDialogTitle"),
@@ -6003,10 +6307,10 @@ function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, ancho
           save();
         }
       },
-      footer: /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : saving ? t("profileSaving") : t("save")))
+      footer: /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : saving ? t("profileSaving") : t("save")))
     },
-    /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-profile-body", "aria-busy": loading || saving }, /* @__PURE__ */ import_react4.default.createElement(
-      import_dsh_client_ui_primitives3.Button,
+    /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-profile-body", "aria-busy": loading || saving }, /* @__PURE__ */ import_react5.default.createElement(
+      import_dsh_client_ui_primitives4.Button,
       {
         ref: portrait,
         className: "wsp-profile-portrait" + (dragging ? " wsp-profile-dragging" : ""),
@@ -6042,9 +6346,9 @@ function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, ancho
           }
         }
       },
-      /* @__PURE__ */ import_react4.default.createElement(Avatar, { image: draftImage ?? baseline.image }),
-      /* @__PURE__ */ import_react4.default.createElement("span", { className: "wsp-profile-camera", "aria-hidden": "true" }, /* @__PURE__ */ import_react4.default.createElement(ProfileIcon, { camera: true }))
-    ), /* @__PURE__ */ import_react4.default.createElement(
+      /* @__PURE__ */ import_react5.default.createElement(Avatar, { image: draftImage ?? baseline.image }),
+      /* @__PURE__ */ import_react5.default.createElement("span", { className: "wsp-profile-camera", "aria-hidden": "true" }, /* @__PURE__ */ import_react5.default.createElement(ProfileIcon, { camera: true }))
+    ), /* @__PURE__ */ import_react5.default.createElement(
       "input",
       {
         ref: uploadInput,
@@ -6058,7 +6362,7 @@ function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, ancho
           event.target.value = "";
         }
       }
-    ), /* @__PURE__ */ import_react4.default.createElement(
+    ), /* @__PURE__ */ import_react5.default.createElement(
       "input",
       {
         className: "wsp-profile-name",
@@ -6080,7 +6384,7 @@ function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, ancho
           setError("");
         }
       }
-    ), customDraft && /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { className: "wsp-profile-reset", variant: "ghost", size: "sm", disabled: saving, onClick: restore }, /* @__PURE__ */ import_react4.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M4 10a8 8 0 1 1 1.5 7M4 4v6h6", stroke: "currentColor", strokeWidth: "1.6", strokeLinejoin: "round", strokeLinecap: "round" })), /* @__PURE__ */ import_react4.default.createElement("span", null, t("profileReset"))), errorCode && /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-profile-error" }, /* @__PURE__ */ import_react4.default.createElement("div", { id: errorId, role: "alert" }, t(errorCode)), state.error && /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Button, { variant: "outline", size: "sm", disabled: loading || saving, onClick: retry }, t("profileRetry"))))
+    ), customDraft && /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { className: "wsp-profile-reset", variant: "ghost", size: "sm", disabled: saving, onClick: restore }, /* @__PURE__ */ import_react5.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, /* @__PURE__ */ import_react5.default.createElement("path", { d: "M4 10a8 8 0 1 1 1.5 7M4 4v6h6", stroke: "currentColor", strokeWidth: "1.6", strokeLinejoin: "round", strokeLinecap: "round" })), /* @__PURE__ */ import_react5.default.createElement("span", null, t("profileReset"))), errorCode && /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-profile-error" }, /* @__PURE__ */ import_react5.default.createElement("div", { id: errorId, role: "alert" }, t(errorCode)), state.error && /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { variant: "outline", size: "sm", disabled: loading || saving, onClick: retry }, t("profileRetry"))))
   );
 }
 
@@ -6441,9 +6745,9 @@ function createProfileAdapter({ document: doc, preferences, translate, onEdit, o
 }
 
 // src/settings-icon.jsx
-var import_react5 = __toESM(require("react"), 1);
+var import_react6 = __toESM(require("react"), 1);
 function SettingsSectionIcon({ size = 16 }) {
-  return /* @__PURE__ */ import_react5.default.createElement(
+  return /* @__PURE__ */ import_react6.default.createElement(
     "svg",
     {
       xmlns: "http://www.w3.org/2000/svg",
@@ -6459,7 +6763,7 @@ function SettingsSectionIcon({ size = 16 }) {
       focusable: "false",
       "data-framing": "centered-22-of-24"
     },
-    /* @__PURE__ */ import_react5.default.createElement("g", { transform: "translate(12 12) scale(1.077101642) translate(-11.539062500 -12.460937500)" }, /* @__PURE__ */ import_react5.default.createElement("g", { transform: "translate(12 12) rotate(45)" }, /* @__PURE__ */ import_react5.default.createElement("path", { d: "M-2.48 -10.015968V-7.279999999999999A2.48 2.48 0 0 0 2.48 -7.279999999999999V-10.015968A4.72 4.72 0 0 1 2.1 -1.772897V11A2.1 2.1 0 0 1-2.1 11V-1.772897A4.72 4.72 0 0 1 -2.48 -10.015968Z" })))
+    /* @__PURE__ */ import_react6.default.createElement("g", { transform: "translate(12 12) scale(1.077101642) translate(-11.539062500 -12.460937500)" }, /* @__PURE__ */ import_react6.default.createElement("g", { transform: "translate(12 12) rotate(45)" }, /* @__PURE__ */ import_react6.default.createElement("path", { d: "M-2.48 -10.015968V-7.279999999999999A2.48 2.48 0 0 0 2.48 -7.279999999999999V-10.015968A4.72 4.72 0 0 1 2.1 -1.772897V11A2.1 2.1 0 0 1-2.1 11V-1.772897A4.72 4.72 0 0 1 -2.48 -10.015968Z" })))
   );
 }
 
@@ -6475,10 +6779,10 @@ function download(text, name) {
   setTimeout(() => URL.revokeObjectURL(url), 1e3);
 }
 function SettingsFeature({ label, description, checked, onChange, disabled = false }) {
-  return /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature-copy" }, /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature-label" }, label), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-feature-description" }, description)), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Switch, { label, checked, onChange, disabled }));
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature-copy" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature-label" }, label), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature-description" }, description)), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Switch, { label, checked, onChange, disabled }));
 }
 function Settings({ prefs, profilePrefs, reminders, t }) {
-  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = (0, import_react6.useState)("");
+  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = (0, import_react7.useState)("");
   async function safe(fn) {
     try {
       await fn();
@@ -6487,10 +6791,10 @@ function Settings({ prefs, profilePrefs, reminders, t }) {
       setError(String(e.code ?? "").startsWith("profile") ? t(e.code) : e.message);
     }
   }
-  const feature = (key) => /* @__PURE__ */ import_react6.default.createElement(SettingsFeature, { key, label: t(key), description: t(key + "Description"), checked: state.features[key], onChange: (next) => safe(() => prefs.toggle(key, next)) });
-  return /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react6.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react6.default.createElement("p", { className: "wsp-settings-description" }, t("settingsDescription")), /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react6.default.createElement("h3", null, t("settingsAppearance")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-card" }, feature("workspaces"), /* @__PURE__ */ import_react6.default.createElement(SettingsFeature, { label: t("profileFeature"), description: t("profileFeatureDescription"), checked: profileState.enabled, disabled: Boolean(profileState.error), onChange: (next) => safe(() => profilePrefs.toggle(next)) }), feature("branding")), profileState.error && /* @__PURE__ */ import_react6.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => profilePrefs.retry()) }, t("retry")))), /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react6.default.createElement("h3", null, t("settingsModelLogos")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-card" }, feature("composer"), feature("sessions"))), /* @__PURE__ */ import_react6.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react6.default.createElement("h3", null, t("settingsChats")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-card" }, feature("unread"))), (state.error || error) && /* @__PURE__ */ import_react6.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react6.default.createElement("details", { className: "wsp-settings-recovery" }, /* @__PURE__ */ import_react6.default.createElement("summary", null, t("recoveryTitle")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-settings-recovery-body" }, /* @__PURE__ */ import_react6.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react6.default.createElement("p", null, t("recoveryScope")), /* @__PURE__ */ import_react6.default.createElement("p", null, t("recoverySource")), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react6.default.createElement(import_react6.default.Fragment, null, /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => {
+  const feature = (key) => /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { key, label: t(key), description: t(key + "Description"), checked: state.features[key], onChange: (next) => safe(() => prefs.toggle(key, next)) });
+  return /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react7.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react7.default.createElement("p", { className: "wsp-settings-description" }, t("settingsDescription")), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsAppearance")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("workspaces"), /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { label: t("profileFeature"), description: t("profileFeatureDescription"), checked: profileState.enabled, disabled: Boolean(profileState.error), onChange: (next) => safe(() => profilePrefs.toggle(next)) }), feature("branding")), profileState.error && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => profilePrefs.retry()) }, t("retry")))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsModelLogos")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("composer"), feature("sessions"))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsChats")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("unread"))), (state.error || error) && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react7.default.createElement("details", { className: "wsp-settings-recovery" }, /* @__PURE__ */ import_react7.default.createElement("summary", null, t("recoveryTitle")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-recovery-body" }, /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryScope")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoverySource")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("resetConfirm"))) prefs.resetAll();
-  }) }, t("resetAll")))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react6.default.createElement(import_react6.default.Fragment, null, /* @__PURE__ */ import_react6.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react6.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react6.default.createElement(import_dsh_client_ui_primitives4.Button, { size: "sm", onClick: () => safe(() => {
+  }) }, t("resetAll")))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("unreadResetConfirm"))) return reminders.resetAll();
   }) }, t("resetAll")))));
 }
@@ -6559,12 +6863,12 @@ function apply(ctx) {
   registerSidebarFeatures(ctx, { prefs, reminders, namespace: NS });
   function Overlay(props) {
     const { target, profileTarget } = useStore(ui), profileState = useStore(profilePrefs);
-    if (profileTarget && profileState.enabled) return /* @__PURE__ */ import_react6.default.createElement(ProfileDialog, { prefs: profilePrefs, baseline: profileTarget.baseline, anchor: profileTarget.anchor, t: props.t, onClose: closeProfile });
-    return target ? /* @__PURE__ */ import_react6.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
+    if (profileTarget && profileState.enabled) return /* @__PURE__ */ import_react7.default.createElement(ProfileDialog, { prefs: profilePrefs, baseline: profileTarget.baseline, anchor: profileTarget.anchor, t: props.t, onClose: closeProfile });
+    return target ? /* @__PURE__ */ import_react7.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
   }
   function Composer({ directory, sessionId }) {
-    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react6.useRef)(null);
-    (0, import_react6.useEffect)(() => {
+    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react7.useRef)(null);
+    (0, import_react7.useEffect)(() => {
       currentModels.set((s) => ({ ...s, [sessionId]: state.pending ?? state.current }));
       return () => currentModels.set((s) => {
         const next = { ...s };
@@ -6572,18 +6876,18 @@ function apply(ctx) {
         return next;
       });
     }, [sessionId, state.current, state.pending]);
-    (0, import_react6.useLayoutEffect)(() => {
+    (0, import_react7.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachComposerIcon(marker.current, state.pending ?? state.current);
     }, [state.current, state.pending, settings.features.composer]);
-    (0, import_react6.useLayoutEffect)(() => {
+    (0, import_react7.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachModelMenuIcons(marker.current, directory);
     }, [directory, settings.features.composer]);
-    return /* @__PURE__ */ import_react6.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
+    return /* @__PURE__ */ import_react7.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "workspace-plus-dialog", order: 90, locale: NS }, Overlay));
-  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react6.default.createElement(Settings, { prefs, profilePrefs, reminders, t: props.t })));
+  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react7.default.createElement(Settings, { prefs, profilePrefs, reminders, t: props.t })));
   ctx.slots.inject("settings.section.icon", () => ctx.slots.register({ name: "settings.section.icon", id: "workspace-plus" }, SettingsSectionIcon));
   ctx.slots.inject("conversation.input.right", () => ctx.slots.register({
     name: "conversation.input.right",

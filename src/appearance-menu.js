@@ -73,6 +73,10 @@ export function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
   // Revalidation may find our old row between the native separator and Delete.
   if (ownedButton && preceding === ownedButton.parentElement) preceding = preceding.previousElementSibling;
   if (preceding?.getAttribute('role') === 'separator') insertionAnchor = preceding;
+  // Prefer immediately after Rename; keep the legacy anchor if Rename is terminal.
+  let following = rename[0].wrapper.nextElementSibling;
+  if (ownedButton && following === ownedButton.parentElement) following = following.nextElementSibling;
+  if (following) insertionAnchor = following;
   return { rename: rename[0], remove: remove[0], insertionAnchor };
 }
 
