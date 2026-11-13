@@ -972,12 +972,31 @@ var CSS = `
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */
-.wsp-appearance-dialog{width:min(540px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
-.wsp-appearance-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
-.wsp-appearance-body{display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:22px}
+.wsp-appearance-dialog{width:min(760px,100%);height:620px;max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-appearance-content{flex:1;min-height:0;overflow:hidden}
+.wsp-appearance-content>:first-child{flex-shrink:0}
+.wsp-appearance-content>:last-child{flex:1;min-height:0;overflow:hidden}
+.wsp-appearance-body{display:grid;grid-template-columns:208px minmax(0,1fr);gap:24px;height:100%;min-height:0;font-size:14px;line-height:22px}
 .wsp-appearance-body *{box-sizing:border-box}
-.wsp-kind-tabs{display:flex;gap:4px;align-self:flex-start;padding:3px;background:var(--dsw-alias-bg-layer-1);border-radius:var(--dsw-radius-md)}
+.wsp-appearance-context{display:flex;flex-direction:column;gap:28px;min-width:0;min-height:0;padding-right:24px;border-right:1px solid var(--dsw-alias-border-l3);overflow-y:auto;overscroll-behavior:contain}
+.wsp-preview-divider{width:100%;margin:0;border:0;border-top:1px solid var(--dsw-alias-border-l3);flex:none}
+.wsp-kind-section>.wsp-field-label{margin-bottom:6px}
+.wsp-kind-tabs{display:flex;flex-direction:column;gap:5px;width:100%}
+.wsp-kind-tabs .wsp-kind-choice{justify-content:flex-start;gap:8px;width:100%;height:44px;padding:8px 12px;text-align:left}
+.wsp-kind-choice>svg{flex:none}
+.wsp-kind-choice>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-kind-tabs button[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l4)}
+.wsp-appearance-editor{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-mode-panel{display:flex;flex:1;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.wsp-mode-panel>*{flex-shrink:0}
+.wsp-mode-panel>.wsp-field-label{margin-bottom:-6px}
+.wsp-search-category{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.wsp-category-anchor{width:100%;min-width:0}
+.wsp-category-anchor .wsp-category-trigger{width:100%;height:44px;justify-content:space-between;gap:8px;padding:7px 14px;border-radius:var(--dsw-radius-lg);text-align:left}
+.wsp-category-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsp-category-trigger>svg{flex:none}
+/* Portal card sizing only. Menu owns material, rows, hover, checks and keyboard. */
+.wsp-emoji-category-menu{width:240px;min-width:0;max-width:calc(100vw - 24px)}
 /* Native Workspace Rename uses this raw-input shape, not the smaller public Input. */
 .wsp-appearance-input{width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;outline:none}
 .wsp-appearance-input:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
@@ -993,7 +1012,7 @@ var CSS = `
 .wsp-custom-color::-webkit-color-swatch-wrapper{padding:0}
 .wsp-custom-color::-webkit-color-swatch{border:0;border-radius:50%}
 .wsp-custom-color::-moz-color-swatch{border:0;border-radius:50%}
-.wsp-choice-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;max-height:226px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.wsp-choice-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:40px;align-content:start;gap:6px;flex:1;min-height:80px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
 .wsp-choice-grid .wsp-choice{height:40px;min-width:0;width:100%;padding:0}
 .wsp-choice[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l4)}
 .wsp-choice .wsp-icon{width:22px;height:22px;flex-basis:22px}
@@ -1001,12 +1020,12 @@ var CSS = `
 .wsp-results-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .wsp-help{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .wsp-preview-section{display:flex;flex-direction:column;gap:6px}
-.wsp-list-preview{display:flex;align-items:center;height:34px;gap:6px;padding:0 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-sidebar-fill);font-size:14px;line-height:20px}
+.wsp-list-preview{display:flex;align-items:center;min-width:0;height:34px;gap:6px;padding:0;border:0;border-radius:0;background:transparent;font-size:14px;line-height:20px}
 .wsp-list-preview>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-list-preview .wsp-icon{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
 .wsp-list-preview .wsp-native-folder{width:16px;height:16px;flex-basis:16px;color:var(--dsw-alias-label-secondary)}
 .wsp-reset-action{margin-right:auto}
-.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;min-height:188px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
+.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;flex:1;min-height:220px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
 .wsp-image-dropzone.wsp-is-dragging{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
 .wsp-drop-title{font-size:16px;line-height:24px}
 .wsp-hidden-file{display:none}
@@ -1035,7 +1054,8 @@ var CSS = `
 .wsp-profile-error{display:flex;flex-direction:column;align-self:stretch;gap:10px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
 .wsp-profile-error>button{align-self:center;max-width:100%;height:auto;min-height:28px;white-space:normal;text-align:center}
 @media(max-width:430px){.wsp-profile-body{gap:20px}.wsp-profile-body .wsp-profile-reset{font-size:11px}}
-@media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
+@media(max-width:640px){.wsp-appearance-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px}.wsp-appearance-context{gap:8px;padding:0 0 12px;border-right:0;border-bottom:1px solid var(--dsw-alias-border-l3);overflow:visible}.wsp-preview-section{flex-direction:row;align-items:center;justify-content:space-between;gap:12px}.wsp-preview-section>.wsp-field-label{max-width:55%}.wsp-preview-section>.wsp-list-preview{max-width:45%}.wsp-preview-divider{display:none}.wsp-kind-tabs{flex-direction:row;gap:4px}.wsp-kind-tabs .wsp-kind-choice{flex:1;min-width:0;height:36px;padding:4px 8px;gap:6px}.wsp-search-category{grid-template-columns:minmax(0,1fr);gap:8px}.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:480px){.wsp-kind-choice>svg{display:none}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;
 
 // locale/en.json
@@ -1062,9 +1082,14 @@ var en = {
   settingsModelLogos: "AI model logos",
   settingsChats: "Chats",
   appearance: "Appearance",
-  changeAppearance: "Change workspace appearance",
+  changeAppearance: "Workspace appearance",
   close: "Close",
   kind: "Icon type",
+  selectIconType: "Select icon type",
+  selectIconColor: "Select icon color",
+  selectIcon: "Select icon",
+  selectEmoji: "Select emoji",
+  uploadImage: "Upload image",
   icon: "Icon",
   emoji: "Emoji",
   image: "Image",
@@ -1075,10 +1100,10 @@ var en = {
   emojiCategory: "Emoji category",
   emojiCatalog: "Emoji catalog",
   allEmoji: "All categories",
-  customEmoji: "Paste your own emoji",
+  customEmoji: "Or paste your emoji",
   noResults: "No results",
   showMore: "Show more",
-  previewLabel: "Preview in the Workspace list",
+  previewLabel: "Preview in workspace list",
   upload: "Choose image",
   imageDropArea: "Image upload area",
   dropImage: "Drop an image here",
@@ -1154,9 +1179,14 @@ var ru = {
   settingsModelLogos: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0418\u0418",
   settingsChats: "\u0427\u0430\u0442\u044B",
   appearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
-  changeAppearance: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
+  changeAppearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
   close: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
   kind: "\u0422\u0438\u043F \u0437\u043D\u0430\u0447\u043A\u0430",
+  selectIconType: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0442\u0438\u043F \u0438\u043A\u043E\u043D\u043A\u0438",
+  selectIconColor: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0446\u0432\u0435\u0442 \u0438\u043A\u043E\u043D\u043A\u0438",
+  selectIcon: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043A\u043E\u043D\u043A\u0443",
+  selectEmoji: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043C\u043E\u0434\u0437\u0438",
+  uploadImage: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
   icon: "\u0418\u043A\u043E\u043D\u043A\u0430",
   emoji: "Emoji",
   image: "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
@@ -1167,7 +1197,7 @@ var ru = {
   emojiCategory: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F emoji",
   emojiCatalog: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 emoji",
   allEmoji: "\u0412\u0441\u0435 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438",
-  customEmoji: "\u0412\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0441\u0432\u043E\u0439 emoji",
+  customEmoji: "\u0418\u043B\u0438 \u0432\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0441\u0432\u043E\u0439 \u044D\u043C\u043E\u0434\u0437\u0438",
   noResults: "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E",
   showMore: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0435\u0449\u0451",
   previewLabel: "\u041F\u0440\u0435\u0432\u044C\u044E \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 Workspace",
@@ -4978,6 +5008,9 @@ function Artwork({ appearance }) {
 function Preview({ appearance }) {
   return appearance ? /* @__PURE__ */ import_react2.default.createElement(Artwork, { appearance }) : /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-icon wsp-native-folder", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.IconFolderCloseRegular, { size: 16 }));
 }
+function KindGlyph({ kind }) {
+  return /* @__PURE__ */ import_react2.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", focusable: "false" }, kind === "icon" ? /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("path", { d: "m7 3 4 7H3Z" }), /* @__PURE__ */ import_react2.default.createElement("rect", { x: "3", y: "14", width: "7", height: "7", rx: "1" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "17", cy: "17", r: "4" })) : kind === "emoji" ? /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ import_react2.default.createElement("path", { d: "M8 14a4.5 4.5 0 0 0 8 0" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "9", cy: "9", r: ".5" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "15", cy: "9", r: ".5" })) : /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }), /* @__PURE__ */ import_react2.default.createElement("circle", { cx: "8", cy: "8", r: "1.5" }), /* @__PURE__ */ import_react2.default.createElement("path", { d: "m3 17 5-5 4 4 4-6 5 7" })));
+}
 function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   const list = useStore(workspaces.list);
   const workspace = list.items.find((item) => item.workspaceId === target.id);
@@ -4995,10 +5028,28 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   const [error, setError] = (0, import_react2.useState)(""), [loading, setLoading] = (0, import_react2.useState)(false);
   const [iconQuery, setIconQuery] = (0, import_react2.useState)(""), [emojiQuery, setEmojiQuery] = (0, import_react2.useState)("");
   const [emojiGroup, setEmojiGroup] = (0, import_react2.useState)("all"), [emojiLimit, setEmojiLimit] = (0, import_react2.useState)(PAGE_SIZE);
+  const [categoryOpen, setCategoryOpen] = (0, import_react2.useState)(false), categoryTrigger = (0, import_react2.useRef)(null);
+  const [categoryAutoFocus, setCategoryAutoFocus] = (0, import_react2.useState)(false);
+  const categoryGeneration = (0, import_react2.useRef)(0), categoryState = (0, import_react2.useRef)(null);
   const [dragging, setDragging] = (0, import_react2.useState)(false);
   const uploadGeneration = (0, import_react2.useRef)(0), dragDepth = (0, import_react2.useRef)(0), uploadInput = (0, import_react2.useRef)(null), compositionObserver = (0, import_react2.useRef)(null);
-  const russian = String(lang ?? t("language")).startsWith("ru");
+  const language = String(lang ?? t("language")), russian = language.startsWith("ru"), targetAvailable = Boolean(workspace);
+  categoryState.current = { open: categoryOpen, kind, language, targetId: target.id, available: targetAvailable };
+  const categoryItems = [{ id: "all", label: t("allEmoji") }, ...EMOJI_GROUPS.map((group) => ({ id: group.id, label: russian ? group.ru : group.en }))];
+  function openCategory() {
+    categoryGeneration.current++;
+    setCategoryAutoFocus(false);
+    setCategoryOpen(true);
+  }
+  function closeCategory(restoreFocus = false) {
+    categoryGeneration.current++;
+    categoryState.current = { ...categoryState.current, open: false };
+    setCategoryAutoFocus(false);
+    setCategoryOpen(false);
+    if (restoreFocus) categoryTrigger.current?.focus({ preventScroll: true });
+  }
   const close = () => {
+    closeCategory();
     uploadGeneration.current++;
     ui.set({ target: null });
   };
@@ -5008,6 +5059,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setDrafts((previous) => ({ ...previous, [next.kind]: next }));
   }
   function selectKind(next) {
+    closeCategory();
     if (next === kind) return;
     uploadGeneration.current++;
     setLoading(false);
@@ -5018,6 +5070,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setKind(next);
   }
   function restoreDefault() {
+    closeCategory();
     uploadGeneration.current++;
     setLoading(false);
     setError("");
@@ -5057,6 +5110,22 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   (0, import_react2.useEffect)(() => {
     setEmojiLimit(PAGE_SIZE);
   }, [emojiQuery, emojiGroup]);
+  (0, import_react2.useEffect)(() => {
+    closeCategory(categoryOpen && Boolean(document.activeElement?.closest(".wsp-emoji-category-menu")));
+  }, [language]);
+  (0, import_react2.useEffect)(() => {
+    if (!categoryOpen || kind !== "emoji" || !targetAvailable || !categoryState.current.open) return;
+    const generation = categoryGeneration.current, trigger = categoryTrigger.current, targetId = target.id;
+    let active = true;
+    const frame = requestAnimationFrame(function enableCategoryAutoFocus() {
+      const current = categoryState.current;
+      if (active && generation === categoryGeneration.current && current.open && current.kind === "emoji" && current.language === language && current.targetId === targetId && current.available && trigger?.isConnected && categoryTrigger.current === trigger && document.activeElement === trigger) setCategoryAutoFocus(true);
+    });
+    return () => {
+      active = false;
+      cancelAnimationFrame(frame);
+    };
+  }, [categoryOpen, kind, language, target.id, targetAvailable]);
   const matchingIcons = (0, import_react2.useMemo)(() => {
     const terms = normalizeSearch(iconQuery).split(" ").filter(Boolean);
     return ICONS.filter((icon) => terms.every((term) => normalizeSearch(`${icon.id} ${icon.en} ${icon.ru}`).includes(term)));
@@ -5112,7 +5181,17 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       className: "wsp-appearance-dialog",
       contentClassName: "wsp-appearance-content",
       onKeyDownCapture: (event) => {
-        if (compositionObserver.current?.guards(event.nativeEvent)) return;
+        const composing = compositionObserver.current?.guards(event.nativeEvent);
+        if (composing) {
+          if (event.key === "Enter" && event.target.tagName === "BUTTON") event.preventDefault();
+          return;
+        }
+        if (!categoryOpen && event.key === "ArrowDown" && event.target === categoryTrigger.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          openCategory();
+          return;
+        }
         if (event.key === "Enter" && event.target.tagName === "INPUT" && event.target.type === "text") {
           event.preventDefault();
           event.stopPropagation();
@@ -5121,7 +5200,9 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       },
       footer: /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { className: "wsp-reset-action", variant: "ghost", onClick: restoreDefault }, t("reset")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : t("save")))
     },
-    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-body" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-preview-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-preview-label", className: "wsp-field-label" }, t("previewLabel")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-list-preview", role: "group", "aria-labelledby": "wsp-preview-label" }, /* @__PURE__ */ import_react2.default.createElement(Preview, { appearance: restoring ? null : appearance }), /* @__PURE__ */ import_react2.default.createElement("span", null, workspace?.title))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-kind-tabs", role: "group", "aria-label": t("kind") }, ["icon", "emoji", "image"].map((value) => /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { key: value, size: "sm", "aria-pressed": kind === value, onClick: () => selectKind(value) }, t(value)))), kind === "icon" && /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-field-label" }, t("color")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-palette", role: "group", "aria-label": t("color") }, PALETTE.map((color) => /* @__PURE__ */ import_react2.default.createElement(
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-body" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-context" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-preview-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-preview-label", className: "wsp-field-label" }, t("previewLabel")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-list-preview", role: "group", "aria-labelledby": "wsp-preview-label" }, /* @__PURE__ */ import_react2.default.createElement(Preview, { appearance: restoring ? null : appearance }), /* @__PURE__ */ import_react2.default.createElement("span", { title: workspace?.title }, workspace?.title))), /* @__PURE__ */ import_react2.default.createElement("hr", { className: "wsp-preview-divider" }), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-kind-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-kind-label", className: "wsp-field-label" }, t("selectIconType")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-kind-tabs", role: "group", "aria-labelledby": "wsp-kind-label" }, ["icon", "emoji", "image"].map((value) => /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { key: value, className: "wsp-kind-choice", size: "sm", "aria-pressed": kind === value, onClick: () => selectKind(value) }, /* @__PURE__ */ import_react2.default.createElement(KindGlyph, { kind: value }), /* @__PURE__ */ import_react2.default.createElement("span", null, t(value))))))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-editor", onScrollCapture: (event) => {
+      if (categoryOpen && event.currentTarget.contains(event.target)) closeCategory(Boolean(document.activeElement?.closest(".wsp-emoji-category-menu")));
+    } }, kind === "icon" && /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-field-label" }, t("selectIconColor")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-palette", role: "group", "aria-label": t("selectIconColor") }, PALETTE.map((color) => /* @__PURE__ */ import_react2.default.createElement(
       import_dsh_client_ui_primitives.Button,
       {
         key: color,
@@ -5132,9 +5213,10 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         style: { "--wsp-art-color": color },
         onClick: () => setAppearance({ ...appearance, color })
       }
-    )), /* @__PURE__ */ import_react2.default.createElement("input", { className: "wsp-custom-color", type: "color", "aria-label": t("customColor"), title: t("customColor"), value: appearance.color, onChange: (event) => setAppearance({ ...appearance, color: event.target.value }) }))), /* @__PURE__ */ import_react2.default.createElement(
+    )), /* @__PURE__ */ import_react2.default.createElement("input", { className: "wsp-custom-color", type: "color", "aria-label": t("customColor"), title: t("customColor"), value: appearance.color, onChange: (event) => setAppearance({ ...appearance, color: event.target.value }) }))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-icon-search" }, t("selectIcon")), /* @__PURE__ */ import_react2.default.createElement(
       "input",
       {
+        id: "wsp-icon-search",
         className: "wsp-appearance-input",
         type: "search",
         "data-modal-autofocus": true,
@@ -5154,9 +5236,10 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         onClick: () => setAppearance({ ...appearance, icon: icon.id })
       },
       /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-icon", style: { color: appearance.color }, dangerouslySetInnerHTML: { __html: icon.svg } })
-    ))), matchingIcons.length === 0 && /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults"))), kind === "emoji" && /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(
+    ))), matchingIcons.length === 0 && /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults"))), kind === "emoji" && /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji-search" }, t("selectEmoji")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-search-category" }, /* @__PURE__ */ import_react2.default.createElement(
       "input",
       {
+        id: "wsp-emoji-search",
         className: "wsp-appearance-input",
         type: "search",
         "data-modal-autofocus": true,
@@ -5165,7 +5248,41 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         value: emojiQuery,
         onChange: (event) => setEmojiQuery(event.target.value)
       }
-    ), /* @__PURE__ */ import_react2.default.createElement("select", { className: "wsp-appearance-input", "aria-label": t("emojiCategory"), value: emojiGroup, onChange: (event) => setEmojiGroup(event.target.value) }, /* @__PURE__ */ import_react2.default.createElement("option", { value: "all" }, t("allEmoji")), EMOJI_GROUPS.map((group) => /* @__PURE__ */ import_react2.default.createElement("option", { key: group.id, value: group.id }, russian ? group.ru : group.en))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-choice-grid wsp-emoji-grid", role: "group", "aria-label": t("emojiCatalog") }, matchingEmoji.slice(0, emojiLimit).map((item) => /* @__PURE__ */ import_react2.default.createElement(
+    ), /* @__PURE__ */ import_react2.default.createElement(
+      import_dsh_client_ui_primitives.Menu,
+      {
+        open: categoryOpen,
+        portal: true,
+        align: "start",
+        side: "bottom",
+        autoFocus: categoryAutoFocus,
+        selection: "check",
+        className: "wsp-category-anchor",
+        listClassName: "wsp-emoji-category-menu",
+        items: categoryItems,
+        selectedId: emojiGroup,
+        onSelect: (id) => {
+          setEmojiGroup(id);
+          closeCategory();
+        },
+        onClose: () => closeCategory(),
+        anchor: /* @__PURE__ */ import_react2.default.createElement(
+          import_dsh_client_ui_primitives.Button,
+          {
+            ref: categoryTrigger,
+            className: "wsp-category-trigger",
+            variant: "outline",
+            "aria-label": t("emojiCategory"),
+            "aria-describedby": "wsp-category-value",
+            "aria-haspopup": "menu",
+            "aria-expanded": categoryOpen,
+            onClick: () => categoryOpen ? closeCategory() : openCategory()
+          },
+          /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-category-value", className: "wsp-category-value" }, categoryItems.find((item) => item.id === emojiGroup)?.label),
+          /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.IconChevronDownOutlineRegular, { size: 16 })
+        )
+      }
+    )), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-choice-grid wsp-emoji-grid", role: "group", "aria-label": t("emojiCatalog") }, matchingEmoji.slice(0, emojiLimit).map((item) => /* @__PURE__ */ import_react2.default.createElement(
       import_dsh_client_ui_primitives.Button,
       {
         key: item.emoji,
@@ -5176,7 +5293,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         onClick: () => setAppearance({ kind: "emoji", emoji: item.emoji })
       },
       item.emoji
-    ))), matchingEmoji.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults")) : /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-results-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, Math.min(emojiLimit, matchingEmoji.length), " / ", matchingEmoji.length), emojiLimit < matchingEmoji.length && /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { size: "sm", onClick: () => setEmojiLimit((value) => value + PAGE_SIZE) }, t("showMore"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji" }, t("customEmoji")), /* @__PURE__ */ import_react2.default.createElement("input", { id: "wsp-emoji", className: "wsp-appearance-input", type: "text", maxLength: 32, value: appearance.emoji, onChange: (event) => setAppearance({ kind: "emoji", emoji: event.target.value }) })), kind === "image" && /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(
+    ))), matchingEmoji.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults")) : /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-results-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, Math.min(emojiLimit, matchingEmoji.length), " / ", matchingEmoji.length), emojiLimit < matchingEmoji.length && /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { size: "sm", onClick: () => setEmojiLimit((value) => value + PAGE_SIZE) }, t("showMore"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji" }, t("customEmoji")), /* @__PURE__ */ import_react2.default.createElement("input", { id: "wsp-emoji", className: "wsp-appearance-input", type: "text", maxLength: 32, value: appearance.emoji, onChange: (event) => setAppearance({ kind: "emoji", emoji: event.target.value }) })), kind === "image" && /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-field-label" }, t("uploadImage")), /* @__PURE__ */ import_react2.default.createElement(
       "div",
       {
         className: "wsp-image-dropzone" + (dragging ? " wsp-is-dragging" : ""),
@@ -5231,7 +5348,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         }
       ),
       /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, t("imageHint"))
-    )), error && /* @__PURE__ */ import_react2.default.createElement("div", { role: "alert", className: "wsp-error" }, error))
+    )), error && /* @__PURE__ */ import_react2.default.createElement("div", { role: "alert", className: "wsp-error" }, error)))
   );
 }
 

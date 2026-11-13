@@ -79,8 +79,8 @@ for (const language of ['en', 'ru']) test(`Tinker settings and reset confirmatio
 for (const dark of [true, false]) test(`native modal/header/input/footer match ${dark ? 'dark' : 'light'} theme`, async ({ page }) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await setup(page, { dark }); await open(page);
-  const dialog = page.getByRole('dialog', { name: 'Change workspace appearance', exact: true });
-  await expect(dialog.getByRole('heading')).toHaveText('Change workspace appearance');
+  const dialog = page.getByRole('dialog', { name: 'Workspace appearance', exact: true });
+  await expect(dialog.getByRole('heading')).toHaveText('Workspace appearance');
   await expect(dialog.getByRole('button', { name: 'Close', exact: true }).locator('svg')).toHaveCount(1);
   await expect(dialog).toHaveCSS('border-radius', '28px');
   await expect(dialog).toHaveCSS('border-width', '0px');
@@ -136,7 +136,8 @@ test('full emoji catalog is bounded in DOM but searches all 3512 entries and bot
   await page.locator('.wsp-emoji-grid').getByRole('button', { name: 'rocket', exact: true }).click(); await expect(page.locator('.wsp-list-preview .wsp-icon')).toHaveText('🚀');
   await search.fill('💰'); await expect(page.locator('.wsp-emoji-grid button')).toHaveCount(1);
   await search.fill('never-an-emoji'); await expect(page.getByRole('status')).toHaveText('No results');
-  await search.fill(''); await page.getByRole('combobox', { name: 'Emoji category' }).selectOption('animals-nature');
+  await search.fill(''); await page.getByRole('button', { name: 'Emoji category', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Animals & Nature', exact: true }).click();
   await expect(page.locator('.wsp-results-row')).toContainText('120 / 140');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.locator('.wsp-workspace-icon')).toHaveText('🚀');
@@ -145,7 +146,7 @@ test('full emoji catalog is bounded in DOM but searches all 3512 entries and bot
 
 test('Russian localization and custom/manual emoji remain available', async ({ page }) => {
   await setup(page, { language: 'ru' }); await open(page);
-  await expect(page.getByRole('heading', { name: 'Изменить оформление Workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Оформление Workspace', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Emoji', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Поиск emoji' }).fill('rocket');
   await expect(page.locator('.wsp-emoji-grid').getByRole('button', { name: 'ракета', exact: true })).toHaveAttribute('title', 'ракета');
@@ -189,7 +190,7 @@ for (const quotaKey of [key, key + ':legacy-backup']) test(`migration quota at $
 
 test('preview is below title and above tabs in all modes, with native/default and real-size custom glyphs', async ({ page }) => {
   await setup(page); await open(page);
-  await expect(page.getByRole('group', { name: 'Preview in the Workspace list' })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Preview in workspace list' })).toBeVisible();
   await expect(page.locator('.wsp-list-preview')).toHaveCSS('height', '34px');
   await expect(page.locator('.wsp-list-preview .wsp-native-folder')).toHaveCSS('width', '16px');
   await expect(page.locator('.wsp-list-preview')).toHaveCSS('font-size', '14px');

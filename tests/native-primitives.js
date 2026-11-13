@@ -5,7 +5,7 @@ import './native-rc2/packages/client/ui-primitives/src/input-modality.ts';
 export { Modal } from './native-rc2/packages/client/ui-primitives/src/Modal.tsx';
 export { Button } from './native-rc2/packages/client/ui-primitives/src/Button.tsx';
 export { Switch } from './native-rc2/packages/client/ui-primitives/src/Switch.tsx';
-export { IconFolderCloseRegular } from './native-rc2/packages/client/ui-primitives/src/icons/index.tsx';
+export { IconFolderCloseRegular, IconChevronDownOutlineRegular } from './native-rc2/packages/client/ui-primitives/src/icons/index.tsx';
 export { Menu, MenuItemButton } from './native-rc2/packages/client/ui-primitives/src/Menu.tsx';
 export { Toast } from './native-rc2/packages/client/ui-primitives/src/Toast.tsx';
 export { StateDot } from './native-rc2/packages/client/ui-primitives/src/StateDot.tsx';

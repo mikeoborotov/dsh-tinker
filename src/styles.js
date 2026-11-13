@@ -26,12 +26,31 @@ export const CSS = `
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */
-.wsp-appearance-dialog{width:min(540px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
-.wsp-appearance-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
-.wsp-appearance-body{display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:22px}
+.wsp-appearance-dialog{width:min(760px,100%);height:620px;max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-appearance-content{flex:1;min-height:0;overflow:hidden}
+.wsp-appearance-content>:first-child{flex-shrink:0}
+.wsp-appearance-content>:last-child{flex:1;min-height:0;overflow:hidden}
+.wsp-appearance-body{display:grid;grid-template-columns:208px minmax(0,1fr);gap:24px;height:100%;min-height:0;font-size:14px;line-height:22px}
 .wsp-appearance-body *{box-sizing:border-box}
-.wsp-kind-tabs{display:flex;gap:4px;align-self:flex-start;padding:3px;background:var(--dsw-alias-bg-layer-1);border-radius:var(--dsw-radius-md)}
+.wsp-appearance-context{display:flex;flex-direction:column;gap:28px;min-width:0;min-height:0;padding-right:24px;border-right:1px solid var(--dsw-alias-border-l3);overflow-y:auto;overscroll-behavior:contain}
+.wsp-preview-divider{width:100%;margin:0;border:0;border-top:1px solid var(--dsw-alias-border-l3);flex:none}
+.wsp-kind-section>.wsp-field-label{margin-bottom:6px}
+.wsp-kind-tabs{display:flex;flex-direction:column;gap:5px;width:100%}
+.wsp-kind-tabs .wsp-kind-choice{justify-content:flex-start;gap:8px;width:100%;height:44px;padding:8px 12px;text-align:left}
+.wsp-kind-choice>svg{flex:none}
+.wsp-kind-choice>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-kind-tabs button[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l4)}
+.wsp-appearance-editor{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-mode-panel{display:flex;flex:1;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.wsp-mode-panel>*{flex-shrink:0}
+.wsp-mode-panel>.wsp-field-label{margin-bottom:-6px}
+.wsp-search-category{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.wsp-category-anchor{width:100%;min-width:0}
+.wsp-category-anchor .wsp-category-trigger{width:100%;height:44px;justify-content:space-between;gap:8px;padding:7px 14px;border-radius:var(--dsw-radius-lg);text-align:left}
+.wsp-category-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsp-category-trigger>svg{flex:none}
+/* Portal card sizing only. Menu owns material, rows, hover, checks and keyboard. */
+.wsp-emoji-category-menu{width:240px;min-width:0;max-width:calc(100vw - 24px)}
 /* Native Workspace Rename uses this raw-input shape, not the smaller public Input. */
 .wsp-appearance-input{width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;outline:none}
 .wsp-appearance-input:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
@@ -47,7 +66,7 @@ export const CSS = `
 .wsp-custom-color::-webkit-color-swatch-wrapper{padding:0}
 .wsp-custom-color::-webkit-color-swatch{border:0;border-radius:50%}
 .wsp-custom-color::-moz-color-swatch{border:0;border-radius:50%}
-.wsp-choice-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;max-height:226px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.wsp-choice-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:40px;align-content:start;gap:6px;flex:1;min-height:80px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
 .wsp-choice-grid .wsp-choice{height:40px;min-width:0;width:100%;padding:0}
 .wsp-choice[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l4)}
 .wsp-choice .wsp-icon{width:22px;height:22px;flex-basis:22px}
@@ -55,12 +74,12 @@ export const CSS = `
 .wsp-results-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .wsp-help{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .wsp-preview-section{display:flex;flex-direction:column;gap:6px}
-.wsp-list-preview{display:flex;align-items:center;height:34px;gap:6px;padding:0 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-sidebar-fill);font-size:14px;line-height:20px}
+.wsp-list-preview{display:flex;align-items:center;min-width:0;height:34px;gap:6px;padding:0;border:0;border-radius:0;background:transparent;font-size:14px;line-height:20px}
 .wsp-list-preview>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-list-preview .wsp-icon{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
 .wsp-list-preview .wsp-native-folder{width:16px;height:16px;flex-basis:16px;color:var(--dsw-alias-label-secondary)}
 .wsp-reset-action{margin-right:auto}
-.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;min-height:188px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
+.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;flex:1;min-height:220px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
 .wsp-image-dropzone.wsp-is-dragging{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
 .wsp-drop-title{font-size:16px;line-height:24px}
 .wsp-hidden-file{display:none}
@@ -89,5 +108,6 @@ export const CSS = `
 .wsp-profile-error{display:flex;flex-direction:column;align-self:stretch;gap:10px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
 .wsp-profile-error>button{align-self:center;max-width:100%;height:auto;min-height:28px;white-space:normal;text-align:center}
 @media(max-width:430px){.wsp-profile-body{gap:20px}.wsp-profile-body .wsp-profile-reset{font-size:11px}}
-@media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
+@media(max-width:640px){.wsp-appearance-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px}.wsp-appearance-context{gap:8px;padding:0 0 12px;border-right:0;border-bottom:1px solid var(--dsw-alias-border-l3);overflow:visible}.wsp-preview-section{flex-direction:row;align-items:center;justify-content:space-between;gap:12px}.wsp-preview-section>.wsp-field-label{max-width:55%}.wsp-preview-section>.wsp-list-preview{max-width:45%}.wsp-preview-divider{display:none}.wsp-kind-tabs{flex-direction:row;gap:4px}.wsp-kind-tabs .wsp-kind-choice{flex:1;min-width:0;height:36px;padding:4px 8px;gap:6px}.wsp-search-category{grid-template-columns:minmax(0,1fr);gap:8px}.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:480px){.wsp-kind-choice>svg{display:none}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;

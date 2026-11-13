@@ -20,14 +20,25 @@ function geometry(markup) {
   };
 }
 
-test('plugin manifest uses the exact accepted color wrench 13', async () => {
-  const icon = Buffer.from((await readFile(new URL('icon.svg', root), 'utf8')).replaceAll('\r\n', '\n'));
+test('plugin color wrench is 85% of accepted size with all other artwork bytes preserved', async () => {
+  const markup = (await readFile(new URL('icon.svg', root), 'utf8')).replaceAll('\r\n', '\n');
   const manifest = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
   assert.equal(manifest.icon, './icon.svg');
-  // Only two trailing spaces on an empty source line are removed; artwork is unchanged.
-  assert.equal(icon.length, 2407);
-  assert.equal(sha256(icon), '41f7ad5ebde39a12f1eca03c3677c6fa71f32fd1da6c92c750c9f50ca5bc4382');
-  assert.match(icon.toString('utf8'), /data-framing="centered-60-of-64"/);
+  const svg = markup.match(/<svg\b[^>]*>/)[0];
+  assert.equal(attribute(svg, 'width'), '64');
+  assert.equal(attribute(svg, 'height'), '64');
+  assert.equal(attribute(svg, 'viewBox'), '0 0 64 64');
+  assert.equal(attribute(svg, 'data-framing'), 'centered-51-of-64');
+  const transform = geometry(markup).transforms[0];
+  assert.equal(transform, 'translate(32 32) scale(0.996945632) translate(-30.546875000 -33.453125000)');
+  const scale = Number(transform.match(/scale\(([^)]+)\)/)[1]);
+  assert.ok(Math.abs(scale / 1.172877214 - 0.85) < 1e-9, 'rounded scale must retain the 85% linear ratio');
+  // Reverting only the two framing attributes must reconstruct the accepted SVG.
+  const original = Buffer.from(markup
+    .replace('data-framing="centered-51-of-64"', 'data-framing="centered-60-of-64"')
+    .replace('scale(0.996945632)', 'scale(1.172877214)'));
+  assert.equal(original.length, 2407);
+  assert.equal(sha256(original), '41f7ad5ebde39a12f1eca03c3677c6fa71f32fd1da6c92c750c9f50ca5bc4382');
 });
 
 test('Settings wrench preserves authored variant 13 geometry and inherits native color at host sizes', async () => {
