@@ -22,8 +22,6 @@ A plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 
 4. Click **Install** and enable plugin.
 
-Requires DeepSeek Harness `>=0.2.0-rc.2 <0.3.0-0`.
-
 ## Features
 
 ### Workspace appearance
@@ -55,6 +53,12 @@ Open **Settings / Tinker** to turn features on or off individually. You don't ne
 - **Local storage.** Appearance and reminders stay in this browser or desktop profile, without cross-device sync.
 - **Local profile.** Name and avatar overrides do not change your account; they apply to all accounts using this storage.
 - **Saved settings.** Disabling Tinker keeps your preferences. Clearing the profile's storage removes them.
+
+## Compatible DeepSeek Harness versions
+
+| Compatible series | Starting with |
+| --- | --- |
+| `0.2.x` | `0.2.0-rc.2` |
 
 ## License
 
