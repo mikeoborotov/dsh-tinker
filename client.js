@@ -687,9 +687,16 @@ function matchingSelection(groups, label) {
 }
 function providerGroups(section, menu, kind, groups) {
   const headingId = section.getAttribute("aria-labelledby");
-  if (kind === "codex" && menu.id.endsWith("-menu")) {
-    const ownerId = menu.id.slice(0, -5);
-    return groups.filter((group) => headingId === `${ownerId}-${group.id}`);
+  if (kind === "codex") {
+    if (section.classList.contains("codexModelSelectGroup") || section.hasAttribute("aria-labelledby")) {
+      if (!menu.id.endsWith("-menu")) return [];
+      const ownerId = menu.id.slice(0, -5);
+      return groups.filter((group) => headingId === `${ownerId}-${group.id}`);
+    }
+    const name2 = normalize(section.getAttribute("aria-label"));
+    const heading2 = section.querySelector(":scope > div.codexModelSelectGroupTitle");
+    if (!name2 || normalize(heading2?.textContent) !== name2) return [];
+    return groups.filter((group) => normalize(group.name) === name2);
   }
   const heading = section.querySelector(":scope > [data-menu-group-heading]");
   const name = normalize(heading?.textContent);
@@ -727,14 +734,18 @@ function attachModelMenuIcons(marker, directory) {
     if (menu !== observedMenu) {
       menuObserver.disconnect();
       observedMenu = menu;
-      if (menu) menuObserver.observe(menu, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["title", "aria-labelledby", "hidden"] });
+      if (menu) menuObserver.observe(menu, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["title", "aria-labelledby", "aria-label", "role", "class", "hidden"] });
     }
     const seen = /* @__PURE__ */ new Set();
     if (menu && menu.getAttribute("role") && !menu.hidden) {
       const groups = directory.getSnapshot().groups ?? [];
-      const selector = owner.kind === "codex" ? 'section.codexModelSelectGroup[role="group"]' : 'section[data-menu-group][role="group"]';
+      let selector = owner.kind === "codex" ? 'section.codexModelSelectGroup[role="group"]' : 'section[data-menu-group][role="group"]';
+      if (owner.kind === "codex" && menu.matches('.codexModelSelectMenu[role="group"]')) {
+        selector += ', :scope > div.codexModelSelectGroups[role="menu"] > section[role="group"][aria-label]';
+      }
       for (const section of menu.querySelectorAll(selector)) {
         if (section.hidden) continue;
+        if (owner.kind === "codex" && !section.classList.contains("codexModelSelectGroup") && !section.querySelector(":scope > div.codexModelSelectGroupTitle")) continue;
         const candidates = providerGroups(section, menu, owner.kind, groups);
         const buttons = owner.kind === "codex" ? section.querySelectorAll(':scope > button.codexModelSelectOption[role="menuitemradio"]') : section.querySelectorAll(':scope > button[role="menuitemradio"][title]');
         for (const button of buttons) {
