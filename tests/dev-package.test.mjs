@@ -14,6 +14,31 @@ const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const read = name => readFile(path.join(projectRoot, name));
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const require = createRequire(import.meta.url);
+const fixtureReadme = Buffer.from([
+  '# Tinker',
+  '',
+  '![Tinker icon](./icon.svg)',
+  '',
+  'Personal interface features for DeepSeek Harness. Настройки остаются локальными.',
+  '',
+  '## Installation',
+  '',
+  '```sh',
+  'npm install dsh-tinker',
+  '```',
+  '',
+  'Enable the installed plugin to open its settings and choose the features you need.',
+  '',
+  '## Features',
+  '',
+  '- Customize workspace names, colors and icons.',
+  '- Track unread sessions and recover local settings when a backup is available.',
+  '',
+  '## License',
+  '',
+  'See [LICENSE](./LICENSE) and [third-party notices](./THIRD_PARTY_NOTICES.md).',
+  '',
+].join('\r\n'));
 const source = marker => `import React from 'react';
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import icons from './workspace-icons.json';
@@ -45,7 +70,7 @@ async function fixture(run) {
     await writeFile(path.join(root, 'src/workspace-icons.json'), 'STALE_GENERATED_ICONS');
     await writeFile(path.join(root, 'client.js'), 'STALE_CLIENT_MUST_NEVER_BE_PACKED');
     await writeFile(path.join(root, '.env'), 'DO_NOT_COPY_OR_READ=fixture-only\n');
-    await writeFile(path.join(root, 'README.md'), 'npm install dsh-tinker # stable instructions must not leak into dev README');
+    await writeFile(path.join(root, 'README.md'), fixtureReadme);
     await run(root, temporaryParent);
   } finally {
     assert.ok(path.isAbsolute(owner) && path.dirname(owner) === parent && path.basename(owner).startsWith('tinker packaging fixture '));
@@ -86,6 +111,7 @@ function withRegistration(client) {
 
 test('dev tgz is a fresh real npm package with matching metadata, factory, locale, hashes and no source writes', { timeout: 120_000 }, async () => fixture(async (root, temporaryParent) => {
   const before = await tree(root), temporaryBefore = await ownedTemps(temporaryParent);
+  const readme = await readFile(path.join(root, 'README.md'));
   const result = await packDev({ sourceRoot: root, temporaryParent });
   assert.deepEqual(await tree(root), before);
   assert.deepEqual(await ownedTemps(temporaryParent), temporaryBefore);
@@ -103,7 +129,8 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   const client = files.get('client.js').toString();
   assert.doesNotMatch(client, /STALE_CLIENT|STALE_GENERATED_ICONS|DO_NOT_COPY_OR_READ/);
   assert.match(client, /fresh-source-A/);
-  assert.doesNotMatch(files.get('README.md').toString(), /npm install dsh-tinker/);
+  assert.deepEqual(files.get('README.md'), readme, 'Pack the full source README without a prologue or transformations');
+  assert.equal(sha256(files.get('README.md')), sha256(readme));
   const { registration, exports, requests } = withRegistration(client);
   assert.equal(registration.id, DEV_NAME);
   assert.deepEqual(Object.keys(exports).sort(), ['apply', 'inject']);
@@ -124,6 +151,7 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   assert.match(provenance.tools.npm, /^\d+\.\d+\.\d+$/);
   assert.equal(provenance.archive.sha256, sha256(bytes));
   assert.equal(provenance.archive.integrity, 'sha512-' + createHash('sha512').update(bytes).digest('base64'));
+  assert.deepEqual(provenance.files['README.md'], { bytes: readme.length, sha256: sha256(readme) });
   for (const [name, content] of files) assert.deepEqual(provenance.files[name], { bytes: content.length, sha256: sha256(content) });
   assert.deepEqual(Object.keys(provenance.files).sort(), PACKAGE_FILES);
   assert.ok(!JSON.stringify(provenance).includes(root));
@@ -153,6 +181,66 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   assert.match(secondClient, /fresh-source-B/);
   assert.doesNotMatch(secondClient, /fresh-source-A|STALE_CLIENT/);
   assert.equal(sha256(await readFile(result.tarball)), result.sha256, 'The previous archive must remain untouched');
+}));
+
+test('README-only edits get a new immutable archive and provenance while unchanged README reuses the same artifacts', { timeout: 180_000 }, async () => fixture(async (root, temporaryParent) => {
+  const before = await tree(root), temporaryBefore = await ownedTemps(temporaryParent);
+  const first = await packDev({ sourceRoot: root, temporaryParent });
+  const firstArchive = await readFile(first.tarball), firstSidecar = await readFile(first.provenance);
+  const firstFiles = readPackageTarball(firstArchive), firstProvenance = JSON.parse(firstSidecar);
+  assert.deepEqual(firstFiles.get('README.md'), fixtureReadme);
+  assert.deepEqual(await tree(root), before);
+
+  const updatedReadme = Buffer.concat([fixtureReadme, Buffer.from('\r\n## Preview update\r\n\r\nOnly the README changed. Полный текст сохранён.\r\n')]);
+  await writeFile(path.join(root, 'README.md'), updatedReadme);
+  const beforeSecond = await tree(root);
+  assert.deepEqual([...beforeSecond].filter(([name, hash]) => hash !== before.get(name)).map(([name]) => name), ['README.md']);
+  const second = await packDev({ sourceRoot: root, temporaryParent });
+  const secondArchive = await readFile(second.tarball), secondSidecar = await readFile(second.provenance);
+  const secondFiles = readPackageTarball(secondArchive), secondProvenance = JSON.parse(secondSidecar);
+  assert.notEqual(second.version, first.version);
+  assert.notEqual(second.tarball, first.tarball);
+  assert.notEqual(second.provenance, first.provenance);
+  assert.notEqual(second.sha256, first.sha256);
+  assert.notEqual(secondProvenance.source.snapshotSha256, firstProvenance.source.snapshotSha256);
+  assert.notEqual(secondProvenance.files['README.md'].sha256, firstProvenance.files['README.md'].sha256);
+  assert.equal(firstProvenance.source.snapshotSha256.slice(0, 12), first.version.split('.s')[1]);
+  assert.equal(secondProvenance.source.snapshotSha256.slice(0, 12), second.version.split('.s')[1]);
+  assert.deepEqual(secondFiles.get('README.md'), updatedReadme);
+  assert.deepEqual(firstProvenance.files['README.md'], { bytes: fixtureReadme.length, sha256: sha256(fixtureReadme) });
+  assert.deepEqual(secondProvenance.files['README.md'], { bytes: updatedReadme.length, sha256: sha256(updatedReadme) });
+  assert.equal(firstProvenance.archive.sha256, sha256(firstArchive));
+  assert.equal(secondProvenance.archive.sha256, sha256(secondArchive));
+  for (const name of PACKAGE_FILES.filter(name => name !== 'README.md' && name !== 'package.json')) assert.deepEqual(secondFiles.get(name), firstFiles.get(name), 'README-only edit must not change ' + name);
+  assert.deepEqual(await tree(root), beforeSecond);
+  assert.deepEqual(await ownedTemps(temporaryParent), temporaryBefore);
+
+  const repeated = await packDev({ sourceRoot: root, temporaryParent });
+  assert.deepEqual(repeated, second);
+  assert.deepEqual(await readFile(first.tarball), firstArchive, 'The previous archive must remain byte-identical');
+  assert.deepEqual(await readFile(first.provenance), firstSidecar, 'The previous sidecar must remain byte-identical');
+  assert.deepEqual(await readFile(second.tarball), secondArchive, 'Unchanged input must not replace the archive');
+  assert.deepEqual(await readFile(second.provenance), secondSidecar, 'Unchanged input must not replace the sidecar');
+  assert.deepEqual((await readdir(path.join(root, 'dist/develop'))).sort(), [first.version, second.version].sort());
+  assert.deepEqual(await tree(root), beforeSecond);
+  assert.deepEqual(await ownedTemps(temporaryParent), temporaryBefore);
+}));
+
+test('a missing README fails before output without a substitute or leftover staging', { timeout: 60_000 }, async () => fixture(async (root, temporaryParent) => {
+  const parent = await realpath(tmpdir()), owner = path.dirname(root), readme = path.join(root, 'README.md');
+  assert.ok(path.isAbsolute(owner) && path.dirname(owner) === parent && path.basename(owner).startsWith('tinker packaging fixture '), 'Delete only inside an owned temporary fixture');
+  assert.equal(await realpath(owner), owner);
+  assert.equal(root, path.join(owner, 'source'));
+  assert.equal(await realpath(root), root);
+  assert.ok(path.isAbsolute(readme) && path.dirname(readme) === root && path.basename(readme) === 'README.md');
+  assert.equal(await realpath(readme), readme, 'Refuse redirected README deletion');
+  await rm(readme);
+  const before = await tree(root), temporaryBefore = await ownedTemps(temporaryParent);
+  await assert.rejects(packDev({ sourceRoot: root, temporaryParent }), { code: 'ENOENT', path: readme });
+  assert.deepEqual(await tree(root), before);
+  assert.deepEqual(await ownedTemps(temporaryParent), temporaryBefore);
+  await assert.rejects(access(readme), { code: 'ENOENT' });
+  await assert.rejects(access(path.join(root, 'dist')), { code: 'ENOENT' });
 }));
 
 test('derived historical backup key is accepted but an altered suffix is rejected', { timeout: 60_000 }, async () => fixture(async (root, temporaryParent) => {

@@ -54,7 +54,6 @@ function Settings({ prefs, profilePrefs, reminders, t }) {
   const feature = key => <SettingsFeature key={key} label={t(key)} description={t(key + 'Description')} checked={state.features[key]} onChange={next => safe(() => prefs.toggle(key, next))} />;
   return <section className="wsp-panel">
     <h2>Tinker</h2>
-    <p className="wsp-settings-description">{t('settingsDescription')}</p>
     <div className="wsp-settings-tabs" role="tablist" aria-label={t('settingsTabsLabel')}>
       {tabs.map((tab, index) => <button key={tab} ref={node => { tabRefs.current[index] = node; }} type="button" className="wsp-settings-tab" role="tab"
         id={`${tabsId}-${tab}-tab`} aria-controls={`${tabsId}-${tab}-panel`} aria-selected={activeTab === tab} tabIndex={activeTab === tab ? 0 : -1}

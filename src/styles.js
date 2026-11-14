@@ -9,7 +9,6 @@ export const CSS = `
 .wsp-session-icon{margin-right:6px;transform:translateX(5px)}
 .wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.4;max-width:560px}
 .wsp-panel>h2{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.45px;margin:0 0 7px}
-.wsp-settings-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0 0 20px}
 .wsp-settings-tabs{display:flex;gap:18px;margin:0 0 18px;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .wsp-settings-tabs>.wsp-settings-tab{box-sizing:border-box;flex:none;min-height:34px;padding:0 2px;margin:0 0 -1px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary);font:inherit;font-size:14px;line-height:20px;white-space:nowrap;cursor:pointer}
 .wsp-settings-tabs>.wsp-settings-tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-label-primary)}

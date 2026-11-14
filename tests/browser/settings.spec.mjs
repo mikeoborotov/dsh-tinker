@@ -45,8 +45,8 @@ async function mount(page,{language='en',dark=true,records={},trackStorage=false
   await page.addScriptTag({content:fixture.js});await page.evaluate(language=>window.settingsFixture.mount(language),language);await expect(panel(page).getByRole('heading',{name:'Tinker',exact:true})).toBeVisible();
 }
 const labels={en:['Workspace appearance','Profile appearance','Hide Deepseek Harness logo','In the model picker','Beside chats','Mark as unread'],ru:['Оформление Workspaces','Оформление профиля','Скрывать логотип Deepseek Harness','В выборе модели','Рядом с чатами','Метка непрочитанности']};
-for(const language of ['en','ru'])test(`approved A grouped settings and exact metadata copy ${language}`,async({page},testInfo)=>{
-  await mount(page,{language});await expect(panel(page).locator('.wsp-settings-description')).toHaveText((language==='en'?enMetadata:ruMetadata).meta.description);
+for(const language of ['en','ru'])test(`approved A grouped settings without metadata description ${language}`,async({page},testInfo)=>{
+  await mount(page,{language});await expect(panel(page).locator('.wsp-settings-description')).toHaveCount(0);for(const metadata of [enMetadata,ruMetadata])await expect(panel(page)).not.toContainText(metadata.meta.description);
   const list=panel(page).getByRole('tablist',{name:tabs[language].label,exact:true});await expect(list.getByRole('tab')).toHaveText([tabs[language].features,tabs[language].recovery]);await expect(list).toHaveClass(/\bwsp-settings-tabs\b/);
   await expect(panel(page).locator('.wsp-settings-tabpanel')).toHaveCount(2);await expectSelected(page,'features',language);await expect(panel(page).locator('details,summary')).toHaveCount(0);
   for(const name of ['features','recovery']) {
@@ -64,6 +64,7 @@ for(const language of ['en','ru'])test(`approved A grouped settings and exact me
   await expect(panel(page)).not.toContainText(/prototype|demo only|6\/6|Compatible with/i);
   await panel(page).screenshot({path:testInfo.outputPath(`settings-${language}.png`)});
   await tab(page,'recovery',language).click();await expectSelected(page,'recovery',language);await expect(panel(page).getByRole('switch')).toHaveCount(0);
+  await expect(panel(page).locator('.wsp-settings-description')).toHaveCount(0);for(const metadata of [enMetadata,ruMetadata])await expect(panel(page)).not.toContainText(metadata.meta.description);
   await expect(sharedRecovery(page).getByRole('heading',{level:3})).toHaveText(language==='en'?'Advanced: recovery copy':'Дополнительно: копия для восстановления');
   const copy=language==='en'?['A limited recovery copy, not a full backup','Includes Workspace appearance and five feature flags only. Profile appearance and unread reminders are separate and are not included.','Copy may contain data saved before an update. No import is available.']:['Копия для восстановления, не полный бэкап','Только оформление Workspaces и пять флагов функций. Оформление профиля и метки непрочитанности хранятся отдельно и в копию не входят.','Копия может содержать данные, сохранённые до обновления. Импорта нет.'];
   expect((await sharedRecovery(page).locator('p').allTextContents()).slice(0,3)).toEqual(copy);for(let index=0;index<3;index++)await expect(sharedRecovery(page).locator('p').nth(index)).toBeVisible();
