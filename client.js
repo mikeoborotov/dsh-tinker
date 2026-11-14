@@ -970,6 +970,11 @@ var CSS = `
 .wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.4;max-width:560px}
 .wsp-panel>h2{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.45px;margin:0 0 7px}
 .wsp-settings-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0 0 20px}
+.wsp-settings-tabs{display:flex;gap:18px;margin:0 0 18px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.wsp-settings-tabs>.wsp-settings-tab{box-sizing:border-box;flex:none;min-height:34px;padding:0 2px;margin:0 0 -1px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary);font:inherit;font-size:14px;line-height:20px;white-space:nowrap;cursor:pointer}
+.wsp-settings-tabs>.wsp-settings-tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-label-primary)}
+.wsp-settings-tabs>.wsp-settings-tab:focus-visible,.wsp-settings-tabpanel:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-settings-tabpanel[hidden]{display:none}
 .wsp-settings-group{margin:0 0 15px}
 .wsp-settings-group>h3{font-size:12px;line-height:17px;font-weight:600;margin:0 0 7px}
 .wsp-settings-card{border:1px solid var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l4));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-layer-2));overflow:hidden}
@@ -978,11 +983,10 @@ var CSS = `
 .wsp-settings-feature-copy{min-width:0}
 .wsp-settings-feature-label{font-size:12px;line-height:17px}
 .wsp-settings-feature-description{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary);margin-top:1px}
-.wsp-settings-recovery{border-top:1px solid var(--dsw-alias-border-l3);margin-top:20px;padding-top:12px}
-.wsp-settings-recovery>summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}
-.wsp-settings-recovery>summary:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color);outline-offset:3px}
-.wsp-settings-recovery-body{margin:12px 0 0 14px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
-.wsp-settings-recovery-body>p{margin:0 0 9px}
+.wsp-settings-recovery{font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery>h3,.wsp-settings-unread-recovery>h3{margin:0 0 9px;font-size:12px;line-height:17px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.wsp-settings-recovery>p{margin:0 0 9px}
+.wsp-settings-unread-recovery{margin-top:16px}
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */
@@ -1114,6 +1118,10 @@ var ru_default = {
 var en = {
   language: "en",
   settingsDescription: en_default.meta.description,
+  featuresTab: "Features",
+  recoveryTab: "Recovery",
+  settingsTabsLabel: "Tinker settings",
+  recoveryEmpty: "No recovery copy is available.",
   settingsAppearance: "Appearance",
   settingsModelLogos: "AI model logos",
   settingsChats: "Chats",
@@ -1172,6 +1180,7 @@ var en = {
   markUnread: "Mark as unread",
   unreadLabel: "Unread reminder",
   unreadFailed: "Could not save the reminder.",
+  unreadRecoveryTitle: "Unread reminders",
   unreadRecovery: "Unread reminders could not be read. Back up before resetting.",
   unreadResetConfirm: "Remove only manual unread reminders? Appearance and chats will not change.",
   branding: "Hide Deepseek Harness logo",
@@ -1217,6 +1226,10 @@ var en = {
 var ru = {
   language: "ru",
   settingsDescription: ru_default.meta.description,
+  featuresTab: "\u0424\u0443\u043D\u043A\u0446\u0438\u0438",
+  recoveryTab: "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435",
+  settingsTabsLabel: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 Tinker",
+  recoveryEmpty: "\u041A\u043E\u043F\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430.",
   settingsAppearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
   settingsModelLogos: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0418\u0418",
   settingsChats: "\u0427\u0430\u0442\u044B",
@@ -1275,6 +1288,7 @@ var ru = {
   markUnread: "\u041F\u043E\u043C\u0435\u0442\u0438\u0442\u044C \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u043C",
   unreadLabel: "\u041D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0435 \u043D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435",
   unreadFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043C\u0435\u0442\u043A\u0443.",
+  unreadRecoveryTitle: "\u041C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438",
   unreadRecovery: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u043E\u043F\u0438\u044E \u043F\u0435\u0440\u0435\u0434 \u0441\u0431\u0440\u043E\u0441\u043E\u043C.",
   unreadResetConfirm: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0440\u0443\u0447\u043D\u044B\u0435 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438? \u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0438 \u0447\u0430\u0442\u044B \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442\u0441\u044F.",
   branding: "\u0421\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043B\u043E\u0433\u043E\u0442\u0438\u043F Deepseek Harness",
@@ -6794,6 +6808,31 @@ function SettingsFeature({ label, description, checked, onChange, disabled = fal
 }
 function Settings({ prefs, profilePrefs, reminders, t }) {
   const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = (0, import_react7.useState)("");
+  const [activeTab, setActiveTab] = (0, import_react7.useState)("features"), tabsId = (0, import_react7.useId)(), tabRefs = (0, import_react7.useRef)([]);
+  const tabs = ["features", "recovery"];
+  function onTabKeyDown(event, index2) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing || event.nativeEvent?.isComposing) return;
+    let next;
+    switch (event.key) {
+      case "ArrowLeft":
+        next = (index2 + tabs.length - 1) % tabs.length;
+        break;
+      case "ArrowRight":
+        next = (index2 + 1) % tabs.length;
+        break;
+      case "Home":
+        next = 0;
+        break;
+      case "End":
+        next = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    setActiveTab(tabs[next]);
+    tabRefs.current[next]?.focus();
+  }
   async function safe(fn) {
     try {
       await fn();
@@ -6803,11 +6842,29 @@ function Settings({ prefs, profilePrefs, reminders, t }) {
     }
   }
   const feature = (key) => /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { key, label: t(key), description: t(key + "Description"), checked: state.features[key], onChange: (next) => safe(() => prefs.toggle(key, next)) });
-  return /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react7.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react7.default.createElement("p", { className: "wsp-settings-description" }, t("settingsDescription")), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsAppearance")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("workspaces"), /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { label: t("profileFeature"), description: t("profileFeatureDescription"), checked: profileState.enabled, disabled: Boolean(profileState.error), onChange: (next) => safe(() => profilePrefs.toggle(next)) }), feature("branding")), profileState.error && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => profilePrefs.retry()) }, t("retry")))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsModelLogos")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("composer"), feature("sessions"))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsChats")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("unread"))), (state.error || error) && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react7.default.createElement("details", { className: "wsp-settings-recovery" }, /* @__PURE__ */ import_react7.default.createElement("summary", null, t("recoveryTitle")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-recovery-body" }, /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryScope")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoverySource")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
+  return /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react7.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react7.default.createElement("p", { className: "wsp-settings-description" }, t("settingsDescription")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-tabs", role: "tablist", "aria-label": t("settingsTabsLabel") }, tabs.map((tab, index2) => /* @__PURE__ */ import_react7.default.createElement(
+    "button",
+    {
+      key: tab,
+      ref: (node) => {
+        tabRefs.current[index2] = node;
+      },
+      type: "button",
+      className: "wsp-settings-tab",
+      role: "tab",
+      id: `${tabsId}-${tab}-tab`,
+      "aria-controls": `${tabsId}-${tab}-panel`,
+      "aria-selected": activeTab === tab,
+      tabIndex: activeTab === tab ? 0 : -1,
+      onClick: () => setActiveTab(tab),
+      onKeyDown: (event) => onTabKeyDown(event, index2)
+    },
+    t(tab + "Tab")
+  ))), (state.error || error) && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-tabpanel", role: "tabpanel", id: `${tabsId}-features-panel`, "aria-labelledby": `${tabsId}-features-tab`, hidden: activeTab !== "features", tabIndex: 0 }, /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsAppearance")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("workspaces"), /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { label: t("profileFeature"), description: t("profileFeatureDescription"), checked: profileState.enabled, disabled: Boolean(profileState.error), onChange: (next) => safe(() => profilePrefs.toggle(next)) }), feature("branding")), profileState.error && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => profilePrefs.retry()) }, t("retry")))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsModelLogos")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("composer"), feature("sessions"))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsChats")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("unread")))), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-tabpanel", role: "tabpanel", id: `${tabsId}-recovery-panel`, "aria-labelledby": `${tabsId}-recovery-tab`, hidden: activeTab !== "recovery", tabIndex: 0 }, /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-recovery" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("recoveryTitle")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryScope")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoverySource")), state.error || state.recoveryAvailable ? /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("resetConfirm"))) prefs.resetAll();
-  }) }, t("resetAll")))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
+  }) }, t("resetAll")))) : /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryEmpty"))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-unread-recovery", "aria-labelledby": `${tabsId}-unread-recovery-title` }, /* @__PURE__ */ import_react7.default.createElement("h3", { id: `${tabsId}-unread-recovery-title` }, t("unreadRecoveryTitle")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("unreadResetConfirm"))) return reminders.resetAll();
-  }) }, t("resetAll")))));
+  }) }, t("resetAll"))))));
 }
 function apply(ctx) {
   const locale = ctx.locale, prefs = createPreferences(window.localStorage, ICON_IDS), ui = createStore({ target: null }), currentModels = createStore({});

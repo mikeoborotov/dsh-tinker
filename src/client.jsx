@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Button, Switch } from '@deepseek-ai/dsh-client-ui-primitives';
 import { createPreferences, createStore } from './store.js';
 import { ICON_IDS } from './icons.js';
@@ -34,36 +34,61 @@ function SettingsFeature({ label, description, checked, onChange, disabled = fal
 
 function Settings({ prefs, profilePrefs, reminders, t }) {
   const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('features'), tabsId = useId(), tabRefs = useRef([]);
+  const tabs = ['features', 'recovery'];
+  function onTabKeyDown(event, index) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing || event.nativeEvent?.isComposing) return;
+    let next;
+    switch (event.key) {
+      case 'ArrowLeft': next = (index + tabs.length - 1) % tabs.length; break;
+      case 'ArrowRight': next = (index + 1) % tabs.length; break;
+      case 'Home': next = 0; break;
+      case 'End': next = tabs.length - 1; break;
+      default: return;
+    }
+    event.preventDefault();
+    setActiveTab(tabs[next]);
+    tabRefs.current[next]?.focus();
+  }
   async function safe(fn) { try { await fn(); setError(''); } catch (e) { setError(String(e.code ?? '').startsWith('profile') ? t(e.code) : e.message); } }
   const feature = key => <SettingsFeature key={key} label={t(key)} description={t(key + 'Description')} checked={state.features[key]} onChange={next => safe(() => prefs.toggle(key, next))} />;
   return <section className="wsp-panel">
     <h2>Tinker</h2>
     <p className="wsp-settings-description">{t('settingsDescription')}</p>
-    <section className="wsp-settings-group">
-      <h3>{t('settingsAppearance')}</h3><div className="wsp-settings-card">
-        {feature('workspaces')}
-        <SettingsFeature label={t('profileFeature')} description={t('profileFeatureDescription')} checked={profileState.enabled} disabled={Boolean(profileState.error)} onChange={next => safe(() => profilePrefs.toggle(next))} />
-        {feature('branding')}
-      </div>
-      {profileState.error && <div role="alert" className="wsp-error">{t(profileState.error)} <Button size="sm" onClick={() => safe(() => profilePrefs.retry())}>{t('retry')}</Button></div>}
-    </section>
-    <section className="wsp-settings-group"><h3>{t('settingsModelLogos')}</h3><div className="wsp-settings-card">{feature('composer')}{feature('sessions')}</div></section>
-    <section className="wsp-settings-group"><h3>{t('settingsChats')}</h3><div className="wsp-settings-card">{feature('unread')}</div></section>
+    <div className="wsp-settings-tabs" role="tablist" aria-label={t('settingsTabsLabel')}>
+      {tabs.map((tab, index) => <button key={tab} ref={node => { tabRefs.current[index] = node; }} type="button" className="wsp-settings-tab" role="tab"
+        id={`${tabsId}-${tab}-tab`} aria-controls={`${tabsId}-${tab}-panel`} aria-selected={activeTab === tab} tabIndex={activeTab === tab ? 0 : -1}
+        onClick={() => setActiveTab(tab)} onKeyDown={event => onTabKeyDown(event, index)}>{t(tab + 'Tab')}</button>)}
+    </div>
     {(state.error || error) && <div role="alert" className="wsp-error">{error || state.error}</div>}
-    {(state.error || state.recoveryAvailable) && <details className="wsp-settings-recovery">
-      <summary>{t('recoveryTitle')}</summary>
-      <div className="wsp-settings-recovery-body"><p>{t('recoveryHint')}</p><p>{t('recoveryScope')}</p><p>{t('recoverySource')}</p>
-        <div className="wsp-row"><Button size="sm" variant="outline" onClick={() => safe(() => download(prefs.backup(), 'tinker-recovery.json'))}>{t('backup')}</Button>
-          {state.error && <><Button size="sm" onClick={() => safe(() => prefs.retry())}>{t('retry')}</Button><Button size="sm" onClick={() => safe(() => { if (window.confirm(t('resetConfirm'))) prefs.resetAll(); })}>{t('resetAll')}</Button></>}
+    {(unreadState.error || unreadState.lastError) && <div role="alert" className="wsp-error">{t('unreadRecovery')} {unreadState.error || unreadState.lastError}</div>}
+    <div className="wsp-settings-tabpanel" role="tabpanel" id={`${tabsId}-features-panel`} aria-labelledby={`${tabsId}-features-tab`} hidden={activeTab !== 'features'} tabIndex={0}>
+      <section className="wsp-settings-group">
+        <h3>{t('settingsAppearance')}</h3><div className="wsp-settings-card">
+          {feature('workspaces')}
+          <SettingsFeature label={t('profileFeature')} description={t('profileFeatureDescription')} checked={profileState.enabled} disabled={Boolean(profileState.error)} onChange={next => safe(() => profilePrefs.toggle(next))} />
+          {feature('branding')}
         </div>
-      </div>
-    </details>}
-    {(unreadState.error || unreadState.lastError) && <>
-      <div role="alert" className="wsp-error">{t('unreadRecovery')} {unreadState.error || unreadState.lastError}</div>
-      <div className="wsp-row"><Button size="sm" variant="outline" onClick={() => safe(() => download(reminders.backup(), 'tinker-unread-recovery.json'))}>{t('backup')}</Button>
-        <Button size="sm" onClick={() => safe(() => reminders.refresh())}>{t('retry')}</Button>
-        <Button size="sm" onClick={() => safe(() => { if (window.confirm(t('unreadResetConfirm'))) return reminders.resetAll(); })}>{t('resetAll')}</Button></div>
-    </>}
+        {profileState.error && <div role="alert" className="wsp-error">{t(profileState.error)} <Button size="sm" onClick={() => safe(() => profilePrefs.retry())}>{t('retry')}</Button></div>}
+      </section>
+      <section className="wsp-settings-group"><h3>{t('settingsModelLogos')}</h3><div className="wsp-settings-card">{feature('composer')}{feature('sessions')}</div></section>
+      <section className="wsp-settings-group"><h3>{t('settingsChats')}</h3><div className="wsp-settings-card">{feature('unread')}</div></section>
+    </div>
+    <div className="wsp-settings-tabpanel" role="tabpanel" id={`${tabsId}-recovery-panel`} aria-labelledby={`${tabsId}-recovery-tab`} hidden={activeTab !== 'recovery'} tabIndex={0}>
+      <section className="wsp-settings-recovery">
+        <h3>{t('recoveryTitle')}</h3>
+        <p>{t('recoveryHint')}</p><p>{t('recoveryScope')}</p><p>{t('recoverySource')}</p>
+        {(state.error || state.recoveryAvailable) ? <div className="wsp-row"><Button size="sm" variant="outline" onClick={() => safe(() => download(prefs.backup(), 'tinker-recovery.json'))}>{t('backup')}</Button>
+          {state.error && <><Button size="sm" onClick={() => safe(() => prefs.retry())}>{t('retry')}</Button><Button size="sm" onClick={() => safe(() => { if (window.confirm(t('resetConfirm'))) prefs.resetAll(); })}>{t('resetAll')}</Button></>}
+        </div> : <p>{t('recoveryEmpty')}</p>}
+      </section>
+      {(unreadState.error || unreadState.lastError) && <section className="wsp-settings-unread-recovery" aria-labelledby={`${tabsId}-unread-recovery-title`}>
+        <h3 id={`${tabsId}-unread-recovery-title`}>{t('unreadRecoveryTitle')}</h3>
+        <div className="wsp-row"><Button size="sm" variant="outline" onClick={() => safe(() => download(reminders.backup(), 'tinker-unread-recovery.json'))}>{t('backup')}</Button>
+          <Button size="sm" onClick={() => safe(() => reminders.refresh())}>{t('retry')}</Button>
+          <Button size="sm" onClick={() => safe(() => { if (window.confirm(t('unreadResetConfirm'))) return reminders.resetAll(); })}>{t('resetAll')}</Button></div>
+      </section>}
+    </div>
   </section>;
 }
 

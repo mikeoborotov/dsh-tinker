@@ -10,6 +10,11 @@ export const CSS = `
 .wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.4;max-width:560px}
 .wsp-panel>h2{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.45px;margin:0 0 7px}
 .wsp-settings-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0 0 20px}
+.wsp-settings-tabs{display:flex;gap:18px;margin:0 0 18px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.wsp-settings-tabs>.wsp-settings-tab{box-sizing:border-box;flex:none;min-height:34px;padding:0 2px;margin:0 0 -1px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary);font:inherit;font-size:14px;line-height:20px;white-space:nowrap;cursor:pointer}
+.wsp-settings-tabs>.wsp-settings-tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-label-primary)}
+.wsp-settings-tabs>.wsp-settings-tab:focus-visible,.wsp-settings-tabpanel:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-settings-tabpanel[hidden]{display:none}
 .wsp-settings-group{margin:0 0 15px}
 .wsp-settings-group>h3{font-size:12px;line-height:17px;font-weight:600;margin:0 0 7px}
 .wsp-settings-card{border:1px solid var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l4));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-layer-2));overflow:hidden}
@@ -18,11 +23,10 @@ export const CSS = `
 .wsp-settings-feature-copy{min-width:0}
 .wsp-settings-feature-label{font-size:12px;line-height:17px}
 .wsp-settings-feature-description{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary);margin-top:1px}
-.wsp-settings-recovery{border-top:1px solid var(--dsw-alias-border-l3);margin-top:20px;padding-top:12px}
-.wsp-settings-recovery>summary{cursor:pointer;font-size:11px;color:var(--dsw-alias-label-secondary)}
-.wsp-settings-recovery>summary:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color);outline-offset:3px}
-.wsp-settings-recovery-body{margin:12px 0 0 14px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
-.wsp-settings-recovery-body>p{margin:0 0 9px}
+.wsp-settings-recovery{font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery>h3,.wsp-settings-unread-recovery>h3{margin:0 0 9px;font-size:12px;line-height:17px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.wsp-settings-recovery>p{margin:0 0 9px}
+.wsp-settings-unread-recovery{margin-top:16px}
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */

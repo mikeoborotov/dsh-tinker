@@ -103,7 +103,8 @@ test('RU labels, write failure and corrupt-state recovery are visible instead of
   await expect(row(page,'s2').getByRole('alert')).toContainText('QuotaExceededError'); expect(await page.evaluate(()=>window.sidebarFixture.unread().s2)).toBeUndefined();
   await page.reload(); await attach(page); await page.evaluate(()=>window.sidebarFixture.corruptUnread());
   await page.reload(); await attach(page); await expect(page.getByRole('alert').first()).toContainText('Unread reminders could not be read');
-  page.once('dialog',dialog=>dialog.accept()); await page.getByRole('button',{name:'Reset plugin settings',exact:true}).click();
+  await page.getByRole('tablist',{name:'Tinker settings',exact:true}).getByRole('tab',{name:'Recovery',exact:true}).click();
+  page.once('dialog',dialog=>dialog.accept()); await page.locator('.wsp-settings-unread-recovery').getByRole('button',{name:'Reset plugin settings',exact:true}).click();
   await mark(page,'s2'); await expect(reminder(page,'s2')).toBeVisible();
 });
 

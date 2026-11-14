@@ -12,9 +12,15 @@ A plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 
 ## Install
 
-1. Open **Plugins / Add plugin** in DeepSeek Harness.
-2. Enter **[`dsh-tinker`](https://www.npmjs.com/package/dsh-tinker)** and install it.
-3. Enable the plugin. Restart only if the application asks you to.
+1. Open **Plugins / Add plugin**.
+2. Select **Official npm registry**.
+3. Enter plugin's package name:
+
+   ```text
+   dsh-tinker
+   ```
+
+4. Click **Install** and enable plugin.
 
 Requires DeepSeek Harness `>=0.2.0-rc.2 <0.3.0-0`.
 
@@ -40,15 +46,15 @@ Mark a chat as unread from its menu, hover action or the host-managed shortcut. 
 
 Hide the top branding row and its empty space while keeping **New Session** and navigation.
 
-Manage features independently in **Settings / Tinker**. The interface is available in English and Russian.
+## Enable only what you need
 
-## Local data
+Open **Settings / Tinker** to turn features on or off individually. You don't need to enable them all.
 
-Tinker does not change prompts, model requests or credentials.
+## Your settings stay local
 
-Appearance and reminders are stored in the current browser or desktop profile, not synchronized across devices. Uploaded images are stored as static PNG copies. Profile appearance is shared by accounts using that local storage.
-
-Disabling or uninstalling the plugin does not intentionally erase saved preferences; clearing the profile storage does. Adapters leave unsupported menu structures unchanged rather than guessing.
+- **Local storage.** Appearance and reminders stay in this browser or desktop profile, without cross-device sync.
+- **Local profile.** Name and avatar overrides do not change your account; they apply to all accounts using this storage.
+- **Saved settings.** Disabling Tinker keeps your preferences. Clearing the profile's storage removes them.
 
 ## License
 
