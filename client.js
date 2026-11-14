@@ -6594,7 +6594,7 @@ function createProfileAdapter({ document: doc, preferences, translate, onEdit, o
     onEdit({ anchor: target.trigger, baseline: baseline(target) });
   }
   function insert(menu, target, shape) {
-    const [settings, , auth] = shape.buttons;
+    const [settings, feedback, auth] = shape.buttons;
     const wrapper = mark(doc.createElement("div"));
     wrapper.className = settings.parentElement.className;
     wrapper.setAttribute("data-wsp-profile-menu", "");
@@ -6613,7 +6613,7 @@ function createProfileAdapter({ document: doc, preferences, translate, onEdit, o
     label.textContent = translate("profileCustomize");
     button.append(icon, label);
     wrapper.append(button);
-    auth.parentElement.before(wrapper);
+    feedback.parentElement.before(wrapper);
     const record2 = { menu, wrapper, button, label, trigger: target.trigger };
     menuRecord = record2;
     button.addEventListener("click", (event) => {

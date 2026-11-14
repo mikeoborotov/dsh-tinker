@@ -54,7 +54,8 @@ async function drop(page,target,extension='png') {
 // Native nodes and listeners stay authoritative: unknown ids would increment signout.
 test('native actions/order/node identity survive an additive Customize item without accidental logout',async({page})=>{
   await setup(page);await trigger(page).click();
-  await expect(page.getByRole('menuitem')).toHaveText(['SettingsCtrl+,','Feedback','Appearance','Sign out']);
+  await expect(page.getByRole('menuitem')).toHaveText(['SettingsCtrl+,','Appearance','Feedback','Sign out']);
+  if(screenshots)await page.screenshot({path:join(screenshots,'account-menu-order.png')});
   await page.evaluate(()=>window.profileFixture.captureNodes());
   await page.evaluate(()=>window.profileFixture.save('Local Alice'));
   await expect(customName(page)).toHaveText('Local Alice');
@@ -76,10 +77,11 @@ test('current DOM rows share native keyboard walk, Enter/Tab activation, Escape 
   await expect(page.getByRole('menuitem',{name:'Settings',exact:false})).toBeFocused();
   await page.keyboard.press('End');await expect(page.getByRole('menuitem',{name:'Sign out',exact:true})).toBeFocused();
   await page.keyboard.press('Home');await expect(page.getByRole('menuitem',{name:'Settings',exact:false})).toBeFocused();
-  await page.keyboard.press('ArrowDown');await expect(page.getByRole('menuitem',{name:'Feedback',exact:true})).toBeFocused();
   await page.keyboard.press('ArrowDown');await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();
+  await page.keyboard.press('ArrowDown');await expect(page.getByRole('menuitem',{name:'Feedback',exact:true})).toBeFocused();
+  await page.keyboard.press('ArrowUp');await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();
   await page.keyboard.press('Enter');await expect(input(page)).toBeFocused();await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
-  await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await page.keyboard.press('Tab');
+  await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await expect(page.getByRole('menuitem',{name:'Feedback',exact:true})).toBeFocused();await page.keyboard.press('ArrowUp');await page.keyboard.press('Tab');
   await expect(dialog(page)).toBeVisible();await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
   await menu(page);await page.keyboard.press('Escape');await expect(page.getByRole('menu')).toHaveCount(0);await expect(trigger(page)).toBeFocused();
   expect((await page.evaluate(()=>window.profileFixture.counters())).signout).toBe(0);
@@ -161,7 +163,7 @@ test('preexisting foreign popup is never adopted and native popup remains unchan
 });
 
 test('removing a focused owned menu row restores a keyboard anchor for native actions',async({page})=>{
-  await setup(page);await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();
+  await setup(page);await menu(page);await page.keyboard.press('End');await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowUp');await expect(page.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();
   await page.evaluate(()=>window.profileFixture.toggle(false));await expect(page.getByRole('menuitem')).toHaveCount(3);await expect(trigger(page)).toBeFocused();
   await page.keyboard.press('Home');await expect(page.getByRole('menuitem',{name:'Settings',exact:false})).toBeFocused();await page.keyboard.press('Escape');await expect(trigger(page)).toBeFocused();
 });
@@ -214,7 +216,7 @@ test('pending native close cannot reopen H after disable or plugin disposal',asy
 
 test('RU native/menu translation updates while open and settings contains one toggle only',async({page})=>{
   await setup(page);await menu(page);await page.evaluate(()=>window.profileFixture.language('ru'));
-  await expect(page.getByRole('menuitem')).toHaveText(['НастройкиCtrl+,','Обратная связь','Оформление','Выйти']);
+  await expect(page.getByRole('menuitem')).toHaveText(['НастройкиCtrl+,','Оформление','Обратная связь','Выйти']);
   await page.getByRole('menuitem',{name:'Оформление',exact:true}).click();await expect(input(page,'ru')).toBeVisible();await expect(input(page,'ru')).toHaveAttribute('placeholder','Имя профиля');await page.keyboard.press('Escape');
   await menu(page,'ru');await page.getByRole('menuitem',{name:'Настройки',exact:false}).click();await expect(page.locator('#settings [role="switch"]')).toHaveCount(6);await expect(page.locator('#settings [data-wsp-profile-menu]')).toHaveCount(0);
 });

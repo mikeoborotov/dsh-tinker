@@ -168,12 +168,12 @@ export function createProfileAdapter({ document: doc, preferences, translate, on
     onEdit({ anchor: target.trigger, baseline: baseline(target) });
   }
   function insert(menu, target, shape) {
-    const [settings, , auth] = shape.buttons;
+    const [settings, feedback, auth] = shape.buttons;
     const wrapper = mark(doc.createElement('div')); wrapper.className = settings.parentElement.className; wrapper.setAttribute('data-wsp-profile-menu', '');
     const button = mark(doc.createElement('button')); button.type = 'button'; button.className = settings.className; button.setAttribute('role', 'menuitem'); button.disabled = auth.disabled;
     const icon = mark(doc.createElement('span')); icon.className = settings.children[0].className; icon.setAttribute('data-wsp-profile-icon', ''); icon.setAttribute('aria-hidden', 'true'); icon.innerHTML = APPEARANCE_BRUSH_SVG;
     const label = mark(doc.createElement('span')); label.className = settings.children[1].className; label.textContent = translate('profileCustomize');
-    button.append(icon, label); wrapper.append(button); auth.parentElement.before(wrapper);
+    button.append(icon, label); wrapper.append(button); feedback.parentElement.before(wrapper);
     const record = { menu, wrapper, button, label, trigger: target.trigger };
     menuRecord = record;
     button.addEventListener('click', event => {
