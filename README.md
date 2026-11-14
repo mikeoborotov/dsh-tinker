@@ -6,9 +6,7 @@
 
 Workspace appearance, model logos, manual unread reminders and sidebar branding.
 
-[![npm version](https://img.shields.io/npm/v/dsh-tinker)](https://www.npmjs.com/package/dsh-tinker)
-[![Downloads over the last 18 months](https://img.shields.io/npm/d18m/dsh-tinker?label=downloads%2F18mo)](https://www.npmjs.com/package/dsh-tinker)
-[![MIT license](https://img.shields.io/npm/l/dsh-tinker)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dsh-tinker?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-tinker) [![Downloads](https://img.shields.io/npm/d18m/dsh-tinker?logo=npm&label=downloads "Downloads over the last 18 months")](https://www.npmjs.com/package/dsh-tinker) [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 
 A web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). Make the interface yours without changing prompts, model requests or credentials.
 
