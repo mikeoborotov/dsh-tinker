@@ -2,13 +2,11 @@
 
 ![Tinker](icon.svg)
 
-# Tinker
+# DSH Tinker
 
-Workspace appearance, model logos, manual unread reminders and sidebar branding.
+A plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.
 
 [![npm](https://img.shields.io/npm/v/dsh-tinker?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-tinker) [![Downloads](https://img.shields.io/npm/d18m/dsh-tinker?logo=npm&label=downloads "Downloads over the last 18 months")](https://www.npmjs.com/package/dsh-tinker) [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
-
-A web UI plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). Make the interface yours without changing prompts, model requests or credentials.
 
 </div>
 
@@ -45,6 +43,8 @@ Hide the top branding row and its empty space while keeping **New Session** and 
 Manage features independently in **Settings / Tinker**. The interface is available in English and Russian.
 
 ## Local data
+
+Tinker does not change prompts, model requests or credentials.
 
 Appearance and reminders are stored in the current browser or desktop profile, not synchronized across devices. Uploaded images are stored as static PNG copies. Profile appearance is shared by accounts using that local storage.
 

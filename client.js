@@ -1098,7 +1098,7 @@ var CSS = `
 var en_default = {
   meta: {
     title: "Tinker",
-    description: "Workspace appearance, model logos, manual unread reminders and sidebar branding."
+    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar."
   }
 };
 
@@ -1106,7 +1106,7 @@ var en_default = {
 var ru_default = {
   meta: {
     title: "Tinker",
-    description: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspaces, \u043B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439, \u0440\u0443\u0447\u043D\u044B\u0435 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438 \u0438 \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438."
+    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar."
   }
 };
 

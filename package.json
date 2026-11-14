@@ -1,7 +1,7 @@
 {
   "name": "dsh-tinker",
   "version": "0.1.5",
-  "description": "Workspace appearance, model logos, unread reminders and sidebar branding for DeepSeek Harness",
+  "description": "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
   "type": "module",
   "license": "MIT",
   "author": "Mike Oborotov",
