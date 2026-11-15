@@ -5,6 +5,7 @@
  * except the pinned local dev tarball. No bootstrap, I/O or dependency import at import.
  * --prepare-only creates owned roots/config and runs only a builtin Node preflight.
  * --check reads only. --run requires the prepared fingerprint and existing tools.
+ * --manual is supervisor-owned: persistent headed window, no clicks or recording.
  * Windows ACLs on the private root must be independently reviewed before --run.
  */
 import * as fs from 'node:fs/promises';
@@ -66,8 +67,8 @@ export function assertWorkspacePath(actual, expectedCanonical) {
   return value;
 }
 export function parseArgs(argv) {
-  const modes = new Set(['--prepare-only', '--run', '--check']);
-  const names = new Set(['--root', '--program', '--node', '--public-root', '--out', '--ffmpeg', '--pnpm-node', '--pnpm-script']);
+  const modes = new Set(['--prepare-only', '--run', '--check', '--manual']);
+  const names = new Set(['--root', '--program', '--node', '--public-root', '--out', '--ffmpeg', '--pnpm-node', '--pnpm-script', '--manual-lease']);
   const values = Object.create(null);
   let mode;
   for (let i = 0; i < argv.length; i++) {
@@ -81,7 +82,8 @@ export function parseArgs(argv) {
   for (const key of ['--root', '--program', '--node', '--public-root', '--out']) requireThat(values[key], 'required-argument');
   const config = { mode, root: values['--root'], program: values['--program'], node: values['--node'],
     publicRoot: values['--public-root'], out: values['--out'], ffmpeg: values['--ffmpeg'] ?? null,
-    pnpmNode: values['--pnpm-node'] ?? null, pnpmScript: values['--pnpm-script'] ?? null };
+    pnpmNode: values['--pnpm-node'] ?? null, pnpmScript: values['--pnpm-script'] ?? null,
+    manualLease: values['--manual-lease'] ?? null };
   const match = config.root.match(/^(C:\\Users\\[^\\]+)\\AppData\\Local\\DSH-Tinker-Demo$/i);
   requireThat(match && !/^C:\\Users\\(Public|Default)$/i.test(match[1]), 'private-root-required');
   const user = match[1];
@@ -98,6 +100,8 @@ export function parseArgs(argv) {
   }
   if (config.ffmpeg) requireThat(isWithin(config.ffmpeg, path.join(user, 'AppData/Local/Microsoft/WinGet/Packages'))
     && /\\bin\\ffmpeg\.exe$/i.test(config.ffmpeg), 'existing-ffmpeg-required');
+  requireThat(mode === 'manual' ? Boolean(config.manualLease) : !config.manualLease, 'manual-lease-required');
+  if (mode === 'manual') manualLocations(config);
   return Object.freeze(config);
 }
 export function locations(config) {
@@ -164,6 +168,71 @@ export function browserLaunchOptions(config) {
   return { executablePath: EXPECTED.browserExecutable, headless: true, env: demoEnvironment(config),
     host: '127.0.0.1', port: 0, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false,
     args: ['--disable-background-networking', '--disable-component-update', '--no-first-run'] };
+}
+export function manualLocations(config) {
+  const root = path.join(config.root, 'manual'), leases = path.join(root, 'leases');
+  const lease = absoluteWindowsPath(config.manualLease);
+  requireThat(path.dirname(lease).toLowerCase() === leases.toLowerCase()
+    && /^manual-[0-9]{6}$/.test(path.basename(lease)), 'manual-lease-invalid');
+  return { root, leases, lease, profile: path.join(root, 'browser-profile'), listener: path.join(root, 'listener.json'),
+    stop: path.join(lease, 'stop.request'), ready: path.join(lease, 'ready.json'), finished: path.join(lease, 'controller-finished.json'),
+    heartbeat: path.join(lease, 'heartbeat'), handoff: path.join(lease, 'handoff.request') };
+}
+export function manualOwner(config) { return { schema: 1, tool: 'dsh-tinker-manual', root: config.root }; }
+export function manualLeaseOwner(config) {
+  return { schema: 1, tool: 'dsh-tinker-manual-supervisor', root: config.root, lease: path.basename(manualLocations(config).lease) };
+}
+export function manualListener(config, port) {
+  requireThat(Number.isInteger(port) && port > 0 && port <= 65535 && port !== 59656, 'manual-port-invalid');
+  return { ...manualOwner(config), port };
+}
+export function assertManualListener(value, config) {
+  requireThat(value && same(value, manualListener(config, value.port)), 'manual-listener-invalid');
+  return value.port;
+}
+export function assertManualLogSizes({ stdout, stderr, controller, sinkFailed = false }) {
+  requireThat(!sinkFailed, 'manual-log-sink-failed');
+  for (const [size, limit] of [[stdout, 16 * 1024 * 1024], [stderr, 16 * 1024 * 1024], [controller, 64 * 1024 * 1024]]) {
+    requireThat(Number.isSafeInteger(size) && size >= 0 && size <= limit, 'manual-log-limit');
+  }
+  return true;
+}
+export function assertManualBirthEnvironment(config, environment) {
+  const expected = demoEnvironment(config), keys = Object.keys(environment);
+  const names = new Map(keys.map(key => [key.toUpperCase(), key]));
+  requireThat(names.size === keys.length && same([...names.keys()].sort(), Object.keys(expected).sort()), 'manual-birth-environment-invalid');
+  for (const [key, value] of Object.entries(expected)) requireThat(environment[names.get(key)] === value, 'manual-birth-environment-invalid');
+  return true;
+}
+export function manualCleanupUnproven(state) {
+  return Boolean(state.manualLease && (state.manualBrowserClosed !== true || [...state.children].some(child => !child.settled)));
+}
+export function holdManualRoot(state) {
+  if (!manualCleanupUnproven(state)) {
+    if (state.manualRootHold) clearInterval(state.manualRootHold);
+    state.manualRootHold = null;
+    return false;
+  }
+  // A bare pending Promise does NOT keep Node alive. This ref'd timer does, and
+  // must exist before any fallible cleanup metadata or handoff notification.
+  state.manualRootHold ??= setInterval(() => {}, 1000).ref();
+  return true;
+}
+export async function awaitManualSupervisor(state, { notify = async () => {}, terminated } = {}) {
+  if (!holdManualRoot(state)) return false;
+  try {
+    try { await notify(); } catch { /* Supervisor heartbeat still enforces the grace bound. */ }
+    await (terminated ?? new Promise(() => {})); // production ends ONLY via own supervisor Kill(true)
+    return true;
+  } finally { clearInterval(state.manualRootHold); state.manualRootHold = null; }
+}
+export function manualBrowserOptions(config) {
+  return { executablePath: EXPECTED.browserExecutable, headless: false, env: demoEnvironment(config),
+    locale: 'en-US', colorScheme: 'dark', viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1,
+    serviceWorkers: 'block', acceptDownloads: false, timeout: 30000,
+    handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false,
+    ignoreDefaultArgs: ['--enable-automation'],
+    args: ['--disable-background-networking', '--disable-component-update', '--no-first-run', '--window-size=1040,807'] };
 }
 export function isolationPatch(config) {
   const l = locations(config);
@@ -315,9 +384,10 @@ export function verifyArchive(bytes) {
   requireThat(/\bid:\s*["']dsh-tinker-develop["']/.test(files.get('client.js').toString('utf8')), 'archive-factory-mismatch');
   return files;
 }
-export function cliArguments(config, install = false) {
+export function cliArguments(config, install = false, port = 0) {
+  requireThat(port === 0 || (!install && config.mode === 'manual' && manualListener(config, port)), 'manual-port-invalid');
   return install ? ['plugin', '--profile', 'web', 'add', locations(config).archive, '--offline', '--ignore-scripts']
-    : ['--profile', 'web', '--patch', locations(config).patch, '--host', '127.0.0.1', '--port', '0', '--no-open'];
+    : ['--profile', 'web', '--patch', locations(config).patch, '--host', '127.0.0.1', '--port', String(port), '--no-open'];
 }
 export function cliCarrier(config, argv) {
   const bin = locations(config).bin;
@@ -543,7 +613,7 @@ async function prepare(config, state) {
   await exactFile(l.prepared, JSON.stringify(preparedMarker(config, actual.preset), null, 2) + '\n', true);
   state.emit({ phase: 'prepared', environment: true, patch: true, aclReviewRequired: true, root: config.root });
 }
-async function claimRun(config) {
+async function claimRun(config, withMedia = true) {
   const l = locations(config);
   const names = (await fs.readdir(l.runs)).filter(name => /^run-[0-9]{6}$/.test(name)).sort();
   const last = names.at(-1);
@@ -556,8 +626,8 @@ async function claimRun(config) {
   requireThat(number < 1000000, 'run-limit');
   const name = 'run-' + String(number).padStart(6, '0'), dir = path.join(l.runs, name);
   await fs.mkdir(dir, { mode: 0o700 }); // exclusive, persistent lease; never delete another run's data
-  const media = path.join(l.media, name);
-  await fs.mkdir(media, { mode: 0o700 });
+  const media = withMedia ? path.join(l.media, name) : null;
+  if (media) await fs.mkdir(media, { mode: 0o700 });
   return { dir, media, name };
 }
 async function verifyInstalledPayload(config, payload) {
@@ -570,14 +640,15 @@ async function verifyInstalledPayload(config, payload) {
   }
   return true;
 }
-async function startHost(config, state) {
+async function startHost(config, state, port = 0) {
   state.emit({ phase: 'host-start' });
-  const host = await spawnPrivate(config.node, cliCarrier(config, cliArguments(config)), config, state, 'host');
+  const host = await spawnPrivate(config.node, cliCarrier(config, cliArguments(config, false, port)), config, state, 'host');
   const ready = await waitUntil(async () => {
     requireThat(!host.settled, 'host-exited-before-ready');
     requireThat((await fs.stat(host.stdoutPath)).size <= 16 * 1024 * 1024, 'ready-log-limit');
     return parseReady(await fs.readFile(host.stdoutPath, 'utf8'));
   }, state, 90000);
+  requireThat(port === 0 || ready.port === port, 'manual-listener-port-mismatch');
   // Verify the announcement belongs to this child, not another listener.
   const ps = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
   const code = `$ErrorActionPreference='Stop';$x=@(Get-NetTCPConnection -State Listen -LocalAddress 127.0.0.1 -LocalPort ${ready.port});if($x.Count -eq 1 -and $x[0].OwningProcess -eq ${host.child.pid}){[Console]::Write('true')}else{exit 2}`;
@@ -593,10 +664,14 @@ async function bounded(promise, milliseconds) {
     timer = setTimeout(() => reject(new DemoError('operation-timeout')), milliseconds);
   })]); } finally { clearTimeout(timer); }
 }
-async function closeBrowser(state) {
-  const browser = state.browser, server = state.browserServer;
+export async function closeBrowser(state) {
+  const browser = state.browser, server = state.browserServer, context = state.manualContext;
   state.browser = null; state.browserServer = null;
   let failure;
+  if (context) try {
+    await bounded(context.close(), 10000);
+    state.manualBrowserClosed = true; state.manualContext = null;
+  } catch (error) { failure = error; }
   if (browser) try { await bounded(browser.close(), 10000); } catch (error) { failure = error; }
   if (server) try { await bounded(server.close(), 10000); } catch (error) { failure ??= error; }
   if (failure) throw new DemoError('browser-close-failed'); // own ChildProcess fallback is in finally
@@ -620,8 +695,15 @@ async function browserContext(config, state, origin) {
   state.browserVersion = state.browser.version(); // private capture proof only
   const context = await state.browser.newContext({ locale: 'en-US', colorScheme: 'dark',
     viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1, serviceWorkers: 'block', acceptDownloads: false });
+  await guardBrowserContext(context, state, origin);
+  return context;
+}
+async function guardBrowserContext(context, state, origin) {
   context.setDefaultTimeout(12000);
-  const diagnostic = kind => { state.diagnostics.push({ kind }); };
+  const diagnostic = kind => {
+    if (state.manualLease && state.diagnostics.length >= 1024) { state.networkViolation = true; return; }
+    state.diagnostics.push({ kind });
+  };
   await context.route('**/*', async route => {
     try {
       if (allowDemoUrl(route.request().url(), origin)) await route.continue();
@@ -833,6 +915,84 @@ async function runCapture(config, state) {
   state.result = { phase: 'captured', png: path.join(config.out, 'workspace-icon.png'), gif: path.join(config.out, 'workspace-icon.gif'),
     nativeRowChanged: true, localDemoPreference: true, visualReviewRequired: true };
 }
+async function assertManualJson(file, expected, config) {
+  await plainPath(file, [config.root]);
+  const stat = await fs.lstat(file);
+  requireThat(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1, 'manual-owner-invalid');
+  requireThat(same(JSON.parse(await fs.readFile(file, 'utf8')), expected), 'manual-owner-mismatch');
+}
+async function checkManualLogs(host, state) {
+  assertManualLogSizes({ stdout: (await fs.stat(host.stdoutPath)).size, stderr: (await fs.stat(host.stderrPath)).size,
+    controller: (await fs.stat(state.controllerLogPath)).size, sinkFailed: state.manualLogSinkFailed });
+}
+async function runManual(config, state) {
+  const actual = await validatePrepared(config), l = locations(config), m = manualLocations(config);
+  await assertManualJson(path.join(m.root, '.manual-owner.json'), manualOwner(config), config);
+  await assertManualJson(path.join(m.lease, 'owner.json'), manualLeaseOwner(config), config);
+  requireThat(!(await exists(m.ready)) && !(await exists(m.finished)), 'manual-lease-already-used');
+  state.manualLease = m; state.manualBrowserClosed = true; state.manualWindowClosed = false;
+  await regularFile(m.heartbeat, [config.root]);
+  requireThat((await fs.stat(m.heartbeat)).size === 1, 'manual-heartbeat-invalid');
+  requireThat(!(await exists(m.stop)), 'manual-stop-already-requested');
+  state.run = await claimRun(config, false); // excludes simultaneous automatic/manual runs
+  process.env = demoEnvironment(config); process.chdir(l.cwd);
+  await builtinPreflight(config, state);
+  requireThat(await verifyInstalledPayload(config, actual.payload), 'manual-installed-dev-required'); // NEVER install/enable
+  const profileOwner = { ...manualOwner(config), profile: m.profile, browserExecutable: EXPECTED.browserExecutable };
+  if (!(await exists(m.profile))) {
+    await fs.mkdir(m.profile, { mode: 0o700 });
+    await fs.writeFile(path.join(m.profile, '.manual-browser-owner.json'), JSON.stringify(profileOwner) + '\n', { flag: 'wx', mode: 0o600 });
+  }
+  await plainPath(m.profile);
+  await assertManualJson(path.join(m.profile, '.manual-browser-owner.json'), profileOwner, config);
+  let port = 0;
+  if (await exists(m.listener)) {
+    await regularFile(m.listener, [config.root]);
+    port = assertManualListener(JSON.parse(await fs.readFile(m.listener, 'utf8')), config);
+  }
+  const { host, ready } = await startHost(config, state, port);
+  await checkManualLogs(host, state);
+  if (port === 0) await fs.writeFile(m.listener, JSON.stringify(manualListener(config, ready.port)) + '\n', { flag: 'wx', mode: 0o600 });
+  await regularFile(EXPECTED.browserExecutable, []);
+  const { chromium } = await import('playwright');
+  state.manualBrowserClosed = false;
+  const context = state.manualContext = await chromium.launchPersistentContext(m.profile, manualBrowserOptions(config));
+  context.on('close', () => { state.manualWindowClosed = true; }); // event is NOT process-cleanup proof
+  await guardBrowserContext(context, state, ready.origin);
+  // Playwright starts persistent Chromium at about:blank. Refuse any unexpected
+  // restored page rather than opening an auth URL or rewriting browser settings.
+  requireThat(context.pages().length === 1 && context.pages().every(page => page.url() === 'about:blank'), 'manual-startup-page-not-blank');
+  await context.addInitScript(() => {
+    // Window-picker label only. Never modify body, feature UI, styles or stores.
+    const label = () => { if (document.title !== 'Tinker Demo - DeepSeek Harness') document.title = 'Tinker Demo - DeepSeek Harness'; };
+    const install = () => { label(); new MutationObserver(label).observe(document.head, { childList: true, subtree: true, characterData: true }); };
+    if (document.head) install(); else document.addEventListener('DOMContentLoaded', install, { once: true });
+  });
+  await handshake(context, ready);
+  checkBundles(await rpc(context, ready.origin, 'pluginManager/listBundles'), true);
+  checkRuntimeRows(await rpc(context, ready.origin, 'pluginManager/listPlugins'));
+  await ownedWorkspacePath(config);
+  const page = context.pages()[0] ?? await context.newPage();
+  await page.goto(ready.origin + '/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  assertCleanPage(page, ready.origin);
+  await checkManualLogs(host, state);
+  await fs.writeFile(m.ready, JSON.stringify({ ...manualLeaseOwner(config), ready: true, pid: process.pid,
+    startedAt: new Date().toISOString(), windowTitle: await page.title(),
+    dimensions: await page.evaluate(() => ({ width: innerWidth, height: innerHeight, dpr: devicePixelRatio })) }) + '\n', { flag: 'wx', mode: 0o600 });
+  state.emit({ phase: 'manual-open', ready: true, persistentBrowser: true });
+  // No session/workspace/settings mutations, onboarding clicks, recording or
+  // duration limit. Owner closes the window or supervisor requests this lease's Stop.
+  while (!state.manualWindowClosed && context.pages().length > 0) {
+    await fs.writeFile(m.heartbeat, '1', { flag: 'r+' }); // constant-size own byte, healthy loop ONLY
+    await checkManualLogs(host, state);
+    interrupted(state);
+    requireThat(!host.settled, 'manual-host-exited');
+    requireThat(!state.networkViolation, 'browser-origin-violation');
+    if (await exists(m.stop)) break;
+    await delay(250, undefined, { signal: state.abort.signal }).catch(() => { throw new DemoError('interrupted'); });
+  }
+  state.result = { phase: 'manual-stopped', requested: await exists(m.stop) };
+}
 export async function main(argv = process.argv.slice(2)) {
   const publicWrite = process.stdout.write.bind(process.stdout);
   const state = { children: new Set(), browser: null, browserServer: null, abort: new AbortController(), owned: false, privateReady: false,
@@ -844,6 +1004,7 @@ export async function main(argv = process.argv.slice(2)) {
   try {
     config = parseArgs(argv);
     requireThat(process.platform === 'win32', 'windows-only');
+    if (config.mode === 'manual') assertManualBirthEnvironment(config, process.env);
     requireThat(fileURLToPath(import.meta.url).toLowerCase() === path.join(locations(config).repo, 'scripts/demo/workspace-icon.mjs').toLowerCase(), 'controller-location-mismatch');
     state.phase = config.mode;
     if (config.mode === 'prepare-only') await prepare(config, state);
@@ -857,29 +1018,39 @@ export async function main(argv = process.argv.slice(2)) {
       state.owned = true;
       await plainPath(locations(config).private, [config.root]);
       state.privateReady = true;
-      rawLog = await fs.open(path.join(locations(config).private, 'controller-' + randomUUID() + '.log'), 'wx', 0o600);
+      state.controllerLogPath = path.join(locations(config).private, 'controller-' + randomUUID() + '.log');
+      rawLog = await fs.open(state.controllerLogPath, 'wx', 0o600);
       state.savedStdout = process.stdout.write; state.savedStderr = process.stderr.write;
       const privateWrite = (chunk, encoding, callback) => {
         const cb = typeof encoding === 'function' ? encoding : callback;
-        rawLog.write(typeof chunk === 'string' ? chunk : Buffer.from(chunk)).then(() => cb?.(), () => cb?.());
+        rawLog.write(typeof chunk === 'string' ? chunk : Buffer.from(chunk)).then(() => cb?.(), () => {
+          if (config.mode === 'manual') state.manualLogSinkFailed = true;
+          cb?.();
+        });
         return true;
       };
       process.stdout.write = privateWrite; process.stderr.write = privateWrite;
-      await runCapture(config, state);
+      if (config.mode === 'manual') await runManual(config, state);
+      else await runCapture(config, state);
     }
   } catch (error) { failure = error; }
   finally {
     try { await closeBrowser(state); } catch (error) { failure ??= error; }
+    holdManualRoot(state); // ref'd before fallible host/proof/log cleanup
     if (config) for (const record of [...state.children].reverse()) {
       try { await stopOwnChild(record, config, state); } catch (error) { failure ??= error; }
     }
+    holdManualRoot(state); // release only if browser AND own children are proven closed
     if (state.privateReady && config) {
       try {
         if (failure) await fs.writeFile(path.join(locations(config).private, 'error-' + randomUUID() + '.log'),
           failure instanceof Error ? failure.stack ?? failure.message : String(failure), { flag: 'wx', mode: 0o600 });
+        if (state.manualLease) await fs.writeFile(state.manualLease.finished, JSON.stringify({ ...manualLeaseOwner(config),
+          ok: !failure, childrenStopped: [...state.children].every(c => c.settled), browserClosed: state.manualBrowserClosed === true }) + '\n', { flag: 'wx', mode: 0o600 });
         if (state.run) {
           await fs.writeFile(path.join(state.run.dir, 'diagnostics.json'), JSON.stringify(state.diagnostics) + '\n', { flag: 'wx', mode: 0o600 });
-          await fs.writeFile(path.join(state.run.dir, 'finished.json'), JSON.stringify({ ok: !failure, childrenStopped: [...state.children].every(c => c.settled),
+          await fs.writeFile(path.join(state.run.dir, 'finished.json'), JSON.stringify({ ok: !failure, childrenStopped: [...state.children].every(c => c.settled)
+            && (!state.manualLease || state.manualBrowserClosed === true),
             code: failure ? redactDiagnostic(failure).code : null }) + '\n', { flag: 'wx', mode: 0o600 });
         }
       } catch { failure ??= new DemoError('private-report-failed'); }
@@ -890,6 +1061,9 @@ export async function main(argv = process.argv.slice(2)) {
     }
     process.removeListener('SIGINT', onSignal); process.removeListener('SIGTERM', onSignal);
   }
+  await awaitManualSupervisor(state, { notify: async () => {
+    await fs.writeFile(state.manualLease.handoff, '{"requested":true}\n', { flag: 'wx', mode: 0o600 });
+  } });
   if (failure) { state.emit({ phase: state.phase, ...redactDiagnostic(failure), ok: false }); return 1; }
   if (state.result) state.emit(state.result);
   return 0;

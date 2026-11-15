@@ -6,6 +6,9 @@ import {
   assertOwnerMarker, preparedMarker, parseReady, allowDemoUrl, redactDiagnostic,
   rpcRequest, rpcValue, checkChangeResult, checkBundles, checkRuntimeRows, safeVisibleText,
   readTar, verifyDevManifest, verifyArchive, cliArguments, cliCarrier, ffmpegArguments, dismissOnboarding,
+  manualLocations, manualOwner, manualLeaseOwner, manualListener, assertManualListener,
+  manualBrowserOptions, assertManualLogSizes, assertManualBirthEnvironment,
+  closeBrowser, manualCleanupUnproven, holdManualRoot, awaitManualSupervisor,
 } from '../scripts/demo/workspace-icon.mjs';
 
 // Pure tests only: fake paths/identities/tokens, in-memory buffers, no filesystem,
@@ -434,4 +437,162 @@ test('onboarding acknowledgement already hidden before click resolves: fast coun
   assert.deepEqual(fake.state.transitions, ['ready', 'saving-disabled', 'acknowledged-hidden']);
   assert.equal(fake.state.acknowledgements, 1);
   assert.equal(fake.state.continueClicks, 1);
+});
+
+const manualFlags = ['--manual-lease', config.root + '\\manual\\leases\\manual-000001'];
+const manual = parseArgs(['--manual', ...flags, ...tools, ...manualFlags]);
+test('manual mode requires its exact supervisor-owned lease, not an automatic-mode override', () => {
+  assert.equal(manual.mode, 'manual');
+  assert.throws(() => parseArgs(['--manual', ...flags, ...tools]), fail('manual-lease-required'));
+  assert.throws(() => parseArgs(['--run', ...flags, ...tools, ...manualFlags]), fail('manual-lease-required'));
+});
+test('manual mode leaves existing ownership, prepared patch and 54-key environment fingerprints unchanged', () => {
+  assert.deepEqual(ownerMarker(manual, 'private'), ownerMarker(config, 'private'));
+  assert.deepEqual(preparedMarker(manual, 'existing-presets'), preparedMarker(config, 'existing-presets'));
+  assert.deepEqual(demoEnvironment(manual), demoEnvironment(config));
+  assert.equal(Object.keys(demoEnvironment(manual)).length, 54);
+});
+test('manual profile, listener, lease and stop request are exclusively under the private owned root', () => {
+  const m = manualLocations(manual);
+  for (const file of Object.values(m)) assert.equal(isWithin(file, config.root), true);
+  assert.equal(m.profile, config.root + '\\manual\\browser-profile');
+  assert.equal(m.stop, manual.manualLease + '\\stop.request');
+  assert.deepEqual(manualOwner(manual), { schema: 1, tool: 'dsh-tinker-manual', root: config.root });
+  assert.equal(manualLeaseOwner(manual).lease, 'manual-000001');
+});
+test('manual lease rejects other roots, nested paths and unknown identifiers', () => {
+  for (const lease of ['C:\\other\\manual-000001', config.root + '\\manual\\manual-000001',
+    config.root + '\\manual\\leases\\other-000001', manual.manualLease + '\\child']) {
+    assert.throws(() => parseArgs(['--manual', ...flags, ...tools, '--manual-lease', lease]), fail('manual-lease-invalid'));
+  }
+});
+test('manual listener persists only a validated numeric loopback port with its owner binding', () => {
+  const listener = manualListener(manual, 42001);
+  assert.deepEqual(listener, { schema: 1, tool: 'dsh-tinker-manual', root: config.root, port: 42001 });
+  assert.equal(assertManualListener(listener, manual), 42001);
+  for (const port of [0, -1, 59656, 65536, 1.5, NaN, '42001']) assert.throws(() => manualListener(manual, port));
+});
+test('manual listener refuses copied owner metadata and additional capability fields', () => {
+  const listener = manualListener(manual, 42001);
+  for (const value of [{ ...listener, root: 'C:\\other' }, { ...listener, schema: 2 },
+    { ...listener, token: 'FAKE-NOT-A-CREDENTIAL' }, null]) assert.throws(() => assertManualListener(value, manual));
+});
+test('manual first port zero and stable subsequent binding never alter automatic random-port behavior', () => {
+  assert.equal(cliArguments(manual)[7], '0');
+  assert.equal(cliArguments(manual, false, 42001)[7], '42001');
+  assert.throws(() => cliArguments(config, false, 42001), fail('manual-port-invalid'));
+  assert.throws(() => cliArguments(manual, false, 59656));
+  assert.deepEqual(cliArguments(config), ['--profile', 'web', '--patch', l.patch, '--host', '127.0.0.1', '--port', '0', '--no-open']);
+});
+test('manual headed persistent browser is pinned, isolated and content-sized without recording or user browser attach', () => {
+  const options = manualBrowserOptions(manual);
+  assert.equal(options.headless, false); assert.equal(options.executablePath, EXPECTED.browserExecutable);
+  assert.deepEqual(options.env, demoEnvironment(manual));
+  assert.deepEqual(options.viewport, { width: 1024, height: 768 }); assert.equal(options.deviceScaleFactor, 1);
+  assert.equal(options.acceptDownloads, false); assert.equal(options.serviceWorkers, 'block');
+  for (const name of ['channel', 'storageState', 'recordHar', 'recordVideo', 'wsEndpoint', 'proxy']) assert.equal(options[name], undefined);
+});
+test('manual standard startup keeps default blank without test banner or remote debugging port', () => {
+  const options = manualBrowserOptions(manual);
+  assert.ok(!options.args.some(arg => arg.startsWith('--app=')));
+  assert.deepEqual(options.ignoreDefaultArgs, ['--enable-automation']);
+  assert.ok(options.args.includes('--window-size=1040,807'));
+  assert.ok(!options.args.some(arg => /remote-debugging|user-data-dir|profile-directory|https?:/i.test(arg)));
+});
+test('manual default startup regression', () => {
+  const options = manualBrowserOptions(manual);
+  assert.deepEqual({ appArgument: options.args.some(arg => arg.startsWith('--app=')),
+    suppressesDefaultBlank: options.ignoreDefaultArgs.includes('about:blank') },
+  { appArgument: false, suppressesDefaultBlank: false });
+});
+test('manual log budgets bound each host sink and controller sink without truncation', () => {
+  const sizes = { stdout: 16 * 1024 * 1024, stderr: 16 * 1024 * 1024, controller: 64 * 1024 * 1024 };
+  assert.equal(assertManualLogSizes(sizes), true);
+  for (const key of Object.keys(sizes)) assert.throws(() => assertManualLogSizes({ ...sizes, [key]: sizes[key] + 1 }), fail('manual-log-limit'));
+  assert.throws(() => assertManualLogSizes({ ...sizes, stderr: NaN }), fail('manual-log-limit'));
+  assert.throws(() => assertManualLogSizes({ ...sizes, sinkFailed: true }), fail('manual-log-sink-failed'));
+});
+test('manual birth environment verifies exact allowlist and values before runtime environment replacement', () => {
+  const env = demoEnvironment(manual);
+  assert.equal(assertManualBirthEnvironment(manual, env), true);
+  assert.equal(assertManualBirthEnvironment(manual, Object.fromEntries(Object.entries(env).map(([key, value]) => [key.toLowerCase(), value]))), true);
+  assert.throws(() => assertManualBirthEnvironment(manual, { ...env, HOME: 'C:\\other' }), fail('manual-birth-environment-invalid'));
+  assert.throws(() => assertManualBirthEnvironment(manual, { ...env, Path: env.PATH }), fail('manual-birth-environment-invalid'));
+});
+test('manual birth rejects an inherited key without reading its secret-shaped value', () => {
+  const env = { ...demoEnvironment(manual) };
+  Object.defineProperty(env, 'OPENAI_API_KEY', { enumerable: true, get() { throw new Error('must not read unknown value'); } });
+  assert.throws(() => assertManualBirthEnvironment(manual, env), fail('manual-birth-environment-invalid'));
+});
+
+// Actual production close/final-decision seam. No browser/process/filesystem:
+// context.close is the single dependency, termination models the OWN supervisor.
+function lifecycleState(close) {
+  return { manualLease: {}, manualContext: { close }, manualWindowClosed: true,
+    manualBrowserClosed: false, children: new Set() };
+}
+function terminationSignal() {
+  let terminate;
+  const terminated = new Promise(resolve => { terminate = resolve; });
+  return { terminated, terminate };
+}
+test('manual lifecycle rejected close after disconnect keeps ROOT refd until supervisor termination', async () => {
+  let closeCalls = 0;
+  const state = lifecycleState(async () => { closeCalls++; await Promise.resolve(); throw new Error('synthetic disconnected closer'); });
+  const context = state.manualContext;
+  await assert.rejects(closeBrowser(state), fail('browser-close-failed'));
+  assert.equal(closeCalls, 1); assert.equal(state.manualWindowClosed, true);
+  assert.equal(state.manualBrowserClosed, false); assert.equal(state.manualContext, context);
+  assert.equal(manualCleanupUnproven(state), true);
+  const signal = terminationSignal();
+  let released = false, heldWhenNotified = false;
+  const waiting = awaitManualSupervisor(state, { terminated: signal.terminated,
+    notify: async () => { heldWhenNotified = state.manualRootHold?.hasRef() === true; } }).then(() => { released = true; });
+  try {
+    await Promise.resolve(); await Promise.resolve();
+    assert.equal(heldWhenNotified, true); assert.equal(state.manualRootHold.hasRef(), true);
+    assert.equal(released, false, 'a failed closer must not release the resident ROOT');
+  } finally { signal.terminate(); await waiting; }
+  assert.equal(released, true); assert.equal(state.manualRootHold, null);
+});
+test('manual lifecycle metadata or sink notification failure cannot release unproven ROOT', async () => {
+  for (const reason of ['metadata-write-failed', 'private-sink-failed']) {
+    const state = lifecycleState(async () => { throw new Error(reason); });
+    await assert.rejects(closeBrowser(state), fail('browser-close-failed'));
+    assert.equal(holdManualRoot(state), true); // actual main arms BEFORE fallible proof writes
+    const signal = terminationSignal();
+    let released = false, heldBeforeFailure = false;
+    const waiting = awaitManualSupervisor(state, { terminated: signal.terminated, notify: async () => {
+      heldBeforeFailure = state.manualRootHold?.hasRef() === true; throw new Error(reason);
+    } }).then(() => { released = true; });
+    try {
+      await Promise.resolve(); await Promise.resolve();
+      assert.equal(heldBeforeFailure, true); assert.equal(state.manualRootHold.hasRef(), true);
+      assert.equal(released, false, reason);
+    } finally { signal.terminate(); await waiting; }
+    assert.equal(state.manualRootHold, null);
+  }
+});
+test('manual lifecycle successful PUBLIC close is the only normal release proof', async () => {
+  let closeCalls = 0, notifications = 0;
+  const state = lifecycleState(async () => { closeCalls++; await Promise.resolve(); });
+  assert.equal(state.manualWindowClosed, true); assert.equal(state.manualBrowserClosed, false);
+  await closeBrowser(state);
+  assert.equal(closeCalls, 1); assert.equal(state.manualBrowserClosed, true); assert.equal(state.manualContext, null);
+  assert.equal(manualCleanupUnproven(state), false); assert.equal(holdManualRoot(state), false);
+  assert.equal(await awaitManualSupervisor(state, { terminated: Promise.resolve(), notify: async () => { notifications++; } }), false);
+  assert.equal(notifications, 0); assert.equal(state.manualRootHold, null);
+});
+test('manual lifecycle also retains ROOT when browser closed but own child cleanup remains unproven', async () => {
+  const state = lifecycleState(async () => {});
+  state.children.add({ settled: false });
+  await closeBrowser(state);
+  assert.equal(state.manualBrowserClosed, true); assert.equal(manualCleanupUnproven(state), true);
+  const signal = terminationSignal();
+  let released = false;
+  const waiting = awaitManualSupervisor(state, { terminated: signal.terminated }).then(() => { released = true; });
+  try {
+    await Promise.resolve(); await Promise.resolve();
+    assert.equal(state.manualRootHold.hasRef(), true); assert.equal(released, false);
+  } finally { signal.terminate(); await waiting; }
 });
