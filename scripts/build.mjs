@@ -2,6 +2,7 @@ import { build, version as esbuildVersion } from 'esbuild';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeDetailDocument } from './readme.mjs';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const icons = ['folder','code','terminal','server','database','network','cloud','cpu','bot','wrench','settings','shield','lock','key-round','home','briefcase','building-2','rocket','flask-conical','book-open','notebook','file-text','chart-no-axes-combined','wallet','calendar','mail','globe','layers','package','box','palette','image','music','video','coffee','star'];
@@ -10,6 +11,7 @@ const ru = ['Папка','Код','Терминал','Сервер','База д
 // All generated files belong to root. Dev packaging supplies an isolated source snapshot.
 export async function buildClient({ root = projectRoot, moduleId = 'dsh-tinker' } = {}) {
   root = path.resolve(root);
+  await writeDetailDocument(root);
   const lucideRoot = path.join(projectRoot, 'node_modules/lucide-static');
   const rows = await Promise.all(icons.map(async (id, i) => ({ id, ru: ru[i], en: id.replaceAll('-', ' '), svg: (await readFile(path.join(lucideRoot, 'icons', id + '.svg'), 'utf8')).replace(/<\?xml[^>]*>/g, '').replace(/<!--[^]*?-->/g, '').trim() })));
   await mkdir(path.join(root, 'src'), { recursive: true });

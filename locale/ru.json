@@ -1,6 +1,7 @@
 {
   "meta": {
     "title": "Tinker",
-    "description": "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar."
+    "description": "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
+    "detail": "DETAIL.md"
   }
 }

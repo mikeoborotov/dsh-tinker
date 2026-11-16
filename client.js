@@ -1101,7 +1101,8 @@ var CSS = `
 var en_default = {
   meta: {
     title: "Tinker",
-    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar."
+    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
+    detail: "DETAIL.md"
   }
 };
 
@@ -1109,7 +1110,8 @@ var en_default = {
 var ru_default = {
   meta: {
     title: "Tinker",
-    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar."
+    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
+    detail: "DETAIL.md"
   }
 };
 

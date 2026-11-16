@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { packDev, readPackageTarball, verifyDevPackage, DEV_NAME, DEV_TITLE, PACKAGE_FILES } from '../scripts/pack-dev.mjs';
+import { detailFromReadme } from '../scripts/readme.mjs';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const read = name => readFile(path.join(projectRoot, name));
@@ -33,6 +34,13 @@ const fixtureReadme = Buffer.from([
   '',
   '- Customize workspace names, colors and icons.',
   '- Track unread sessions and recover local settings when a backup is available.',
+  '',
+  '## Compatible DeepSeek Harness versions',
+  '',
+  '| Bound | Version |',
+  '| --- | --- |',
+  '| Minimum | >=0.2.0-rc.2 |',
+  '| Upper limit | <0.3.0-0 |',
   '',
   '## License',
   '',
@@ -71,6 +79,7 @@ async function fixture(run) {
     await writeFile(path.join(root, 'client.js'), 'STALE_CLIENT_MUST_NEVER_BE_PACKED');
     await writeFile(path.join(root, '.env'), 'DO_NOT_COPY_OR_READ=fixture-only\n');
     await writeFile(path.join(root, 'README.md'), fixtureReadme);
+    await writeFile(path.join(root, 'DETAIL.md'), 'STALE_DETAIL_MUST_NEVER_BE_PACKED');
     await run(root, temporaryParent);
   } finally {
     assert.ok(path.isAbsolute(owner) && path.dirname(owner) === parent && path.basename(owner).startsWith('tinker packaging fixture '));
@@ -119,9 +128,11 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   const bytes = await readFile(result.tarball);
   assert.equal(sha256(bytes), result.sha256);
   const files = readPackageTarball(bytes);
+  assert.equal(files.size, 11);
+  assert.deepEqual([...files.keys()].sort(), PACKAGE_FILES);
   const manifest = verifyDevPackage(files, result.version);
   assert.equal(manifest.name, DEV_NAME);
-  assert.match(result.version, /^0\.1\.5-develop\.s[a-f0-9]{12}$/);
+  assert.match(result.version, /^0\.2\.0-develop\.s[a-f0-9]{12}$/);
   const stable = JSON.parse(await read('package.json'));
   for (const key of ['engines', 'exports', 'files', 'dsh', 'repository', 'icon', 'license']) assert.deepEqual(manifest[key], stable[key]);
   assert.equal(JSON.parse(await readFile(path.join(root, 'package.json'))).name, 'dsh-tinker');
@@ -131,6 +142,13 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   assert.match(client, /fresh-source-A/);
   assert.deepEqual(files.get('README.md'), readme, 'Pack the full source README without a prologue or transformations');
   assert.equal(sha256(files.get('README.md')), sha256(readme));
+  assert.deepEqual(files.get('DETAIL.md'), detailFromReadme(readme), 'Derive the detail from the snapshot, not a stale generated source file');
+  for (const language of ['en', 'ru']) {
+    const { meta } = JSON.parse(files.get('locale/' + language + '.json'));
+    assert.equal(meta.title, DEV_TITLE);
+    assert.equal(meta.description, stable.description);
+    assert.equal(meta.detail, 'DETAIL.md');
+  }
   const { registration, exports, requests } = withRegistration(client);
   assert.equal(registration.id, DEV_NAME);
   assert.deepEqual(Object.keys(exports).sort(), ['apply', 'inject']);
@@ -161,6 +179,17 @@ test('dev tgz is a fresh real npm package with matching metadata, factory, local
   const changed = new Map(files);
   changed.set('locale/ru.json', Buffer.from('{"meta":{"title":"Tinker"}}'));
   assert.throws(() => verifyDevPackage(changed, result.version));
+  for (const detail of [undefined, 'README.md', '../DETAIL.md', '## Features\nInline Markdown']) {
+    const locale = JSON.parse(files.get('locale/en.json'));
+    locale.meta.detail = detail;
+    const invalid = new Map(files).set('locale/en.json', Buffer.from(JSON.stringify(locale)));
+    assert.throws(() => verifyDevPackage(invalid, result.version), /Locale detail/);
+  }
+  const missingDetail = new Map(files);
+  missingDetail.delete('DETAIL.md');
+  assert.throws(() => verifyDevPackage(missingDetail, result.version));
+  const staleDetail = new Map(files).set('DETAIL.md', Buffer.from('## Features\nSTALE_DETAIL'));
+  assert.throws(() => verifyDevPackage(staleDetail, result.version), /Detail must match/);
   const tar = gunzipSync(bytes);
   const badChecksum = Buffer.from(tar); badChecksum[0] ^= 1;
   assert.throws(() => readPackageTarball(gzipSync(badChecksum)), /checksum/);
@@ -189,6 +218,7 @@ test('README-only edits get a new immutable archive and provenance while unchang
   const firstArchive = await readFile(first.tarball), firstSidecar = await readFile(first.provenance);
   const firstFiles = readPackageTarball(firstArchive), firstProvenance = JSON.parse(firstSidecar);
   assert.deepEqual(firstFiles.get('README.md'), fixtureReadme);
+  assert.deepEqual(firstFiles.get('DETAIL.md'), detailFromReadme(fixtureReadme));
   assert.deepEqual(await tree(root), before);
 
   const updatedReadme = Buffer.concat([fixtureReadme, Buffer.from('\r\n## Preview update\r\n\r\nOnly the README changed. Полный текст сохранён.\r\n')]);
@@ -207,14 +237,21 @@ test('README-only edits get a new immutable archive and provenance while unchang
   assert.equal(firstProvenance.source.snapshotSha256.slice(0, 12), first.version.split('.s')[1]);
   assert.equal(secondProvenance.source.snapshotSha256.slice(0, 12), second.version.split('.s')[1]);
   assert.deepEqual(secondFiles.get('README.md'), updatedReadme);
+  assert.deepEqual(secondFiles.get('DETAIL.md'), detailFromReadme(updatedReadme));
+  assert.notDeepEqual(secondFiles.get('DETAIL.md'), firstFiles.get('DETAIL.md'));
   assert.deepEqual(firstProvenance.files['README.md'], { bytes: fixtureReadme.length, sha256: sha256(fixtureReadme) });
   assert.deepEqual(secondProvenance.files['README.md'], { bytes: updatedReadme.length, sha256: sha256(updatedReadme) });
+  assert.deepEqual(firstProvenance.files['DETAIL.md'], { bytes: firstFiles.get('DETAIL.md').length, sha256: sha256(firstFiles.get('DETAIL.md')) });
+  assert.deepEqual(secondProvenance.files['DETAIL.md'], { bytes: secondFiles.get('DETAIL.md').length, sha256: sha256(secondFiles.get('DETAIL.md')) });
   assert.equal(firstProvenance.archive.sha256, sha256(firstArchive));
   assert.equal(secondProvenance.archive.sha256, sha256(secondArchive));
-  for (const name of PACKAGE_FILES.filter(name => name !== 'README.md' && name !== 'package.json')) assert.deepEqual(secondFiles.get(name), firstFiles.get(name), 'README-only edit must not change ' + name);
+  for (const name of PACKAGE_FILES.filter(name => !['README.md', 'DETAIL.md', 'package.json'].includes(name))) assert.deepEqual(secondFiles.get(name), firstFiles.get(name), 'README-only edit must not change ' + name);
   assert.deepEqual(await tree(root), beforeSecond);
   assert.deepEqual(await ownedTemps(temporaryParent), temporaryBefore);
 
+  // Generated source detail is not a snapshot input and never replaces the staged suffix.
+  await writeFile(path.join(root, 'DETAIL.md'), 'ANOTHER_STALE_GENERATED_DETAIL');
+  const beforeRepeat = await tree(root);
   const repeated = await packDev({ sourceRoot: root, temporaryParent });
   assert.deepEqual(repeated, second);
   assert.deepEqual(await readFile(first.tarball), firstArchive, 'The previous archive must remain byte-identical');
@@ -222,7 +259,7 @@ test('README-only edits get a new immutable archive and provenance while unchang
   assert.deepEqual(await readFile(second.tarball), secondArchive, 'Unchanged input must not replace the archive');
   assert.deepEqual(await readFile(second.provenance), secondSidecar, 'Unchanged input must not replace the sidecar');
   assert.deepEqual((await readdir(path.join(root, 'dist/develop'))).sort(), [first.version, second.version].sort());
-  assert.deepEqual(await tree(root), beforeSecond);
+  assert.deepEqual(await tree(root), beforeRepeat);
   assert.deepEqual(await ownedTemps(temporaryParent), temporaryBefore);
 }));
 

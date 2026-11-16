@@ -13,7 +13,7 @@ const json = async name => JSON.parse(await read(name));
 test('public package, lock, patch and compiled factory share the Tinker identity and exports', async () => {
   const pkg = await json('package.json'), lock = await json('package-lock.json');
   assert.equal(pkg.name, 'dsh-tinker');
-  assert.equal(pkg.version, '0.1.5');
+  assert.equal(pkg.version, '0.2.0');
   assert.equal(lock.name, pkg.name);
   assert.equal(lock.packages[''].name, pkg.name);
   assert.equal(lock.version, pkg.version);

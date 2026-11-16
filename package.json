@@ -1,6 +1,6 @@
 {
   "name": "dsh-tinker",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
   "type": "module",
   "license": "MIT",
@@ -23,6 +23,7 @@
     "icon.svg",
     "locale",
     "README.md",
+    "DETAIL.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
   ],

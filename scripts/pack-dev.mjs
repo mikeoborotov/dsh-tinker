@@ -9,12 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { runInNewContext } from 'node:vm';
 import { buildClient } from './build.mjs';
+import { detailFromReadme } from './readme.mjs';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const execute = promisify(execFile);
 export const DEV_NAME = 'dsh-tinker-develop';
 export const DEV_TITLE = 'Tinker (develop)';
-export const PACKAGE_FILES = ['LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'client.js', 'cordis.patch.yml', 'icon.svg', 'index.js', 'locale/en.json', 'locale/ru.json', 'package.json'];
+export const PACKAGE_FILES = ['DETAIL.md', 'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'client.js', 'cordis.patch.yml', 'icon.svg', 'index.js', 'locale/en.json', 'locale/ru.json', 'package.json'];
 const inputFiles = ['package.json', 'package-lock.json', 'cordis.patch.yml', 'index.js', 'icon.svg', 'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'locale/en.json', 'locale/ru.json'];
 const preservedKeys = ['dsh-workspace-plus:v1', 'dsh-workspace-plus:v1:legacy-backup', 'dsh-workspace-plus:unread:v1', 'workspace-plus:unread-change'];
 const digest = (bytes, algorithm = 'sha256', encoding = 'hex') => createHash(algorithm).update(bytes).digest(encoding);
@@ -43,7 +44,7 @@ async function sourceSnapshot(root) {
   const files = new Map();
   for (const name of names.sort()) files.set(name, await regularFile(path.join(root, name)));
   // These are the tools actually executing, not an unrelated fixture's build scripts.
-  for (const name of ['scripts/build.mjs', 'scripts/pack-dev.mjs']) files.set(name, await regularFile(path.join(projectRoot, name)));
+  for (const name of ['scripts/build.mjs', 'scripts/pack-dev.mjs', 'scripts/readme.mjs']) files.set(name, await regularFile(path.join(projectRoot, name)));
   return files;
 }
 
@@ -125,7 +126,14 @@ export function verifyDevPackage(files, version) {
   assert.equal(manifest.dsh.client.platform, 'web');
   assert.deepEqual(manifest.exports, { '.': './index.js', './client': './client.js', './package.json': './package.json', './locale/*.json': './locale/*.json' });
   assert.equal(files.get('cordis.patch.yml').toString(), '- insert:\n    - id: workspace-plus\n      name: ' + DEV_NAME + '\n      config: {}\n');
-  for (const language of ['en', 'ru']) assert.equal(json(files.get('locale/' + language + '.json')).meta.title, DEV_TITLE);
+  assert.ok(manifest.files.includes('README.md') && manifest.files.includes('DETAIL.md'), 'Both documentation files must be included');
+  for (const language of ['en', 'ru']) {
+    const { meta } = json(files.get('locale/' + language + '.json'));
+    assert.equal(meta.title, DEV_TITLE);
+    assert.equal(meta.detail, 'DETAIL.md', 'Locale detail must name the root Markdown document');
+    assert.ok(files.has(meta.detail), 'Locale detail document must exist');
+  }
+  assert.deepEqual(files.get('DETAIL.md'), detailFromReadme(files.get('README.md')), 'Detail must match the full README suffix byte for byte');
   const client = files.get('client.js').toString();
   let registration;
   runInNewContext(client, { window: { __ModuleLoader__: { load(value) {
@@ -242,6 +250,7 @@ export async function packDev({ sourceRoot = projectRoot, npmCli, temporaryParen
     const build = await buildClient({ root: stage, moduleId: DEV_NAME });
     const expected = new Map(await Promise.all(PACKAGE_FILES.map(async name => [name, await regularFile(path.join(stage, name))])));
     assert.deepEqual(expected.get('README.md'), snapshot.get('README.md'), 'Staged README must match the source snapshot byte for byte');
+    assert.deepEqual(expected.get('DETAIL.md'), detailFromReadme(snapshot.get('README.md')), 'Staged detail must derive from the source README snapshot');
     verifyDevPackage(expected, version);
     const packed = path.join(temporary, 'packed');
     await mkdir(packed);
