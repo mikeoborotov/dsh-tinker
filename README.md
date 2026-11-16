@@ -28,10 +28,6 @@ A plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 
 Give each workspace its own color and icon, emoji or image. The same appearance follows it in the sidebar and workspace picker. Open **Appearance** from the workspace menu.
 
-https://github.com/user-attachments/assets/42060671-72e3-41a5-899a-ffef02109a69
-
-[Watch or download the MP4](docs/media/workspace-icon.mp4).
-
 ### Account appearance
 
 Set a local display name and avatar from **Appearance** in the bottom-left account menu. Name and image are independent; reset either to the native account details. This changes the local interface, not your DeepSeek account.
