@@ -1,15 +1,99 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, MenuSurface, useAnchoredPosition, useDismissOnOutsidePointer, useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives';
+import * as NativePrimitives from '@deepseek-ai/dsh-client-ui-primitives';
+import { Button, MenuSurface, useDismissOnOutsidePointer, useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives';
 import { hexToHsv, hsvToHex, normalizeHex } from './colors.js';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-export function ColorPicker({ anchorRef, dialogRef, color, onChange, onApply, onCancel, onDismiss, t }) {
+// Older hosts can serve browsers without CSS anchors. Read their optional real
+// hook through the namespace, never require a removed named export at link time.
+const useLegacyAnchoredPosition = Reflect.get(NativePrimitives, 'useAnchoredPosition');
+function supportsAnchors() {
+  return typeof CSS !== 'undefined' && CSS.supports('anchor-name', '--wsp-anchor')
+    && CSS.supports('position-anchor', '--wsp-anchor') && CSS.supports('top', 'anchor(bottom)')
+    && CSS.supports('position-try-fallbacks', '--wsp-color-window') && CSS.supports('justify-self', 'safe end');
+}
+export function ColorPicker(props) {
+  // Separate components keep hook order fixed on each path. rc.3 uses the same
+  // CSS positioning contract as native Menu, with dialog keyboard ownership.
+  return !supportsAnchors() && typeof useLegacyAnchoredPosition === 'function'
+    ? <LegacyColorPicker {...props} /> : <AnchoredColorPicker {...props} />;
+}
+function LegacyColorPicker(props) {
+  const position = useLegacyAnchoredPosition({ open: true, anchorRef: props.anchorRef, panelRef: props.dialogRef, side: 'bottom', align: 'start', gap: 8, margin: 12 });
+  return <ColorPickerSurface {...props} position={position} />;
+}
+function AnchoredColorPicker(props) {
+  const name = '--wsp-color-anchor-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const [ready, setReady] = useState(false);
+  useLayoutEffect(() => {
+    const anchor = props.anchorRef.current, panel = props.dialogRef.current;
+    if (!anchor?.isConnected || !panel?.isConnected) return;
+    let active = true;
+    const previous = anchor.style.getPropertyValue('anchor-name'), priority = anchor.style.getPropertyPriority('anchor-name');
+    const owned = previous && previous !== 'none' ? `${previous}, ${name}` : name;
+    anchor.style.setProperty('anchor-name', owned, priority);
+    setReady(true);
+    // Native CSS scroll compensation can translate even its window fallback
+    // out of bounds. Retry CSS placement on ancestor scroll/resize; if it still
+    // overflows, detach only the scroll association and use the CSS window fit.
+    // No coordinates are calculated here, and modal/focus lifetime stays intact.
+    let frame = 0;
+    const pinToWindow = panel => {
+      if (panel.hasAttribute('data-window-pinned')) return;
+      panel.style.setProperty('--wsp-color-window-left', getComputedStyle(panel).left);
+      panel.setAttribute('data-window-pinned', '');
+    };
+    // IntersectionObserver sees the compositor's post-scroll position, whereas
+    // a scroll callback's layout read can still report its previous snapshot.
+    const windowTop = () => Math.max(12, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dsh-frame-overlay-top')) || 0);
+    let observedTop = windowTop(), observer;
+    const observe = () => {
+      observer?.disconnect();
+      observer = new IntersectionObserver(entries => {
+        if (active && props.dialogRef.current === panel && panel.isConnected
+          && entries.some(entry => entry.target === panel && entry.intersectionRatio < 1)) pinToWindow(panel);
+      }, { rootMargin: `-${observedTop}px -12px -12px -12px`, threshold: 1 });
+      observer.observe(panel);
+    };
+    observe();
+    const constrain = () => {
+      frame = 0;
+      if (!active || props.dialogRef.current !== panel || !anchor.isConnected || !panel.isConnected) return;
+      panel.removeAttribute('data-window-pinned');
+      const rect = panel.getBoundingClientRect();
+      const top = windowTop();
+      if (top !== observedTop) { observedTop = top; observe(); }
+      if (rect.top < top || rect.left < 12 || rect.bottom > innerHeight - 12 || rect.right > innerWidth - 12) {
+        pinToWindow(panel);
+      }
+    };
+    const schedule = event => {
+      if (event.type === 'scroll' && event.target instanceof Node && !event.target.contains(anchor)) return;
+      if (!frame) frame = requestAnimationFrame(constrain);
+    };
+    window.addEventListener('scroll', schedule, true);
+    window.addEventListener('resize', schedule);
+    return () => {
+      active = false;
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', schedule, true);
+      window.removeEventListener('resize', schedule);
+      // Restore only our own write; a foreign owner may have changed it meanwhile.
+      if (anchor.style.getPropertyValue('anchor-name') === owned && anchor.style.getPropertyPriority('anchor-name') === priority) {
+        if (previous) anchor.style.setProperty('anchor-name', previous, priority);
+        else anchor.style.removeProperty('anchor-name');
+      }
+    };
+  }, [props.anchorRef, props.dialogRef, name]);
+  return <ColorPickerSurface {...props} cssAnchor position={ready ? { '--wsp-color-anchor': name } : null} />;
+}
+function ColorPickerSurface({ anchorRef, dialogRef, color, onChange, onApply, onCancel, onDismiss, t, position, cssAnchor }) {
   const [hsv, setHsv] = useState(() => hexToHsv(color));
   const [text, setText] = useState(color), [invalid, setInvalid] = useState(false);
   const drag = useRef(null), id = 'wsp-color-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const position = useAnchoredPosition({ open: true, anchorRef, panelRef: dialogRef, side: 'bottom', align: 'start', gap: 8, margin: 12 });
   // Register only the visible placement commit, not the hidden measuring surface.
   useModalLayer(dialogRef, position !== null, onCancel);
   useDismissOnOutsidePointer(anchorRef, true, next => { if (!next) onDismiss(); }, dialogRef);
@@ -42,7 +126,7 @@ export function ColorPicker({ anchorRef, dialogRef, color, onChange, onApply, on
   }
   const saturationStart = hsvToHex({ ...hsv, s: 0 }), saturationEnd = hsvToHex({ ...hsv, s: 100 });
   const brightnessEnd = hsvToHex({ ...hsv, v: 100 });
-  return createPortal(<MenuSurface ref={dialogRef} className="wsp-color-picker" role="dialog" aria-modal="true" aria-labelledby={id + '-title'} tabIndex={-1}
+  return createPortal(<MenuSurface ref={dialogRef} className="wsp-color-picker" data-css-anchor={cssAnchor ? '' : undefined} role="dialog" aria-modal="true" aria-labelledby={id + '-title'} tabIndex={-1}
     style={{ position: 'fixed', ...position, visibility: position ? 'visible' : 'hidden' }}>
     <div className="wsp-color-picker-header">
       <h3 id={id + '-title'}>{t('customColor')}</h3>

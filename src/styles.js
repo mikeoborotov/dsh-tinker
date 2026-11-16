@@ -68,6 +68,14 @@ export const CSS = `
 .wsp-appearance-palette .wsp-custom-color,.wsp-appearance-palette .wsp-custom-color:hover:not(:disabled),.wsp-appearance-palette .wsp-custom-color:active:not(:disabled){width:28px;height:28px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:conic-gradient(#ff0000 0deg,#ffff00 60deg,#00ff00 120deg,#00ffff 180deg,#0000ff 240deg,#ff00ff 300deg,#ff0000 360deg);box-shadow:none;cursor:pointer}
 .wsp-custom-color:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
 .wsp-color-picker{z-index:1100;box-sizing:border-box;display:flex;flex-direction:column;width:510px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 12px - max(12px,var(--dsh-frame-overlay-top,12px)));overflow:hidden;border:.5px solid var(--dsw-alias-border-l3);border-radius:16px;corner-shape:round;box-shadow:var(--dsw-elevation-prominent);font:inherit;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary);outline:none}
+/* Native Menu CSS-anchor contract, with the color dialog's existing 8px gap.
+   Clamp tall cards to the window, not an above-anchor candidate that can scroll
+   past the window while the browser retains that selected fallback. */
+.wsp-color-picker[data-css-anchor]{position-anchor:var(--wsp-color-anchor);--wsp-color-window-top:max(12px,var(--dsh-frame-overlay-top,12px));position-area:none;top:max(var(--wsp-color-window-top),calc(anchor(bottom) + 8px));bottom:12px;left:max(12px,anchor(left));right:12px;justify-self:start;align-self:start;margin:0;height:fit-content;position-try-fallbacks:--wsp-color-wide-below,--wsp-color-window,--wsp-color-wide-window}
+@position-try --wsp-color-wide-below{left:12px;right:12px;justify-self:safe end}
+@position-try --wsp-color-window{top:var(--wsp-color-window-top);bottom:12px;align-self:safe end}
+@position-try --wsp-color-wide-window{top:var(--wsp-color-window-top);bottom:12px;left:12px;right:12px;align-self:safe end;justify-self:safe end}
+.wsp-color-picker[data-css-anchor][data-window-pinned]{position-anchor:auto;position-try-fallbacks:none;top:var(--wsp-color-window-top);bottom:12px;left:clamp(12px,var(--wsp-color-window-left,12px),max(12px,calc(100vw - 510px - 12px)));right:12px;align-self:safe end;justify-self:start}
 .wsp-color-picker *{box-sizing:border-box}
 .wsp-color-picker-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0;flex:none}
 .wsp-color-picker-header h3{margin:0;font-size:14px;line-height:22px;font-weight:600}

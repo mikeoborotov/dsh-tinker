@@ -958,7 +958,7 @@ function createWorkspacePickerAdapter({ document: doc, preferences, workspaces, 
 }
 
 // src/styles.js
-var CSS = `
+var CSS2 = `
 .wsp-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;line-height:1;font-size:17px;pointer-events:none;color:inherit}
 .wsp-icon svg,.wsp-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .wsp-composer-icon{width:16px;height:16px;flex-basis:16px}
@@ -1028,6 +1028,14 @@ var CSS = `
 .wsp-appearance-palette .wsp-custom-color,.wsp-appearance-palette .wsp-custom-color:hover:not(:disabled),.wsp-appearance-palette .wsp-custom-color:active:not(:disabled){width:28px;height:28px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:conic-gradient(#ff0000 0deg,#ffff00 60deg,#00ff00 120deg,#00ffff 180deg,#0000ff 240deg,#ff00ff 300deg,#ff0000 360deg);box-shadow:none;cursor:pointer}
 .wsp-custom-color:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
 .wsp-color-picker{z-index:1100;box-sizing:border-box;display:flex;flex-direction:column;width:510px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 12px - max(12px,var(--dsh-frame-overlay-top,12px)));overflow:hidden;border:.5px solid var(--dsw-alias-border-l3);border-radius:16px;corner-shape:round;box-shadow:var(--dsw-elevation-prominent);font:inherit;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary);outline:none}
+/* Native Menu CSS-anchor contract, with the color dialog's existing 8px gap.
+   Clamp tall cards to the window, not an above-anchor candidate that can scroll
+   past the window while the browser retains that selected fallback. */
+.wsp-color-picker[data-css-anchor]{position-anchor:var(--wsp-color-anchor);--wsp-color-window-top:max(12px,var(--dsh-frame-overlay-top,12px));position-area:none;top:max(var(--wsp-color-window-top),calc(anchor(bottom) + 8px));bottom:12px;left:max(12px,anchor(left));right:12px;justify-self:start;align-self:start;margin:0;height:fit-content;position-try-fallbacks:--wsp-color-wide-below,--wsp-color-window,--wsp-color-wide-window}
+@position-try --wsp-color-wide-below{left:12px;right:12px;justify-self:safe end}
+@position-try --wsp-color-window{top:var(--wsp-color-window-top);bottom:12px;align-self:safe end}
+@position-try --wsp-color-wide-window{top:var(--wsp-color-window-top);bottom:12px;left:12px;right:12px;align-self:safe end;justify-self:safe end}
+.wsp-color-picker[data-css-anchor][data-window-pinned]{position-anchor:auto;position-try-fallbacks:none;top:var(--wsp-color-window-top);bottom:12px;left:clamp(12px,var(--wsp-color-window-left,12px),max(12px,calc(100vw - 510px - 12px)));right:12px;align-self:safe end;justify-self:start}
 .wsp-color-picker *{box-sizing:border-box}
 .wsp-color-picker-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0;flex:none}
 .wsp-color-picker-header h3{margin:0;font-size:14px;line-height:22px;font-weight:600}
@@ -5060,6 +5068,7 @@ async function imageData(file) {
 // src/color-picker.jsx
 var import_react2 = __toESM(require("react"), 1);
 var import_react_dom = require("react-dom");
+var NativePrimitives = __toESM(require("@deepseek-ai/dsh-client-ui-primitives"), 1);
 var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/colors.js
@@ -5098,11 +5107,82 @@ function hsvToHex(value) {
 
 // src/color-picker.jsx
 var clamp2 = (value, min, max) => Math.min(max, Math.max(min, value));
-function ColorPicker({ anchorRef, dialogRef, color, onChange, onApply, onCancel, onDismiss, t }) {
+var useLegacyAnchoredPosition = Reflect.get(NativePrimitives, "useAnchoredPosition");
+function supportsAnchors() {
+  return typeof CSS !== "undefined" && CSS.supports("anchor-name", "--wsp-anchor") && CSS.supports("position-anchor", "--wsp-anchor") && CSS.supports("top", "anchor(bottom)") && CSS.supports("position-try-fallbacks", "--wsp-color-window") && CSS.supports("justify-self", "safe end");
+}
+function ColorPicker(props) {
+  return !supportsAnchors() && typeof useLegacyAnchoredPosition === "function" ? /* @__PURE__ */ import_react2.default.createElement(LegacyColorPicker, { ...props }) : /* @__PURE__ */ import_react2.default.createElement(AnchoredColorPicker, { ...props });
+}
+function LegacyColorPicker(props) {
+  const position = useLegacyAnchoredPosition({ open: true, anchorRef: props.anchorRef, panelRef: props.dialogRef, side: "bottom", align: "start", gap: 8, margin: 12 });
+  return /* @__PURE__ */ import_react2.default.createElement(ColorPickerSurface, { ...props, position });
+}
+function AnchoredColorPicker(props) {
+  const name = "--wsp-color-anchor-" + (0, import_react2.useId)().replace(/[^a-zA-Z0-9_-]/g, "");
+  const [ready, setReady] = (0, import_react2.useState)(false);
+  (0, import_react2.useLayoutEffect)(() => {
+    const anchor = props.anchorRef.current, panel = props.dialogRef.current;
+    if (!anchor?.isConnected || !panel?.isConnected) return;
+    let active = true;
+    const previous = anchor.style.getPropertyValue("anchor-name"), priority = anchor.style.getPropertyPriority("anchor-name");
+    const owned = previous && previous !== "none" ? `${previous}, ${name}` : name;
+    anchor.style.setProperty("anchor-name", owned, priority);
+    setReady(true);
+    let frame = 0;
+    const pinToWindow = (panel2) => {
+      if (panel2.hasAttribute("data-window-pinned")) return;
+      panel2.style.setProperty("--wsp-color-window-left", getComputedStyle(panel2).left);
+      panel2.setAttribute("data-window-pinned", "");
+    };
+    const windowTop = () => Math.max(12, parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dsh-frame-overlay-top")) || 0);
+    let observedTop = windowTop(), observer;
+    const observe = () => {
+      observer?.disconnect();
+      observer = new IntersectionObserver((entries) => {
+        if (active && props.dialogRef.current === panel && panel.isConnected && entries.some((entry) => entry.target === panel && entry.intersectionRatio < 1)) pinToWindow(panel);
+      }, { rootMargin: `-${observedTop}px -12px -12px -12px`, threshold: 1 });
+      observer.observe(panel);
+    };
+    observe();
+    const constrain = () => {
+      frame = 0;
+      if (!active || props.dialogRef.current !== panel || !anchor.isConnected || !panel.isConnected) return;
+      panel.removeAttribute("data-window-pinned");
+      const rect = panel.getBoundingClientRect();
+      const top = windowTop();
+      if (top !== observedTop) {
+        observedTop = top;
+        observe();
+      }
+      if (rect.top < top || rect.left < 12 || rect.bottom > innerHeight - 12 || rect.right > innerWidth - 12) {
+        pinToWindow(panel);
+      }
+    };
+    const schedule = (event) => {
+      if (event.type === "scroll" && event.target instanceof Node && !event.target.contains(anchor)) return;
+      if (!frame) frame = requestAnimationFrame(constrain);
+    };
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule);
+    return () => {
+      active = false;
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      if (anchor.style.getPropertyValue("anchor-name") === owned && anchor.style.getPropertyPriority("anchor-name") === priority) {
+        if (previous) anchor.style.setProperty("anchor-name", previous, priority);
+        else anchor.style.removeProperty("anchor-name");
+      }
+    };
+  }, [props.anchorRef, props.dialogRef, name]);
+  return /* @__PURE__ */ import_react2.default.createElement(ColorPickerSurface, { ...props, cssAnchor: true, position: ready ? { "--wsp-color-anchor": name } : null });
+}
+function ColorPickerSurface({ anchorRef, dialogRef, color, onChange, onApply, onCancel, onDismiss, t, position, cssAnchor }) {
   const [hsv, setHsv] = (0, import_react2.useState)(() => hexToHsv(color));
   const [text, setText] = (0, import_react2.useState)(color), [invalid, setInvalid] = (0, import_react2.useState)(false);
   const drag = (0, import_react2.useRef)(null), id = "wsp-color-" + (0, import_react2.useId)().replace(/[^a-zA-Z0-9_-]/g, "");
-  const position = (0, import_dsh_client_ui_primitives.useAnchoredPosition)({ open: true, anchorRef, panelRef: dialogRef, side: "bottom", align: "start", gap: 8, margin: 12 });
   (0, import_dsh_client_ui_primitives.useModalLayer)(dialogRef, position !== null, onCancel);
   (0, import_dsh_client_ui_primitives.useDismissOnOutsidePointer)(anchorRef, true, (next) => {
     if (!next) onDismiss();
@@ -5149,6 +5229,7 @@ function ColorPicker({ anchorRef, dialogRef, color, onChange, onApply, onCancel,
     {
       ref: dialogRef,
       className: "wsp-color-picker",
+      "data-css-anchor": cssAnchor ? "" : void 0,
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": id + "-title",
@@ -6878,7 +6959,7 @@ function apply(ctx) {
   ctx.effect(() => {
     const style = document.createElement("style");
     style.dataset.wspOwned = "";
-    style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS + PROFILE_ADAPTER_CSS;
+    style.textContent = CSS2 + SESSION_ACTION_CSS + BRANDING_CSS + PROFILE_ADAPTER_CSS;
     document.head.append(style);
     return () => style.remove();
   });
