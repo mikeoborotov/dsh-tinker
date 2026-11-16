@@ -1,0 +1,24 @@
+{
+  "version": "0.2.2-rc.1",
+  "buildCommit": "c59d10aff167ad7eefead4b3a9082fb57c8fbfe8",
+  "source": "https://github.com/deepseek-ai/deepseek-harness",
+  "sourceHashes": {
+    "workspace": "0180cefb85c1a71a1d441a8f9533663a8933d5e3f65f8dd23187c5f6147fe12f",
+    "sidebar": "1cc667401af9b64c5a90a5e10f8c085c2dad2852ebe4ed0e69dde5071f531653",
+    "theme": "1c8a1676576db8e94d0574f104f07a407d2328258d22d1b41a7584b276b81631",
+    "frontend": "c7e9821660f7e0f0524cc7cb1a375a5171eebbe68e167b80d290bd2ea391286d",
+    "webCss": "ac7c3d764558542be08b2da02e208c01bf2b9953a7a94bf1fd109bdc03e2d3a4"
+  },
+  "sliceHashes": {
+    "primitives.js": "9cf0c01a07fc76c43e05b3d4b30ed273effd10952dc110c6f0f1c71feebec7ea",
+    "workspace.js": "d4c0bca7b9d008a9e16ea262089dc98cb255dcaee2ba8c01e97424accce941a1",
+    "baseline.css": "494cc5dbfc747d26569a43f7b2e0bd8cd7be01dc0d36cac8729deb811705a77c"
+  },
+  "omissions": [
+    "HoverCard overlay",
+    "drag transport",
+    "relative time formatting",
+    "shortcut label rendering"
+  ],
+  "compatibility": "MenuItemButton and Toast reuse the existing supported RC.2 public fixtures."
+}

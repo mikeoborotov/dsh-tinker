@@ -1,0 +1,36 @@
+{
+  "commit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+  "tag": "dsh-v0.2.0-rc.2",
+  "files": [
+    {
+      "path": "packages/client/ui-slots/src/index.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-slots/src/index.ts",
+      "bytes": 70725,
+      "sha256": "27a453937cdcc28923c37ad90cd01489e458e205dc03032629183087b5b585d0"
+    },
+    {
+      "path": "packages/client/ui-renderer/src/client/registry.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-renderer/src/client/registry.ts",
+      "bytes": 32684,
+      "sha256": "6b8b6b969d8bcf0314ea20438a223f3a90e1bd516571faecae5c3c01008ecf21"
+    },
+    {
+      "path": "packages/client/ui-slots/src/renderer.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-slots/src/renderer.ts",
+      "bytes": 12221,
+      "sha256": "ee834aafc19367922c139d41f677233fbdfcc042b4deff9f616aa43220ee09ee"
+    },
+    {
+      "path": "packages/client/ui-renderer/src/client/errors.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-renderer/src/client/errors.ts",
+      "bytes": 179,
+      "sha256": "594e7de016772aa6ffa3b00a83387b891d660cfb6cbbe719e82ec28871b8edac"
+    },
+    {
+      "path": "packages/client/ui-slots/src/store.ts",
+      "source": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-slots/src/store.ts",
+      "bytes": 334,
+      "sha256": "4233ae32911848aa771910286e5f41b4c683e8c5b16da190935082ac4249cca0"
+    }
+  ]
+}

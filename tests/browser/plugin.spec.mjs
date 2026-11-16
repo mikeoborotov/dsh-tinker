@@ -5,6 +5,9 @@ test.beforeAll(async()=>{ fixture=await buildFixture(); });
 async function mount(page) {
  await page.addStyleTag({content:fixture.css});await page.addScriptTag({content:fixture.js});await page.evaluate(()=>window.fixture.mount());
 }
+async function openAppearance(page) {
+ await page.evaluate(()=>window.fixture.openWorkspaceMenu());await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();
+}
 test.beforeEach(async({page})=>{
  await page.route('http://fixture.test/**',r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><body>
  <div data-row-key="workspace:w1" role="treeitem"><span><svg width="18" height="18"><path/></svg></span><span><svg/></span><span>Infra</span><span><button id="menu-anchor">...</button><button>New</button></span></div>
@@ -43,7 +46,7 @@ test('workspace appearance reset and disposal restore native UI',async({page})=>
 });
 test('menu is added only after its own workspace trigger; UI responds to keyboard',async({page})=>{
  await page.locator('#menu-anchor').click();
- await page.evaluate(()=>{const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete</span></button></div></div>';document.body.append(m);});
+ await page.evaluate(()=>{const m=document.createElement('div');m.setAttribute('role','menu');m.innerHTML='<div role="presentation"><div><button class="native-item" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Rename</span></button></div><div><button class="native-item danger" role="menuitem"><span class="native-icon"><svg/></span><span class="native-label">Delete workspace</span></button></div></div>';document.body.append(m);});
  await expect(page.getByRole('menuitem',{name:'Appearance'})).toBeVisible();
  await page.getByRole('menuitem',{name:'Appearance'}).click();await expect(page.getByRole('dialog')).toBeVisible();
  await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -57,7 +60,7 @@ test('all feature switches remove their changes and can re-enable them',async({p
  await page.getByRole('switch',{name:'sessions',exact:true}).click();await expect(page.locator('.wsp-session-icon')).toHaveCount(2);
 });
 test('class-backed workspace store renders dialog and persists an emoji',async({page})=>{
- await page.locator('#wsp-workspace').selectOption('w1');await expect(page.getByRole('dialog')).toBeVisible();
+ await openAppearance(page);await expect(page.getByRole('dialog')).toBeVisible();
  await page.getByRole('button',{name:'emoji',exact:true}).click();await page.locator('#wsp-emoji').fill('🏠');
  await expect(page.getByRole('textbox',{name:'color'})).toHaveCount(0);
  await page.getByRole('button',{name:'save',exact:true}).click();await expect(page.locator('.wsp-workspace-icon')).toHaveText('🏠');
@@ -70,7 +73,7 @@ test('unsupported workspace markup is left unchanged',async({page})=>{
 
 test('global plugin effect applies workspace icons above prompt independently of model logos',async({page})=>{
  await page.evaluate(()=>{const root=document.createElement('div');root.setAttribute('data-conversation-content','');root.setAttribute('data-conversation-session','s1');root.innerHTML='<div><button id="hero-workspace" aria-haspopup="menu" aria-expanded="false"><svg/><span>Infra</span><svg class="chevron"/></button><div data-slot="conversation.hero.workspace"></div></div>';document.body.append(root);});
- await page.locator('#wsp-workspace').selectOption('w1');await page.getByRole('button',{name:'emoji',exact:true}).click();await page.locator('#wsp-emoji').fill('🏠');await page.getByRole('button',{name:'save',exact:true}).click();
+ await openAppearance(page);await page.getByRole('button',{name:'emoji',exact:true}).click();await page.locator('#wsp-emoji').fill('🏠');await page.getByRole('button',{name:'save',exact:true}).click();
  await expect(page.locator('#hero-workspace .wsp-workspace-picker-icon')).toHaveText('🏠');await expect(page.locator('.wsp-workspace-icon')).toHaveText('🏠');
  await page.getByRole('switch',{name:'composer',exact:true}).click();await expect(page.locator('#hero-workspace .wsp-workspace-picker-icon')).toHaveText('🏠');
  await page.getByRole('switch',{name:'workspaces',exact:true}).click();await expect(page.locator('#hero-workspace .wsp-workspace-picker-icon')).toHaveCount(0);await expect(page.locator('#hero-workspace>svg').first()).not.toHaveCSS('display','none');

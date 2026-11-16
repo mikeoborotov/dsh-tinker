@@ -13,7 +13,7 @@ const json = async name => JSON.parse(await read(name));
 test('public package, lock, patch and compiled factory share the Tinker identity and exports', async () => {
   const pkg = await json('package.json'), lock = await json('package-lock.json');
   assert.equal(pkg.name, 'dsh-tinker');
-  assert.equal(pkg.version, '0.1.5');
+  assert.equal(pkg.version, '0.2.0');
   assert.equal(lock.name, pkg.name);
   assert.equal(lock.packages[''].name, pkg.name);
   assert.equal(lock.version, pkg.version);
@@ -40,13 +40,14 @@ test('public package, lock, patch and compiled factory share the Tinker identity
   const exports = registration.factory(name => {
     externals.add(name);
     if (name === 'react') return require(name);
+    if (name === 'react-dom') return { createPortal() { assert.fail('factory registration must not render a portal'); } };
     assert.equal(name, '@deepseek-ai/dsh-client-ui-primitives');
     return {}; // Host UI components are not rendered in this Node identity check.
   });
   assert.deepEqual(Object.keys(exports).sort(), ['apply', 'inject']);
   assert.equal(typeof exports.apply, 'function');
   assert.deepEqual(Array.from(exports.inject), ['slots', 'locale', 'sessions', 'workspaces', 'modelDirectories', 'remote', 'remote.session']);
-  assert.deepEqual([...externals].sort(), ['@deepseek-ai/dsh-client-ui-primitives', 'react']);
+  assert.deepEqual([...externals].sort(), ['@deepseek-ai/dsh-client-ui-primitives', 'react', 'react-dom']);
   for (const value of [STORAGE_KEY, UNREAD_STORAGE_KEY, UNREAD_CHANGE_EVENT]) assert.ok(client.includes(value));
   assert.match(client, /label: "Tinker"/);
   assert.doesNotMatch(client, /Workspace Plus/);

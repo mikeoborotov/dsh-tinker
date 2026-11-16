@@ -2,30 +2,33 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { MenuItemButton, StateDot, Tooltip, Toast } from '@deepseek-ai/dsh-client-ui-primitives';
 import { useStore } from './use-store.js';
 import { attachSidebarBranding } from './sidebar-branding.js';
+import { registerUnreadShortcuts } from './unread-shortcuts.js';
 
 export const SESSION_ACTION_CSS = `
-.wsp-session-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:inherit}
+.wsp-session-action-root{display:contents}
+.wsp-session-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;margin:-4px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:inherit}
 .wsp-session-action:hover{color:var(--dsw-alias-label-primary)}
-.wsp-session-action:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:2px;border-radius:3px}
+.wsp-session-action:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px;border-radius:3px}
 .wsp-session-action:disabled{opacity:.5;cursor:default}
 .wsp-manual-unread{display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .wsp-unread-error{display:block;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;max-width:260px}
 `;
 
-function UnreadIcon() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+function UnreadIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
     <path d="M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" />
     <circle cx="13.5" cy="3.5" r="2" fill="currentColor" stroke="none" />
   </svg>;
 }
 
 export function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
+  const unreadShortcut = registerUnreadShortcuts(ctx, { prefs, reminders, t: key => ctx.locale.bind(namespace)(key) });
   function MenuItem({ sessionId, useMenuOpenState, t }) {
-    const settings = useStore(prefs), state = useStore(reminders);
+    const settings = useStore(prefs), state = useStore(reminders), shortcut = useStore(unreadShortcut);
     const [, setOpen] = useMenuOpenState();
     if (!settings.features.unread) return null;
     return <div data-wsp-owned="">
-      <MenuItemButton icon={<UnreadIcon />} onSelect={() => {
+      <MenuItemButton icon={<UnreadIcon />} shortcut={shortcut} onSelect={() => {
         // Native Menu returns keyboard focus only for a synchronous selection close.
         // Green state still publishes solely after the durable locked write; failure
         // uses a native Toast, not a success indicator or an unmounted menu message.
@@ -38,13 +41,14 @@ export function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
   function RowAction({ sessionId, t }) {
     const settings = useStore(prefs), state = useStore(reminders), [error, setError] = useState('');
     if (!settings.features.unread) return null;
-    return <span data-wsp-owned="">
+    // Keep the ownership wrapper out of row layout; Tooltip still anchors to the button.
+    return <span data-wsp-owned="" className="wsp-session-action-root">
       <Tooltip label={t('markUnread')} side="bottom" align="end" delayMs={500}>
         <button type="button" className="wsp-session-action" aria-label={t('markUnread')} onClick={async event => {
           event.stopPropagation();
           try { await reminders.markUnread(sessionId); setError(''); }
           catch (reason) { setError(t('unreadFailed') + ' ' + reason.message); reminders.reportError(reason); }
-        }}><UnreadIcon /></button>
+        }}><UnreadIcon size={14} /></button>
       </Tooltip>
       {(error || state.error) && <span role="alert" className="wsp-unread-error">{error || state.error}</span>}
     </span>;

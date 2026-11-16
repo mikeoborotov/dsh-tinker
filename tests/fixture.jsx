@@ -36,6 +36,14 @@ window.fixture={
  prefs:()=>createPreferences(localStorage,ICON_IDS), vendorOf,
  rerenderSettings(){const {root,Component}=rendered.get('settings.section');root.render(<Component t={ctx.locale.bind()} />);},
  refreshes:()=>refreshes,
+ // Source-shaped native owner for dialog tests: open via the real Workspace
+ // Appearance contribution, never a Settings picker or a direct editor callback.
+ openWorkspaceMenu(){
+  const anchor=document.getElementById('menu-anchor');anchor.click();anchor.setAttribute('aria-expanded','true');
+  const menu=document.createElement('div');menu.setAttribute('role','menu');
+  menu.innerHTML='<div role="presentation"><div><button role="menuitem"><span><svg xmlns="http://www.w3.org/2000/svg"/></span><span>Rename</span></button></div><div><button role="menuitem"><span><svg xmlns="http://www.w3.org/2000/svg"/></span><span>Delete workspace</span></button></div></div>';
+  anchor.addEventListener('click',()=>{menu.remove();anchor.setAttribute('aria-expanded','false');},{once:true});document.body.append(menu);
+ },
  setLanguage(value){language=value;for(const {root,Component,options} of rendered.values())root.render(<Component {...options.inject?.('s1')} t={ctx.locale.bind()} lang={language} />);},
  setWorkspaces(items){workspaceState.set({items,phase:'ready'});},
 };

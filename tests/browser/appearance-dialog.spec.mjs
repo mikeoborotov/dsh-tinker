@@ -29,11 +29,11 @@ async function setup(page, { dark = true, language = 'en', seed, quotaKey } = {}
   }, quotaKey);
   await page.addScriptTag({ content: fixture.js });
   await page.evaluate(language => { window.fixture.mount(); window.fixture.setLanguage(language); }, language);
-  await expect(page.locator('#wsp-workspace')).toBeVisible();
+  await expect(page.locator('#settings').getByRole('heading', { name: 'Tinker', exact: true })).toBeVisible();
 }
 async function open(page) {
-  await page.locator('#wsp-workspace').focus();
-  await page.locator('#wsp-workspace').selectOption('w1');
+  await page.evaluate(() => window.fixture.openWorkspaceMenu());
+  await page.getByRole('menuitem', { name: /^(Appearance|Оформление)$/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
 }
 const storage = page => page.evaluate(() => localStorage.getItem('dsh-workspace-plus:v1'));
@@ -56,7 +56,9 @@ async function imageMode(page) { await page.getByRole('button', { name: 'Image',
 for (const language of ['en', 'ru']) test(`Tinker settings and reset confirmation use the public product name (${language})`, async ({ page }, testInfo) => {
   await setup(page, { language, dark: language === 'ru' });
   await expect(page.getByRole('heading', { name: 'Tinker', exact: true })).toBeVisible();
-  await expect(page.getByRole('switch')).toHaveCount(5);
+  await expect(page.getByRole('switch')).toHaveCount(6);
+  await expect(page.getByRole('switch', { name: language === 'en' ? 'Profile appearance' : 'Оформление профиля', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#settings .wsp-profile-name, #settings .wsp-profile-portrait')).toHaveCount(0);
   await expect(page.locator('#settings')).not.toContainText('Workspace Plus');
   await page.locator('#settings').screenshot({ path: testInfo.outputPath(`tinker-settings-${language}.png`), animations: 'disabled' });
   // The recovery-only reset path must use the new label without changing its data key.
@@ -68,7 +70,8 @@ for (const language of ['en', 'ru']) test(`Tinker settings and reset confirmatio
   const confirmation = page.waitForEvent('dialog').then(async dialog => {
     const message = dialog.message(); await dialog.dismiss(); return message;
   });
-  await page.getByRole('button', { name: language === 'en' ? 'Reset plugin settings' : 'Сбросить настройки плагина', exact: true }).click();
+  await page.locator('#settings').getByRole('tab', { name: language === 'en' ? 'Recovery' : 'Восстановление', exact: true }).click();
+  await page.locator('#settings .wsp-settings-recovery').getByRole('button', { name: language === 'en' ? 'Reset plugin settings' : 'Сбросить настройки плагина', exact: true }).click();
   expect(await confirmation).toBe(language === 'en' ? 'Reset all Tinker settings? Save a recovery copy first.' : 'Сбросить все настройки Tinker? Сначала сохраните копию для восстановления.');
   expect(await storage(page)).toBe('{invalid');
 });
@@ -76,8 +79,8 @@ for (const language of ['en', 'ru']) test(`Tinker settings and reset confirmatio
 for (const dark of [true, false]) test(`native modal/header/input/footer match ${dark ? 'dark' : 'light'} theme`, async ({ page }) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await setup(page, { dark }); await open(page);
-  const dialog = page.getByRole('dialog', { name: 'Change workspace appearance', exact: true });
-  await expect(dialog.getByRole('heading')).toHaveText('Change workspace appearance');
+  const dialog = page.getByRole('dialog', { name: 'Workspace appearance', exact: true });
+  await expect(dialog.getByRole('heading')).toHaveText('Workspace appearance');
   await expect(dialog.getByRole('button', { name: 'Close', exact: true }).locator('svg')).toHaveCount(1);
   await expect(dialog).toHaveCSS('border-radius', '28px');
   await expect(dialog).toHaveCSS('border-width', '0px');
@@ -133,7 +136,8 @@ test('full emoji catalog is bounded in DOM but searches all 3512 entries and bot
   await page.locator('.wsp-emoji-grid').getByRole('button', { name: 'rocket', exact: true }).click(); await expect(page.locator('.wsp-list-preview .wsp-icon')).toHaveText('🚀');
   await search.fill('💰'); await expect(page.locator('.wsp-emoji-grid button')).toHaveCount(1);
   await search.fill('never-an-emoji'); await expect(page.getByRole('status')).toHaveText('No results');
-  await search.fill(''); await page.getByRole('combobox', { name: 'Emoji category' }).selectOption('animals-nature');
+  await search.fill(''); await page.getByRole('button', { name: 'Emoji category', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Animals & Nature', exact: true }).click();
   await expect(page.locator('.wsp-results-row')).toContainText('120 / 140');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.locator('.wsp-workspace-icon')).toHaveText('🚀');
@@ -142,7 +146,7 @@ test('full emoji catalog is bounded in DOM but searches all 3512 entries and bot
 
 test('Russian localization and custom/manual emoji remain available', async ({ page }) => {
   await setup(page, { language: 'ru' }); await open(page);
-  await expect(page.getByRole('heading', { name: 'Изменить оформление Workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Оформление Workspace', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Emoji', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Поиск emoji' }).fill('rocket');
   await expect(page.locator('.wsp-emoji-grid').getByRole('button', { name: 'ракета', exact: true })).toHaveAttribute('title', 'ракета');
@@ -158,12 +162,17 @@ test('legacy appearances migrate once with no profile/name/advanced or transfer 
   await expect(page.locator('#wsp-alias, #wsp-saved, .wsp-advanced')).toHaveCount(0);
   await expect(page.locator('#settings input[type=file]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^(Import|Export) settings$/ })).toHaveCount(0);
-  await expect(page.locator('#settings')).toContainText('Storage recovery only, not settings transfer.');
   await expect(page.locator('.wsp-list-preview')).toContainText('📚');
   const saved = await state(page); expect(saved.version).toBe(2); expect(saved.profiles).toBeUndefined(); expect(saved.bindings).toBeUndefined();
   expect(saved.appearances).toEqual({ w1: seed.profiles.shared, w2: seed.profiles.shared });
   expect(saved.features).toEqual({ ...seed.features, unread: true, branding: true });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('dsh-workspace-plus:v1:legacy-backup')))).toEqual(seed);
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.locator('#settings').getByRole('tab', { name: 'Recovery', exact: true }).click();
+  const recovery = page.locator('#settings .wsp-settings-recovery');
+  await expect(recovery.getByText('A limited recovery copy, not a full backup', { exact: true })).toBeVisible();
+  await expect(recovery.getByText('Copy may contain data saved before an update. No import is available.', { exact: true })).toBeVisible();
+  await expect(page.locator('#settings details, #settings summary')).toHaveCount(0);
 });
 
 for (const quotaKey of [key, key + ':legacy-backup']) test(`migration quota at ${quotaKey} preserves v1 bytes and Retry completes without reset`, async ({ page }) => {
@@ -171,11 +180,13 @@ for (const quotaKey of [key, key + ':legacy-backup']) test(`migration quota at $
   await setup(page, { seed, quotaKey });
   await expect(page.locator('#settings [role=alert]')).toContainText('Saved appearances could not be migrated: Quota exceeded');
   await expect(page.locator('.wsp-workspace-icon')).toHaveCount(0);
-  await expect(page.getByRole('switch', { name: 'Model logos in the selector and list', exact: true })).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByRole('switch', { name: 'In the model picker', exact: true })).toHaveAttribute('aria-checked', 'false');
   await expect(page.locator('.wsp-composer-icon')).toHaveCount(0);
   expect(await storage(page)).toBe(JSON.stringify(seed));
   await page.evaluate(() => window.restoreStorageWrites());
-  await page.getByRole('button', { name: 'Retry reading saved settings', exact: true }).click();
+  await page.locator('#settings').getByRole('tab', { name: 'Recovery', exact: true }).click();
+  await expect(page.locator('#settings [role=alert]')).toContainText('Saved appearances could not be migrated: Quota exceeded');
+  await page.locator('#settings .wsp-settings-recovery').getByRole('button', { name: 'Retry reading saved settings', exact: true }).click();
   await expect(page.locator('#settings [role=alert]')).toHaveCount(0);
   await expect(page.locator('.wsp-workspace-icon')).toHaveText('📚');
   expect((await state(page)).appearances).toEqual({ w1: seed.profiles.shared, w2: seed.profiles.shared });
@@ -184,7 +195,7 @@ for (const quotaKey of [key, key + ':legacy-backup']) test(`migration quota at $
 
 test('preview is below title and above tabs in all modes, with native/default and real-size custom glyphs', async ({ page }) => {
   await setup(page); await open(page);
-  await expect(page.getByRole('group', { name: 'Preview in the Workspace list' })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Preview in workspace list' })).toBeVisible();
   await expect(page.locator('.wsp-list-preview')).toHaveCSS('height', '34px');
   await expect(page.locator('.wsp-list-preview .wsp-native-folder')).toHaveCSS('width', '16px');
   await expect(page.locator('.wsp-list-preview')).toHaveCSS('font-size', '14px');
@@ -211,7 +222,7 @@ test('native focus/Tab/Escape/X return focus and cancel without saving', async (
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeFocused();
   await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Close', exact: true })).toBeFocused();
   await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator('#wsp-workspace')).toBeFocused(); expect(await storage(page)).toBeNull();
+  await expect(page.locator('#menu-anchor')).toBeFocused(); expect(await storage(page)).toBeNull();
   await open(page); await page.getByRole('button', { name: 'Emoji', exact: true }).click(); await page.locator('#wsp-emoji').fill('🏠');
   await page.getByRole('button', { name: 'Close', exact: true }).click(); expect(await storage(page)).toBeNull();
 });
@@ -435,6 +446,8 @@ test('failed durable reset Save leaves original appearance and bytes intact', as
 
 test('corrupted storage shows recovery-only controls, no portable transfer inputs', async ({ page }) => {
   await setup(page, { seed: { version: 999 } });
+  await expect(page.locator('#settings [role=alert]')).toContainText('Unsupported settings version');
+  await page.locator('#settings').getByRole('tab', { name: 'Recovery', exact: true }).click();
   await expect(page.locator('#settings [role=alert]')).toContainText('Unsupported settings version');
   await expect(page.getByRole('button', { name: 'Save recovery copy' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry reading saved settings' })).toBeVisible();

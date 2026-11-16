@@ -1,0 +1,33 @@
+{
+  "nativeVersion": "0.2.2-rc.1",
+  "kind": "source-shaped workspace action presentation, not a live DOM capture",
+  "upstream": "https://github.com/deepseek-ai/deepseek-harness",
+  "presentation": [
+    { "package": "@deepseek-ai/dsh-client-ui-workspace", "file": "lib/client.js", "sha256": "0180cefb85c1a71a1d441a8f9533663a8933d5e3f65f8dd23187c5f6147fe12f", "lines": "5955-5982", "actions": "Rename order 100; Delete workspace order 300 with separatorBefore" },
+    { "package": "@deepseek-ai/dsh-client-ui-open-in-app", "file": "lib/client.js", "sha256": "e38cccfe987ff453e95b5f71f4e4c9bd4207d20484b72543d91c1828a00ceb13", "lines": "105-132", "actions": "Show in folder / Show in Finder order 200" }
+  ],
+  "iconOutlet": {
+    "shape": "itemIcon > span[data-slot=contextMenu.icon][style=display:contents] > one direct svg",
+    "inlineDeclaration": { "package": "@deepseek-ai/dsh-client-ui-context-menu", "file": "lib/client.js", "sha256": "b7ca0eb8bf549c420eda1d3772544df65c3dbe35bcd213d008118c765889b5ac", "lines": "1176,1414-1417" },
+    "slotAnchor": { "package": "@deepseek-ai/dsh-client-ui-renderer", "file": "lib/client.js", "sha256": "dbdb3f26bfbc1d143bc8a0eed5982a2507c4f0cf8027e7c170f3bed3604be356", "lines": "1116-1126" },
+    "scope": "Current fixture icons reproduce this source shape; legacy fixture icons remain direct SVG. No live slot service runs."
+  },
+  "preparation": {
+    "defaultResolutionTimeoutMs": 1000,
+    "prepareMs": 20,
+    "enterMs": 40,
+    "lifecycle": "ProjectRow button data-context-menu-trigger, aria-haspopup=menu, aria-expanded reflects active workspace target before the popup exists; row aria-expanded is folding only",
+    "sources": "ui-workspace/lib/client.js:2218,2265-2278; ui-context-menu/lib/client.js:1258,1309-1367; web-frontend/dist/assets/index-BgUyXZcc.js character offset 653651",
+    "webAssetSha256": "c7e9821660f7e0f0524cc7cb1a375a5171eebbe68e167b80d290bd2ea391286d"
+  },
+  "capturedFragments": [
+    { "path": "MenuOverlay.js", "sourcePackage": "@deepseek-ai/dsh-client-ui-context-menu", "sourceFile": "lib/client.js", "sourceLines": "1167-1214", "sourceBundleSha256": "b7ca0eb8bf549c420eda1d3772544df65c3dbe35bcd213d008118c765889b5ac", "nativeFragmentNormalizedSha256": "ac4a7a27e38ca9117abf20574823adefeda957b8571cf1e20cf58384dd17a53d", "fixtureNormalizedSha256": "39b7226518262ea73fdf4ff6096cd79167933853c107198d217b9564f495dccd" },
+    { "path": "SlotOutlet.js", "sourcePackage": "@deepseek-ai/dsh-client-ui-renderer", "sourceFile": "lib/client.js", "sourceLines": "1116-1127", "sourceBundleSha256": "dbdb3f26bfbc1d143bc8a0eed5982a2507c4f0cf8027e7c170f3bed3604be356", "nativeFragmentNormalizedSha256": "cc68dca37bfb066f3acfdc0cd7fc1ddaec67c43e0ec709830e909fd761c1582d", "fixtureNormalizedSha256": "14af4eb922c8143b65a0ca20b215358e55261c78954bbdefd60690e783d65f68" }
+  ],
+  "fragmentNormalization": "UTF-8 with LF newlines; native function bodies are unchanged, only imports/accessor factories provide controlled fixture dependencies",
+  "contentOutlet": "Actual captured MenuOverlay calls renderSlot(contextMenu.content); captured SlotOutlet itself emits the empty terminal DIV anchor. Populated, foreign, duplicated or malformed anchors are not accepted.",
+  "renderer": "Pinned actual RC.2 Menu.tsx/CSS/keyboard with explicit anchor bridge for the newer returnFocus API; captured current overlay/outlet functions run above it. This is not the full installed current renderer.",
+  "rendererProvenance": "../native-rc2/source-files.json",
+  "license": "MIT; captured current fragments license in LICENSE (sha256 ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be); pinned renderer license at ../native-rc2/LICENSE",
+  "runtime": "In-memory React fixture with counter-only native actions; no installed software paths or Host services are used"
+}

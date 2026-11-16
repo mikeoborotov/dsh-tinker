@@ -36,7 +36,8 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react4 = __toESM(require("react"), 1);
+var import_react7 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives5 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/store.js
 var STORAGE_KEY = "dsh-workspace-plus:v1";
@@ -270,17 +271,80 @@ function findComposerTarget(scopes) {
   return null;
 }
 
+// src/appearance-icon.js
+var APPEARANCE_BRUSH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"/></svg>';
+
 // src/appearance-menu.js
-var BRUSH = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"/></svg>';
-function insertAppearanceItem(menu, id, label, onClick) {
+var ENGLISH_LABELS = { rename: "Rename", remove: "Delete workspace", reveal: ["Show in folder", "Show in Finder"] };
+function nativeWorkspaceMenuLabels(locale) {
+  const native = locale.bind("workspace");
+  let reveal = [];
+  try {
+    const open = locale.bind("open-in-app");
+    reveal = [open("menu.reveal"), open("menu.finder")];
+  } catch {
+  }
+  const rename = native("rename"), remove = native("delete.workspace");
+  return rename === "rename" || remove === "delete.workspace" ? void 0 : { rename, remove, reveal };
+}
+function knownMenuIcon(icon) {
+  if (icon?.tagName !== "SPAN" || icon.children.length !== 1) return false;
+  let glyph = icon.firstElementChild;
+  if (glyph.tagName === "SPAN") {
+    const outlet = glyph;
+    if (outlet.getAttribute("data-slot") !== "contextMenu.icon" || outlet.style.display !== "contents" || outlet.matches("[data-slot-error], [tabindex], [contenteditable], [role]") || outlet.children.length !== 1) return false;
+    glyph = outlet.firstElementChild;
+    if ([...outlet.childNodes].some((node) => node !== glyph && (node.nodeType !== 3 || node.textContent.trim()))) return false;
+  }
+  const unsafe = "a, button, input, select, textarea, foreignObject, script, iframe, [contenteditable], [tabindex], [data-slot-error]";
+  return glyph.tagName.toLowerCase() === "svg" && glyph.namespaceURI === "http://www.w3.org/2000/svg" && !glyph.matches(unsafe) && !glyph.querySelector(unsafe);
+}
+function workspaceMenuParts(menu, labels = ENGLISH_LABELS, ownedButton) {
+  const owned = [...menu.querySelectorAll("[data-wsp-menu]")];
+  if (menu.getAttribute("role") !== "menu" || menu.querySelector('[role="menu"]') || (ownedButton ? owned.length !== 1 || owned[0] !== ownedButton : owned.length !== 0)) return null;
+  const viewports = [...menu.children].filter((el) => el.tagName === "DIV" && el.getAttribute("role") === "presentation");
+  if (viewports.length !== 1) return null;
+  const viewport = viewports[0];
+  if ([...menu.children].some((el) => el !== viewport && !(el.tagName === "DIV" && el.getAttribute("aria-hidden") === "true" && !el.children.length))) return null;
+  const entries = [];
+  for (const wrapper of viewport.children) {
+    if (ownedButton && wrapper === ownedButton.parentElement && wrapper.hasAttribute("data-wsp-menu-wrapper") && wrapper.hasAttribute("data-wsp-owned") && wrapper.children.length === 1) continue;
+    if (wrapper.tagName !== "DIV") return null;
+    if (wrapper.hasAttribute("data-slot")) {
+      if (wrapper !== viewport.lastChild || wrapper.dataset.slot !== "contextMenu.content" || wrapper.style.display !== "contents" || wrapper.style.length !== 1 || wrapper.attributes.length !== 2 || wrapper.childNodes.length !== 0) return null;
+      continue;
+    }
+    if (wrapper.getAttribute("role") === "separator" && !wrapper.children.length) continue;
+    const children = [...wrapper.children];
+    const button = children.at(-1);
+    if (!button || button.tagName !== "BUTTON" || button.getAttribute("role") !== "menuitem" || button.hasAttribute("aria-haspopup") || button.hasAttribute("data-wsp-owned")) return null;
+    if (children.length !== 1 && !(children.length === 2 && children[0].getAttribute("role") === "separator" && !children[0].children.length)) return null;
+    const [icon, text, shortcut] = button.children;
+    if (button.children.length < 2 || button.children.length > 3 || !knownMenuIcon(icon) || text.tagName !== "SPAN" || text.children.length) return null;
+    if (shortcut && (shortcut.tagName !== "SPAN" || shortcut.getAttribute("aria-hidden") !== "true" || shortcut.querySelector("button, a, input"))) return null;
+    entries.push({ button, wrapper, icon, text, caption: text.textContent.trim() });
+  }
+  if (entries.length !== 2 && entries.length !== 3) return null;
+  if (!labels?.rename || !labels?.remove || labels.rename === labels.remove) return null;
+  const rename = entries.filter((entry) => entry.caption === labels.rename);
+  const remove = entries.filter((entry) => entry.caption === labels.remove);
+  if (rename.length !== 1 || remove.length !== 1) return null;
+  const others = entries.filter((entry) => entry !== rename[0] && entry !== remove[0]);
+  if (others.some((entry) => !(labels.reveal ?? []).includes(entry.caption))) return null;
+  let insertionAnchor = remove[0].wrapper;
+  let preceding = insertionAnchor.previousElementSibling;
+  if (ownedButton && preceding === ownedButton.parentElement) preceding = preceding.previousElementSibling;
+  if (preceding?.getAttribute("role") === "separator") insertionAnchor = preceding;
+  let following = rename[0].wrapper.nextElementSibling;
+  if (ownedButton && following === ownedButton.parentElement) following = following.nextElementSibling;
+  if (following) insertionAnchor = following;
+  return { rename: rename[0], remove: remove[0], insertionAnchor };
+}
+function insertAppearanceItem(menu, id, label, onClick, labels) {
+  const parts = workspaceMenuParts(menu, labels);
+  if (!parts) return null;
   const doc = menu.ownerDocument;
-  const buttons = [...menu.querySelectorAll('button[role="menuitem"]')].filter((b) => b.closest('[role="menu"]') === menu);
-  if (buttons.length !== 2) return null;
-  const [rename, remove] = buttons;
-  const iconTemplate = rename.querySelector(":scope > span:has(> svg)");
-  const labelTemplate = [...rename.children].find((el) => el.tagName === "SPAN" && el !== iconTemplate);
-  const wrapped = rename.parentElement !== menu && rename.parentElement?.parentElement === remove.parentElement?.parentElement;
-  if (!iconTemplate || !labelTemplate || !wrapped || rename.parentElement === remove.parentElement) return null;
+  const { button: rename, icon: iconTemplate, text: labelTemplate } = parts.rename;
   const wrapper = doc.createElement("div");
   wrapper.className = rename.parentElement.className;
   wrapper.setAttribute("data-wsp-owned", "");
@@ -294,24 +358,25 @@ function insertAppearanceItem(menu, id, label, onClick) {
   const icon = doc.createElement("span");
   icon.className = iconTemplate.className;
   icon.setAttribute("aria-hidden", "true");
-  icon.innerHTML = BRUSH;
+  icon.innerHTML = APPEARANCE_BRUSH_SVG;
   const text = doc.createElement("span");
   text.className = labelTemplate.className;
   text.textContent = label;
   button.append(icon, text);
   button.addEventListener("click", onClick);
   wrapper.append(button);
-  remove.parentElement.before(wrapper);
+  parts.insertionAnchor.before(wrapper);
   return button;
 }
 
 // src/adapters.js
 var OWNED = "data-wsp-owned";
 var rows = '[data-row-key^="workspace:"], [data-row-key^="session:"]';
-function createDOMAdapter({ document: doc, preferences, sessions, workspaces, currentModels, onEdit, translate: t }) {
+var NATIVE_WORKSPACE_MENU_WAIT_MS = 1100;
+function createDOMAdapter({ document: doc, preferences, sessions, workspaces, currentModels, onEdit, translate: t, workspaceMenuLabels }) {
   const win = doc.defaultView;
   let disposed = false, frame = 0, pendingMenu = null, menuTimer = 0;
-  const restorations = /* @__PURE__ */ new Map(), sessionIcons = /* @__PURE__ */ new Map(), requested = /* @__PURE__ */ new Set(), queue = [];
+  const restorations = /* @__PURE__ */ new Map(), sessionIcons = /* @__PURE__ */ new Map(), ownedMenus = /* @__PURE__ */ new Map(), requested = /* @__PURE__ */ new Set(), queue = [];
   let inflight = 0;
   const stats = { workspaceRows: 0, sessionRows: 0, incompatibleRows: 0 };
   function schedule() {
@@ -327,9 +392,9 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
     el.setAttribute("aria-hidden", "true");
     return el;
   }
-  function restore(record) {
-    record.icon.remove();
-    if (record.original.style.display === "none") record.original.style.display = record.display;
+  function restore(record2) {
+    record2.icon.remove();
+    if (record2.original.style.display === "none") record2.original.style.display = record2.display;
   }
   function ensureProjection(id) {
     const value = sessions.list.getSnapshot()?.byId?.[id];
@@ -355,15 +420,15 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
   function scanWorkspace(row, state) {
     const id = row.getAttribute("data-row-key").slice("workspace:".length);
     const appearance = state.features.workspaces ? preferences.appearance(id) : void 0;
-    let record = restorations.get(row);
-    if (record && (!record.original.isConnected || record.original.parentElement !== row.firstElementChild)) {
-      restore(record);
+    let record2 = restorations.get(row);
+    if (record2 && (!record2.original.isConnected || record2.original.parentElement !== row.firstElementChild)) {
+      restore(record2);
       restorations.delete(row);
-      record = void 0;
+      record2 = void 0;
     }
     if (!appearance) {
-      if (record) {
-        restore(record);
+      if (record2) {
+        restore(record2);
         restorations.delete(row);
       }
       return;
@@ -374,16 +439,16 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       return;
     }
     const signature = JSON.stringify(appearance);
-    if (!record) {
+    if (!record2) {
       const icon = ownSpan("wsp-workspace-icon");
-      record = { original, display: original.style.display, icon, signature: "" };
-      restorations.set(row, record);
+      record2 = { original, display: original.style.display, icon, signature: "" };
+      restorations.set(row, record2);
       slot.append(icon);
     }
     original.style.display = "none";
-    if (record.signature !== signature) {
-      fillAppearance(record.icon, appearance);
-      record.signature = signature;
+    if (record2.signature !== signature) {
+      fillAppearance(record2.icon, appearance);
+      record2.signature = signature;
     }
     stats.workspaceRows++;
   }
@@ -414,33 +479,71 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
     if (rect.height && rect.bottom > 0 && rect.top < win.innerHeight) ensureProjection(id);
     stats.sessionRows++;
   }
+  function cancelMenu() {
+    pendingMenu = null;
+    win.clearTimeout(menuTimer);
+  }
+  function knownWorkspace(anchor, id) {
+    const row = anchor.closest("[data-row-key]");
+    return anchor.isConnected && row?.getAttribute("data-row-key") === "workspace:" + id && row.querySelector("button") === anchor && workspaces.list.getSnapshot()?.items?.some((workspace) => workspace.workspaceId === id);
+  }
+  function menuLabels() {
+    try {
+      return workspaceMenuLabels?.();
+    } catch {
+      return null;
+    }
+  }
   function scanMenu(state) {
-    if (!pendingMenu || !state.features.workspaces) return;
-    const { anchor, id, existing } = pendingMenu;
-    if (!anchor.isConnected) {
-      pendingMenu = null;
+    if (!pendingMenu && !ownedMenus.size) return;
+    const labels = menuLabels();
+    for (const [menu2, record2] of ownedMenus) {
+      const parts = menu2.isConnected && record2.button.isConnected && workspaceMenuParts(menu2, labels, record2.button);
+      if (!state.features.workspaces || !parts || !knownWorkspace(record2.anchor, record2.id) || record2.anchor.getAttribute("aria-expanded") === "false") {
+        record2.wrapper.remove();
+        ownedMenus.delete(menu2);
+      } else {
+        if (record2.button.parentElement.nextElementSibling !== parts.insertionAnchor) parts.insertionAnchor.before(record2.button.parentElement);
+        const caption = record2.button.lastElementChild;
+        if (caption.textContent !== t("appearance")) caption.textContent = t("appearance");
+      }
+    }
+    if (!pendingMenu) return;
+    const { anchor, id, existing, nativeLifecycle } = pendingMenu;
+    if (!state.features.workspaces || !knownWorkspace(anchor, id) || anchor.getAttribute("aria-expanded") === "false" || nativeLifecycle && !anchor.matches('[data-context-menu-trigger][aria-haspopup="menu"][aria-expanded="true"]')) {
+      cancelMenu();
       return;
     }
-    const candidates = [...doc.querySelectorAll('[role="menu"]')].filter((menu2) => !existing.has(menu2));
-    const menu = candidates.find((el) => {
-      const buttons = el.querySelectorAll('button[role="menuitem"]');
-      return buttons.length === 2 && el.getBoundingClientRect().height > 0;
-    });
-    if (!menu || menu.querySelector("[data-wsp-menu]")) return;
-    insertAppearanceItem(menu, id, t("appearance"), (e) => {
-      e.stopPropagation();
-      if (anchor.isConnected) anchor.click();
-      pendingMenu = null;
+    const controlledId = anchor.getAttribute("aria-controls");
+    const candidates = [...doc.querySelectorAll('[role="menu"]')].filter((menu2) => !existing.has(menu2) && (!controlledId || menu2.id === controlledId) && menu2.getBoundingClientRect().height > 0 && win.getComputedStyle(menu2).visibility !== "hidden");
+    if (candidates.length > 1) {
+      cancelMenu();
+      return;
+    }
+    const menu = candidates[0];
+    if (!menu || !workspaceMenuParts(menu, labels)) return;
+    const button = insertAppearanceItem(menu, id, t("appearance"), (event) => {
+      event.stopPropagation();
+      if (disposed || !menu.isConnected || !button.isConnected || !preferences.getSnapshot().features.workspaces || !knownWorkspace(anchor, id) || anchor.getAttribute("aria-expanded") === "false" || ownedMenus.get(menu)?.button !== button || !workspaceMenuParts(menu, menuLabels(), button)) return;
+      cancelMenu();
+      anchor.click();
       win.queueMicrotask(() => {
-        if (!disposed) onEdit(id, anchor);
+        if (!disposed && preferences.getSnapshot().features.workspaces && knownWorkspace(anchor, id)) {
+          anchor.focus({ preventScroll: true });
+          onEdit(id, anchor);
+        }
       });
-    });
+    }, labels);
+    if (button) {
+      ownedMenus.set(menu, { button, wrapper: button.parentElement, anchor, id });
+      cancelMenu();
+    }
   }
   function scan() {
     const state = preferences.getSnapshot();
     stats.workspaceRows = stats.sessionRows = stats.incompatibleRows = 0;
-    for (const [row, record] of restorations) if (!row.isConnected) {
-      restore(record);
+    for (const [row, record2] of restorations) if (!row.isConnected) {
+      restore(record2);
       restorations.delete(row);
     }
     for (const [row, icon] of sessionIcons) if (!row.isConnected) {
@@ -451,35 +554,45 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       if (row.getAttribute("data-row-key").startsWith("workspace:")) scanWorkspace(row, state);
       else scanSession(row, state);
     }
-    if (!state.features.workspaces) {
-      for (const wrapper of doc.querySelectorAll("[data-wsp-menu-wrapper]")) wrapper.remove();
-    }
     scanMenu(state);
   }
   function onClick(event) {
     const button = event.target instanceof win.Element ? event.target.closest("button") : null;
     const row = button?.closest('[data-row-key^="workspace:"]');
-    if (!row || row.querySelector("button") !== button || !preferences.getSnapshot().features.workspaces) return;
+    if (!row || row.querySelector("button") !== button || !preferences.getSnapshot().features.workspaces || button.getAttribute("aria-expanded") === "true") {
+      cancelMenu();
+      return;
+    }
     const id = row.getAttribute("data-row-key").slice("workspace:".length);
-    if (!workspaces.list.getSnapshot()?.items?.some((w) => w.workspaceId === id)) return;
-    pendingMenu = { id, anchor: button, existing: new Set(doc.querySelectorAll('[role="menu"]')) };
+    if (!knownWorkspace(button, id)) {
+      cancelMenu();
+      return;
+    }
+    const nativeLifecycle = button.matches('[data-context-menu-trigger][aria-haspopup="menu"][aria-expanded]');
+    const owner = pendingMenu = { id, anchor: button, existing: new Set(doc.querySelectorAll('[role="menu"]')), nativeLifecycle };
     win.clearTimeout(menuTimer);
     menuTimer = win.setTimeout(() => {
+      if (pendingMenu !== owner) return;
       scanMenu(preferences.getSnapshot());
-      pendingMenu = null;
-    }, 300);
+      if (pendingMenu === owner) pendingMenu = null;
+    }, nativeLifecycle ? NATIVE_WORKSPACE_MENU_WAIT_MS : 300);
     schedule();
+  }
+  function onKeyDown(event) {
+    if (event.key === "Escape") cancelMenu();
   }
   const observer = new win.MutationObserver((records) => {
     if (records.some((r) => {
       if (r.target instanceof win.Element && r.target.closest("[" + OWNED + "]")) return false;
+      if (r.type === "attributes" && r.attributeName === "aria-expanded" && r.target.tagName !== "BUTTON") return false;
       const changed = [...r.addedNodes, ...r.removedNodes];
       return r.type === "attributes" || changed.some((n) => !(n instanceof win.Element && n.hasAttribute(OWNED)));
     })) schedule();
   });
-  observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-row-key"] });
+  observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-row-key", "aria-expanded"] });
   const unsub = [preferences.subscribe(schedule), sessions.list.subscribe(schedule), workspaces.list.subscribe(schedule), ...currentModels ? [currentModels.subscribe(schedule)] : []];
   doc.addEventListener("click", onClick, true);
+  doc.addEventListener("keydown", onKeyDown, true);
   doc.addEventListener("scroll", schedule, true);
   scan();
   return {
@@ -495,12 +608,14 @@ function createDOMAdapter({ document: doc, preferences, sessions, workspaces, cu
       win.clearTimeout(menuTimer);
       for (const fn of unsub) fn();
       doc.removeEventListener("click", onClick, true);
+      doc.removeEventListener("keydown", onKeyDown, true);
       doc.removeEventListener("scroll", schedule, true);
-      for (const record of restorations.values()) restore(record);
+      for (const record2 of restorations.values()) restore(record2);
       restorations.clear();
       for (const icon of sessionIcons.values()) icon.remove();
       sessionIcons.clear();
-      for (const wrapper of doc.querySelectorAll("[data-wsp-menu-wrapper]")) wrapper.remove();
+      for (const record2 of ownedMenus.values()) record2.wrapper.remove();
+      ownedMenus.clear();
       queue.length = 0;
       pendingMenu = null;
     }
@@ -572,19 +687,26 @@ function matchingSelection(groups, label) {
 }
 function providerGroups(section, menu, kind, groups) {
   const headingId = section.getAttribute("aria-labelledby");
-  if (kind === "codex" && menu.id.endsWith("-menu")) {
-    const ownerId = menu.id.slice(0, -5);
-    return groups.filter((group) => headingId === `${ownerId}-${group.id}`);
+  if (kind === "codex") {
+    if (section.classList.contains("codexModelSelectGroup") || section.hasAttribute("aria-labelledby")) {
+      if (!menu.id.endsWith("-menu")) return [];
+      const ownerId = menu.id.slice(0, -5);
+      return groups.filter((group) => headingId === `${ownerId}-${group.id}`);
+    }
+    const name2 = normalize(section.getAttribute("aria-label"));
+    const heading2 = section.querySelector(":scope > div.codexModelSelectGroupTitle");
+    if (!name2 || normalize(heading2?.textContent) !== name2) return [];
+    return groups.filter((group) => normalize(group.name) === name2);
   }
   const heading = section.querySelector(":scope > [data-menu-group-heading]");
   const name = normalize(heading?.textContent);
   const named = groups.filter((group) => normalize(group.name) === name || group.id === name);
   return named.length ? named : groups;
 }
-function ownedMutation(record, win) {
-  if (record.target instanceof win.Element && record.target.closest("[data-wsp-owned]")) return true;
-  if (record.type !== "childList") return false;
-  const changes = [...record.addedNodes, ...record.removedNodes];
+function ownedMutation(record2, win) {
+  if (record2.target instanceof win.Element && record2.target.closest("[data-wsp-owned]")) return true;
+  if (record2.type !== "childList") return false;
+  const changes = [...record2.addedNodes, ...record2.removedNodes];
   return changes.length > 0 && changes.every((node) => node instanceof win.Element && node.hasAttribute("data-wsp-owned"));
 }
 function attachModelMenuIcons(marker, directory) {
@@ -612,14 +734,18 @@ function attachModelMenuIcons(marker, directory) {
     if (menu !== observedMenu) {
       menuObserver.disconnect();
       observedMenu = menu;
-      if (menu) menuObserver.observe(menu, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["title", "aria-labelledby", "hidden"] });
+      if (menu) menuObserver.observe(menu, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["title", "aria-labelledby", "aria-label", "role", "class", "hidden"] });
     }
     const seen = /* @__PURE__ */ new Set();
     if (menu && menu.getAttribute("role") && !menu.hidden) {
       const groups = directory.getSnapshot().groups ?? [];
-      const selector = owner.kind === "codex" ? 'section.codexModelSelectGroup[role="group"]' : 'section[data-menu-group][role="group"]';
+      let selector = owner.kind === "codex" ? 'section.codexModelSelectGroup[role="group"]' : 'section[data-menu-group][role="group"]';
+      if (owner.kind === "codex" && menu.matches('.codexModelSelectMenu[role="group"]')) {
+        selector += ', :scope > div.codexModelSelectGroups[role="menu"] > section[role="group"][aria-label]';
+      }
       for (const section of menu.querySelectorAll(selector)) {
         if (section.hidden) continue;
+        if (owner.kind === "codex" && !section.classList.contains("codexModelSelectGroup") && !section.querySelector(":scope > div.codexModelSelectGroupTitle")) continue;
         const candidates = providerGroups(section, menu, owner.kind, groups);
         const buttons = owner.kind === "codex" ? section.querySelectorAll(':scope > button.codexModelSelectOption[role="menuitemradio"]') : section.querySelectorAll(':scope > button[role="menuitemradio"][title]');
         for (const button of buttons) {
@@ -627,28 +753,28 @@ function attachModelMenuIcons(marker, directory) {
           const label = modelLabel(button, owner.kind);
           if (!label) continue;
           const selection = matchingSelection(candidates, label), signature = JSON.stringify(selection);
-          let record = icons.get(button);
-          if (!record || record.icon.parentElement !== button) {
-            record?.icon.remove();
+          let record2 = icons.get(button);
+          if (!record2 || record2.icon.parentElement !== button) {
+            record2?.icon.remove();
             const icon = doc.createElement("span");
             icon.className = "wsp-icon wsp-model-menu-icon";
             icon.setAttribute("data-wsp-owned", "");
             icon.setAttribute("aria-hidden", "true");
             button.insertBefore(icon, button.firstChild);
-            record = { icon, signature: void 0 };
-            icons.set(button, record);
+            record2 = { icon, signature: void 0 };
+            icons.set(button, record2);
           }
-          if (record.signature !== signature) {
-            record.icon.innerHTML = markSVG(selection);
-            record.icon.dataset.vendor = vendorName(selection);
-            record.signature = signature;
+          if (record2.signature !== signature) {
+            record2.icon.innerHTML = markSVG(selection);
+            record2.icon.dataset.vendor = vendorName(selection);
+            record2.signature = signature;
           }
           seen.add(button);
         }
       }
     }
-    for (const [button, record] of icons) if (!seen.has(button)) {
-      record.icon.remove();
+    for (const [button, record2] of icons) if (!seen.has(button)) {
+      record2.icon.remove();
       icons.delete(button);
     }
   }
@@ -665,7 +791,7 @@ function attachModelMenuIcons(marker, directory) {
     scopeObserver.disconnect();
     menuObserver.disconnect();
     portalObserver.disconnect();
-    for (const record of icons.values()) record.icon.remove();
+    for (const record2 of icons.values()) record2.icon.remove();
     icons.clear();
     observedMenu = null;
   };
@@ -686,37 +812,37 @@ function createWorkspacePickerAdapter({ document: doc, preferences, workspaces, 
     });
   }
   function restore(target) {
-    const record = records.get(target);
-    if (!record) return;
-    record.icon.remove();
-    if (record.original.style.display === "none") record.original.style.display = record.display;
+    const record2 = records.get(target);
+    if (!record2) return;
+    record2.icon.remove();
+    if (record2.original.style.display === "none") record2.original.style.display = record2.display;
     records.delete(target);
   }
   function decorate(target, original, id, menu = false) {
     const appearance = preferences.getSnapshot().features.workspaces && preferences.appearance(id);
-    let record = records.get(target);
-    if (record && (record.original !== original || record.icon.parentElement !== target)) {
+    let record2 = records.get(target);
+    if (record2 && (record2.original !== original || record2.icon.parentElement !== target)) {
       restore(target);
-      record = null;
+      record2 = null;
     }
     if (!appearance || !original) {
       restore(target);
       return;
     }
-    if (!record) {
+    if (!record2) {
       const icon = doc.createElement("span");
       icon.className = "wsp-icon wsp-workspace-picker-icon" + (menu ? " wsp-workspace-picker-menu-icon" : "");
       icon.setAttribute(OWNED2, "");
       icon.setAttribute("aria-hidden", "true");
-      record = { original, display: original.style.display, icon, signature: "" };
-      records.set(target, record);
+      record2 = { original, display: original.style.display, icon, signature: "" };
+      records.set(target, record2);
       original.before(icon);
     }
     original.style.display = "none";
     const signature = JSON.stringify(appearance);
-    if (record.signature !== signature) {
-      fillAppearance(record.icon, appearance);
-      record.signature = signature;
+    if (record2.signature !== signature) {
+      fillAppearance(record2.icon, appearance);
+      record2.signature = signature;
     }
   }
   function owners() {
@@ -841,28 +967,53 @@ var CSS = `
 .wsp-workspace-picker-menu-icon{width:100%;height:100%;flex-basis:auto;font-size:14px}
 /* RC.2 has no row gap; the title adds 4px after our 6px margin. Move only the glyph. */
 .wsp-session-icon{margin-right:6px;transform:translateX(5px)}
-.wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.5;max-width:580px}
-.wsp-panel *{box-sizing:border-box}
-.wsp-panel h2{font-size:18px;font-weight:600;margin:0 0 16px}
-.wsp-panel p{margin:8px 0;color:var(--dsw-alias-label-secondary)}
-.wsp-panel button,.wsp-panel input,.wsp-panel select{font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-bg-layer-1);border-radius:8px;padding:8px 12px}
-.wsp-panel button{cursor:pointer}
-.wsp-panel button:hover{background:var(--dsw-alias-bg-overlay)}
-.wsp-panel button:focus-visible,.wsp-panel input:focus-visible,.wsp-panel select:focus-visible{outline:2px solid var(--dsw-alias-border-l4);outline-offset:2px}
-.wsp-panel button:disabled{opacity:.5;cursor:default}
-.wsp-panel button[aria-pressed=true]{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-overlay)}
-.wsp-panel label{display:block;margin:12px 0 4px}
-.wsp-panel input[type=text],.wsp-panel select{width:100%}
-.wsp-panel input[type=color]{width:44px;height:36px;padding:3px;cursor:pointer}
+.wsp-panel{color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.4;max-width:560px}
+.wsp-panel>h2{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.45px;margin:0 0 7px}
+.wsp-settings-tabs{display:flex;gap:18px;margin:0 0 18px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.wsp-settings-tabs>.wsp-settings-tab{box-sizing:border-box;flex:none;min-height:34px;padding:0 2px;margin:0 0 -1px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;box-shadow:none;color:var(--dsw-alias-label-secondary);font:inherit;font-size:14px;line-height:20px;white-space:nowrap;cursor:pointer}
+.wsp-settings-tabs>.wsp-settings-tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-label-primary)}
+.wsp-settings-tabs>.wsp-settings-tab:focus-visible,.wsp-settings-tabpanel:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-settings-tabpanel[hidden]{display:none}
+.wsp-settings-group{margin:0 0 15px}
+.wsp-settings-group>h3{font-size:12px;line-height:17px;font-weight:600;margin:0 0 7px}
+.wsp-settings-card{border:1px solid var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l4));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-layer-2));overflow:hidden}
+.wsp-settings-feature{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:53px;padding:10px 13px}
+.wsp-settings-feature+.wsp-settings-feature{border-top:1px solid var(--dsw-alias-border-l3)}
+.wsp-settings-feature-copy{min-width:0}
+.wsp-settings-feature-label{font-size:12px;line-height:17px}
+.wsp-settings-feature-description{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary);margin-top:1px}
+.wsp-settings-recovery{font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary)}
+.wsp-settings-recovery>h3,.wsp-settings-unread-recovery>h3{margin:0 0 9px;font-size:12px;line-height:17px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.wsp-settings-recovery>p{margin:0 0 9px}
+.wsp-settings-unread-recovery{margin-top:16px}
 .wsp-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* Modal, its header/X and footer Buttons come from the host's public native primitives.
    Never put wsp-panel on that shell: its broad settings selectors override native controls. */
-.wsp-appearance-dialog{width:min(540px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
-.wsp-appearance-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
-.wsp-appearance-body{display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:22px}
+.wsp-appearance-dialog{width:min(760px,100%);height:620px;max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-appearance-content{flex:1;min-height:0;overflow:hidden}
+.wsp-appearance-content>:first-child{flex-shrink:0}
+.wsp-appearance-content>:last-child{flex:1;min-height:0;overflow:hidden}
+.wsp-appearance-body{display:grid;grid-template-columns:208px minmax(0,1fr);gap:24px;height:100%;min-height:0;font-size:14px;line-height:22px}
 .wsp-appearance-body *{box-sizing:border-box}
-.wsp-kind-tabs{display:flex;gap:4px;align-self:flex-start;padding:3px;background:var(--dsw-alias-bg-layer-1);border-radius:var(--dsw-radius-md)}
+.wsp-appearance-context{display:flex;flex-direction:column;gap:28px;min-width:0;min-height:0;padding-right:24px;border-right:1px solid var(--dsw-alias-border-l3);overflow-y:auto;overscroll-behavior:contain}
+.wsp-preview-divider{width:100%;margin:0;border:0;border-top:1px solid var(--dsw-alias-border-l3);flex:none}
+.wsp-kind-section>.wsp-field-label{margin-bottom:6px}
+.wsp-kind-tabs{display:flex;flex-direction:column;gap:5px;width:100%}
+.wsp-kind-tabs .wsp-kind-choice{justify-content:flex-start;gap:8px;width:100%;height:44px;padding:8px 12px;text-align:left}
+.wsp-kind-choice>svg{flex:none}
+.wsp-kind-choice>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-kind-tabs button[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l4)}
+.wsp-appearance-editor{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-mode-panel{display:flex;flex:1;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.wsp-mode-panel>*{flex-shrink:0}
+.wsp-mode-panel>.wsp-field-label{margin-bottom:-6px}
+.wsp-search-category{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.wsp-category-anchor{width:100%;min-width:0}
+.wsp-category-anchor .wsp-category-trigger{width:100%;height:44px;justify-content:space-between;gap:8px;padding:7px 14px;border-radius:var(--dsw-radius-lg);text-align:left}
+.wsp-category-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsp-category-trigger>svg{flex:none}
+/* Portal card sizing only. Menu owns material, rows, hover, checks and keyboard. */
+.wsp-emoji-category-menu{min-width:0;max-width:calc(100vw - 24px)}
 /* Native Workspace Rename uses this raw-input shape, not the smaller public Input. */
 .wsp-appearance-input{width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;outline:none}
 .wsp-appearance-input:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
@@ -870,15 +1021,37 @@ var CSS = `
 .wsp-appearance-input option{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .wsp-field-label{display:block;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary)}
 .wsp-color-section{display:flex;flex-direction:column;gap:6px}
-.wsp-appearance-palette{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:4px 2px}
+.wsp-appearance-palette{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:7px}
 .wsp-appearance-palette .wsp-color-swatch{width:28px;height:28px;padding:0;border-radius:50%;corner-shape:round;background:var(--wsp-art-color)}
 .wsp-appearance-palette .wsp-color-swatch:hover:not(:disabled){background:var(--wsp-art-color)}
 .wsp-color-swatch[aria-pressed=true]{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
-.wsp-custom-color{width:28px;height:28px;padding:0;border:1px solid var(--dsw-alias-border-l4);border-radius:50%;corner-shape:round;background:transparent;cursor:pointer;overflow:hidden}
-.wsp-custom-color::-webkit-color-swatch-wrapper{padding:0}
-.wsp-custom-color::-webkit-color-swatch{border:0;border-radius:50%}
-.wsp-custom-color::-moz-color-swatch{border:0;border-radius:50%}
-.wsp-choice-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;max-height:226px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.wsp-appearance-palette .wsp-custom-color,.wsp-appearance-palette .wsp-custom-color:hover:not(:disabled),.wsp-appearance-palette .wsp-custom-color:active:not(:disabled){width:28px;height:28px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:conic-gradient(#ff0000 0deg,#ffff00 60deg,#00ff00 120deg,#00ffff 180deg,#0000ff 240deg,#ff00ff 300deg,#ff0000 360deg);box-shadow:none;cursor:pointer}
+.wsp-custom-color:focus-visible{outline:2px solid var(--dsw-alias-label-primary);outline-offset:3px}
+.wsp-color-picker{z-index:1100;box-sizing:border-box;display:flex;flex-direction:column;width:510px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 12px - max(12px,var(--dsh-frame-overlay-top,12px)));overflow:hidden;border:.5px solid var(--dsw-alias-border-l3);border-radius:16px;corner-shape:round;box-shadow:var(--dsw-elevation-prominent);font:inherit;font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary);outline:none}
+.wsp-color-picker *{box-sizing:border-box}
+.wsp-color-picker-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0;flex:none}
+.wsp-color-picker-header h3{margin:0;font-size:14px;line-height:22px;font-weight:600}
+.wsp-color-picker-header .wsp-color-close{width:28px;height:28px;padding:0;color:var(--dsw-alias-label-secondary)}
+.wsp-color-picker-content{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:20px;padding:14px 16px 16px;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-color-plane{position:relative;min-width:0;height:248px;border-radius:12px;corner-shape:round;background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),var(--wsp-hue);overflow:hidden;cursor:crosshair;touch-action:none;outline:none}
+.wsp-color-handle{position:absolute;width:14px;height:14px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}
+.wsp-color-controls{display:flex;flex-direction:column;gap:13px;min-width:0}
+.wsp-color-channel{display:flex;flex-direction:column;gap:7px;min-width:0}
+.wsp-color-channel>span{display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
+.wsp-color-channel output{font-size:10px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
+.wsp-color-range{appearance:none;width:100%;height:16px;border:0;border-radius:12px;margin:0;cursor:pointer;touch-action:none;outline:none}
+.wsp-color-range::-webkit-slider-thumb{appearance:none;width:16px;height:20px;border:2px solid #fff;border-radius:8px;background:transparent;box-shadow:0 1px 4px #0009}
+.wsp-color-range::-moz-range-thumb{width:12px;height:16px;border:2px solid #fff;border-radius:8px;background:transparent;box-shadow:0 1px 4px #0009}
+.wsp-color-hex-field{min-width:0}
+.wsp-color-hex-field>label{display:block;margin-bottom:7px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
+.wsp-color-hex-row{display:flex;align-items:center;gap:10px;min-width:0}
+.wsp-color-current{width:38px;height:38px;flex:none;border-radius:10px}
+.wsp-color-hex{width:100%;min-width:0;height:40px;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:12px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;outline:none}
+.wsp-color-plane:focus-visible,.wsp-color-range:focus-visible,.wsp-color-hex:focus-visible{outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-color-error{margin:7px 0 0;color:var(--dsw-alias-state-error-primary);font-size:11px;line-height:16px}
+.wsp-color-picker-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:.5px solid var(--dsw-alias-border-l3);flex:none}
+@media(max-width:520px){.wsp-color-picker-content{gap:14px;padding-left:14px;padding-right:14px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.wsp-color-current{width:28px;height:34px}.wsp-color-hex-row{gap:6px}.wsp-color-hex{padding:7px 8px;font-size:12px}.wsp-color-channel>span{font-size:10px}}
+.wsp-choice-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:40px;align-content:start;gap:6px;flex:1;min-height:80px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
 .wsp-choice-grid .wsp-choice{height:40px;min-width:0;width:100%;padding:0}
 .wsp-choice[aria-pressed=true]{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l4)}
 .wsp-choice .wsp-icon{width:22px;height:22px;flex-basis:22px}
@@ -886,42 +1059,102 @@ var CSS = `
 .wsp-results-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .wsp-help{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .wsp-preview-section{display:flex;flex-direction:column;gap:6px}
-.wsp-list-preview{display:flex;align-items:center;height:34px;gap:6px;padding:0 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-sidebar-fill);font-size:14px;line-height:20px}
+.wsp-list-preview{display:flex;align-items:center;min-width:0;height:34px;gap:6px;padding:0;border:0;border-radius:0;background:transparent;font-size:14px;line-height:20px}
 .wsp-list-preview>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wsp-list-preview .wsp-icon{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
 .wsp-list-preview .wsp-native-folder{width:16px;height:16px;flex-basis:16px;color:var(--dsw-alias-label-secondary)}
 .wsp-reset-action{margin-right:auto}
-.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;min-height:188px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
+.wsp-image-dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;flex:1;min-height:220px;border:1px dashed var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);text-align:center}
 .wsp-image-dropzone.wsp-is-dragging{border-color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
 .wsp-drop-title{font-size:16px;line-height:24px}
 .wsp-hidden-file{display:none}
 .wsp-error{color:var(--dsw-alias-state-error-primary);margin:10px 0}
-.wsp-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.wsp-toggle button{min-width:60px}
-@media(max-width:480px){.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
+/* The profile editor uses the native Modal shell, not the broad wsp-panel settings rules. */
+.wsp-profile-dialog{width:min(388px,100%);max-height:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.wsp-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wsp-profile-content>p{font-size:12px;line-height:20px;color:var(--dsw-alias-label-secondary)}
+.wsp-profile-body{display:flex;flex-direction:column;align-items:center;gap:23px;font-size:14px;line-height:22px;min-width:0;padding:3px 0 0}
+.wsp-profile-body *{box-sizing:border-box}
+.wsp-profile-body .wsp-profile-portrait{position:relative;display:inline-flex;width:84px;height:84px;min-width:84px;flex:none;padding:0;border:0;border-radius:50%;corner-shape:round;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.wsp-profile-body .wsp-profile-portrait:hover:not(:disabled){background:transparent}
+.wsp-profile-avatar{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden;border-radius:50%;corner-shape:round;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}
+.wsp-profile-avatar>svg{width:65%;height:65%}
+.wsp-profile-avatar>img{display:block;width:100%;height:100%;object-fit:cover}
+.wsp-profile-camera{position:absolute;right:-1px;bottom:-1px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:3px solid var(--dsw-alias-bg-layer-2);border-radius:50%;corner-shape:round;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-2);pointer-events:none}
+.wsp-profile-camera>svg{width:13px;height:13px}
+.wsp-profile-body .wsp-profile-dragging{outline:2px dashed var(--dsw-alias-label-primary);outline-offset:4px}
+.wsp-profile-dragging .wsp-profile-avatar{opacity:.72}
+.wsp-profile-name{width:100%;max-width:282px;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:22px;text-align:center;outline:none}
+.wsp-profile-name::placeholder{color:var(--dsw-alias-label-tertiary)}
+.wsp-profile-name:focus-visible,.wsp-profile-portrait:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:3px}
+.wsp-profile-file{display:none}
+.wsp-profile-body .wsp-profile-reset{display:inline-flex;gap:6px;max-width:100%;height:auto;min-height:28px;padding:3px 0;font-size:12px;line-height:18px;white-space:normal;text-align:center;color:var(--dsw-alias-label-secondary)}
+.wsp-profile-reset>svg{width:14px;height:14px;flex:none}
+.wsp-profile-error{display:flex;flex-direction:column;align-self:stretch;gap:10px;font-size:13px;line-height:20px;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
+.wsp-profile-error>button{align-self:center;max-width:100%;height:auto;min-height:28px;white-space:normal;text-align:center}
+@media(max-width:430px){.wsp-profile-body{gap:20px}.wsp-profile-body .wsp-profile-reset{font-size:11px}}
+@media(max-width:640px){.wsp-appearance-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px}.wsp-appearance-context{gap:8px;padding:0 0 12px;border-right:0;border-bottom:1px solid var(--dsw-alias-border-l3);overflow:visible}.wsp-preview-section{flex-direction:row;align-items:center;justify-content:space-between;gap:12px}.wsp-preview-section>.wsp-field-label{max-width:55%}.wsp-preview-section>.wsp-list-preview{max-width:45%}.wsp-preview-divider{display:none}.wsp-kind-tabs{flex-direction:row;gap:4px}.wsp-kind-tabs .wsp-kind-choice{flex:1;min-width:0;height:36px;padding:4px 8px;gap:6px}.wsp-search-category{grid-template-columns:minmax(0,1fr);gap:8px}.wsp-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:480px){.wsp-kind-choice>svg{display:none}.wsp-appearance-palette{gap:10px}.wsp-reset-action{font-size:12px;padding:0 8px}}
 `;
+
+// locale/en.json
+var en_default = {
+  meta: {
+    title: "Tinker",
+    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
+    detail: "DETAIL.md"
+  }
+};
+
+// locale/ru.json
+var ru_default = {
+  meta: {
+    title: "Tinker",
+    description: "Everyday usability upgrades - workspace icons, AI model logos, unread reminders, profile styling, cleaner sidebar.",
+    detail: "DETAIL.md"
+  }
+};
 
 // src/locales.js
 var en = {
   language: "en",
+  settingsDescription: en_default.meta.description,
+  featuresTab: "Features",
+  recoveryTab: "Recovery",
+  settingsTabsLabel: "Tinker settings",
+  recoveryEmpty: "No recovery copy is available.",
+  settingsAppearance: "Appearance",
+  settingsModelLogos: "AI model logos",
+  settingsChats: "Chats",
   appearance: "Appearance",
-  changeAppearance: "Change workspace appearance",
+  changeAppearance: "Workspace appearance",
   close: "Close",
   kind: "Icon type",
+  selectIconType: "Select icon type",
+  selectIconColor: "Select icon color",
+  selectIcon: "Select icon",
+  selectEmoji: "Select emoji",
+  uploadImage: "Upload image",
   icon: "Icon",
   emoji: "Emoji",
   image: "Image",
   color: "Color",
   customColor: "Custom color",
+  colorHue: "Hue",
+  colorSaturation: "Saturation",
+  colorBrightness: "Brightness",
+  colorArea: "Saturation and brightness",
+  applyColor: "Apply",
+  colorHexError: "Enter a HEX color such as #4176e6.",
   searchIcons: "Search icons",
   searchEmoji: "Search emoji",
   emojiCategory: "Emoji category",
   emojiCatalog: "Emoji catalog",
   allEmoji: "All categories",
-  customEmoji: "Paste your own emoji",
+  customEmoji: "Or paste your emoji",
   noResults: "No results",
   showMore: "Show more",
-  previewLabel: "Preview in the Workspace list",
+  previewLabel: "Preview in workspace list",
   upload: "Choose image",
   imageDropArea: "Image upload area",
   dropImage: "Drop an image here",
@@ -937,22 +1170,55 @@ var en = {
   cancel: "Cancel",
   reset: "Restore default",
   loading: "Loading...",
-  workspaces: "Workspace icons and appearance menu",
-  composer: "Model logos in the selector and list",
-  sessions: "Model logos beside chats",
-  unread: "Mark chats unread",
+  workspaces: "Workspace appearance",
+  workspacesDescription: 'Adds "Appearance" option to set custom workspace icons',
+  composer: "In the model picker",
+  composerDescription: "Show logos in the selector and model list",
+  sessions: "Beside chats",
+  sessionsDescription: "Show the selected model logo beside each chat in left sidebar",
+  unread: "Mark as unread",
+  unreadDescription: "Keep a reminder until the chat is reopened",
   markUnread: "Mark as unread",
   unreadLabel: "Unread reminder",
   unreadFailed: "Could not save the reminder.",
+  unreadRecoveryTitle: "Unread reminders",
   unreadRecovery: "Unread reminders could not be read. Back up before resetting.",
   unreadResetConfirm: "Remove only manual unread reminders? Appearance and chats will not change.",
-  branding: "Hide sidebar branding",
+  branding: "Hide Deepseek Harness logo",
+  brandingDescription: "Keep navigation without the sidebar brand",
+  profileFeature: "Profile appearance",
+  profileFeatureDescription: 'Adds "Appearance" option to set local profile name and picture',
+  profileCustomize: "Appearance",
+  profileDialogTitle: "DeepSeek Harness profile appearance",
+  profileDescription: "Customize how your profile appears in the bottom-left corner of DeepSeek Harness. Your DeepSeek account details are not changed.",
+  profileName: "Profile name",
+  profileReset: "Reset to DeepSeek account details",
+  profileChooseImage: "Choose a profile image",
+  profileSaving: "Saving...",
+  profileRetry: "Retry reading profile appearance",
+  profileReadError: "Profile appearance could not be read. Retry reading. Saved data has not been replaced.",
+  profileWriteError: "Profile appearance could not be saved. Check available browser storage, then retry.",
+  profileInvalidData: "Saved profile appearance is invalid. It has not been replaced. Restore valid saved data before retrying.",
+  profileUnsupportedVersion: "Saved profile appearance uses an unsupported version. It has not been replaced. Use a compatible Tinker version before retrying.",
+  profileNameInvalid: "Profile name must be text of up to 80 characters.",
+  profileImageInvalid: "This is not a supported local PNG copy. Choose the image again.",
+  profileEnabledInvalid: "Profile appearance could not be switched. Retry reading profile appearance.",
+  profileSaveError: "Profile appearance could not be saved. Your changes are still in this dialog.",
+  profileImageType: "Choose a PNG, JPEG, WebP, GIF or AVIF image.",
+  profileImageFileSize: "Image exceeds 5 MB.",
+  profileImageDecode: "This image could not be read. Choose another file.",
+  profileImageOneFile: "Choose one image at a time.",
+  profileImageDropFiles: "Drop an image file, not a link.",
+  profileImageSize: "Image is too large (maximum 16 million pixels).",
   on: "On",
   off: "Off",
   editWorkspace: "Workspace appearance",
   chooseWorkspace: "Choose a Workspace",
   adapterHint: "Compatible with DSH 0.2.0 RC.2. Each feature can be disabled independently. Interface changes in later DSH versions may require an update.",
-  recoveryHint: "Storage recovery only, not settings transfer. Keep the original data or pre-upgrade copy for recovery.",
+  recoveryTitle: "Advanced: recovery copy",
+  recoveryHint: "A limited recovery copy, not a full backup",
+  recoveryScope: "Includes Workspace appearance and five feature flags only. Profile appearance and unread reminders are separate and are not included.",
+  recoverySource: "Copy may contain data saved before an update. No import is available.",
   backup: "Save recovery copy",
   retry: "Retry reading saved settings",
   resetAll: "Reset plugin settings",
@@ -960,21 +1226,40 @@ var en = {
 };
 var ru = {
   language: "ru",
+  settingsDescription: ru_default.meta.description,
+  featuresTab: "\u0424\u0443\u043D\u043A\u0446\u0438\u0438",
+  recoveryTab: "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435",
+  settingsTabsLabel: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 Tinker",
+  recoveryEmpty: "\u041A\u043E\u043F\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430.",
+  settingsAppearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
+  settingsModelLogos: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0418\u0418",
+  settingsChats: "\u0427\u0430\u0442\u044B",
   appearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
-  changeAppearance: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
+  changeAppearance: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
   close: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
   kind: "\u0422\u0438\u043F \u0437\u043D\u0430\u0447\u043A\u0430",
+  selectIconType: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0442\u0438\u043F \u0438\u043A\u043E\u043D\u043A\u0438",
+  selectIconColor: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0446\u0432\u0435\u0442 \u0438\u043A\u043E\u043D\u043A\u0438",
+  selectIcon: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043A\u043E\u043D\u043A\u0443",
+  selectEmoji: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043C\u043E\u0434\u0437\u0438",
+  uploadImage: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
   icon: "\u0418\u043A\u043E\u043D\u043A\u0430",
   emoji: "Emoji",
   image: "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
   color: "\u0426\u0432\u0435\u0442",
   customColor: "\u0421\u0432\u043E\u0439 \u0446\u0432\u0435\u0442",
+  colorHue: "\u0422\u043E\u043D",
+  colorSaturation: "\u041D\u0430\u0441\u044B\u0449\u0435\u043D\u043D\u043E\u0441\u0442\u044C",
+  colorBrightness: "\u042F\u0440\u043A\u043E\u0441\u0442\u044C",
+  colorArea: "\u041D\u0430\u0441\u044B\u0449\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u0438 \u044F\u0440\u043A\u043E\u0441\u0442\u044C",
+  applyColor: "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C",
+  colorHexError: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 HEX-\u0446\u0432\u0435\u0442, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 #4176e6.",
   searchIcons: "\u041F\u043E\u0438\u0441\u043A \u0438\u043A\u043E\u043D\u043E\u043A",
   searchEmoji: "\u041F\u043E\u0438\u0441\u043A emoji",
   emojiCategory: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F emoji",
   emojiCatalog: "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 emoji",
   allEmoji: "\u0412\u0441\u0435 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438",
-  customEmoji: "\u0412\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0441\u0432\u043E\u0439 emoji",
+  customEmoji: "\u0418\u043B\u0438 \u0432\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0441\u0432\u043E\u0439 \u044D\u043C\u043E\u0434\u0437\u0438",
   noResults: "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E",
   showMore: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0435\u0449\u0451",
   previewLabel: "\u041F\u0440\u0435\u0432\u044C\u044E \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 Workspace",
@@ -993,22 +1278,55 @@ var ru = {
   cancel: "\u041E\u0442\u043C\u0435\u043D\u0430",
   reset: "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E",
   loading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430...",
-  workspaces: "\u0418\u043A\u043E\u043D\u043A\u0438 \u0438 \u043C\u0435\u043D\u044E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F Workspaces",
-  composer: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0432 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u0435 \u0438 \u0441\u043F\u0438\u0441\u043A\u0435",
-  sessions: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u043C\u043E\u0434\u0435\u043B\u0435\u0439 \u0440\u044F\u0434\u043E\u043C \u0441 \u0447\u0430\u0442\u0430\u043C\u0438",
-  unread: "\u041F\u043E\u043C\u0435\u0442\u0438\u0442\u044C \u0447\u0430\u0442\u044B \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u043C\u0438",
+  workspaces: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspaces",
+  workspacesDescription: "\u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0443\u043D\u043A\u0442 \xAB\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435\xBB \u0434\u043B\u044F \u0441\u0432\u043E\u0438\u0445 \u0437\u043D\u0430\u0447\u043A\u043E\u0432 Workspace",
+  composer: "\u0412 \u0432\u044B\u0431\u043E\u0440\u0435 \u043C\u043E\u0434\u0435\u043B\u0438",
+  composerDescription: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F\u044B \u0432 \u0441\u0435\u043B\u0435\u043A\u0442\u043E\u0440\u0435 \u0438 \u0441\u043F\u0438\u0441\u043A\u0435 \u043C\u043E\u0434\u0435\u043B\u0435\u0439",
+  sessions: "\u0420\u044F\u0434\u043E\u043C \u0441 \u0447\u0430\u0442\u0430\u043C\u0438",
+  sessionsDescription: "\u041B\u043E\u0433\u043E\u0442\u0438\u043F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438 \u0443 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0447\u0430\u0442\u0430 \u0432 \u043B\u0435\u0432\u043E\u0439 \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438",
+  unread: "\u041C\u0435\u0442\u043A\u0430 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438",
+  unreadDescription: "\u041D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435 \u0434\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0433\u043E \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u044F \u0447\u0430\u0442\u0430",
   markUnread: "\u041F\u043E\u043C\u0435\u0442\u0438\u0442\u044C \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u043C",
   unreadLabel: "\u041D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0435 \u043D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435",
   unreadFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043C\u0435\u0442\u043A\u0443.",
+  unreadRecoveryTitle: "\u041C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438",
   unreadRecovery: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u043E\u043F\u0438\u044E \u043F\u0435\u0440\u0435\u0434 \u0441\u0431\u0440\u043E\u0441\u043E\u043C.",
   unreadResetConfirm: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0440\u0443\u0447\u043D\u044B\u0435 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438? \u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0438 \u0447\u0430\u0442\u044B \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442\u0441\u044F.",
-  branding: "\u0421\u043A\u0440\u044B\u0442\u044C \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0432 \u0431\u043E\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043D\u0435\u043B\u0438",
+  branding: "\u0421\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043B\u043E\u0433\u043E\u0442\u0438\u043F Deepseek Harness",
+  brandingDescription: "\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F, \u043B\u043E\u0433\u043E\u0442\u0438\u043F \u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F",
+  profileFeature: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileFeatureDescription: "\u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0443\u043D\u043A\u0442 \xAB\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435\xBB \u0434\u043B\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u0438\u043C\u0435\u043D\u0438 \u0438 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileCustomize: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435",
+  profileDialogTitle: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F DeepSeek Harness",
+  profileDescription: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0432 \u043B\u0435\u0432\u043E\u043C \u043D\u0438\u0436\u043D\u0435\u043C \u0443\u0433\u043B\u0443 DeepSeek Harness. \u041D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u0430\u043C\u043E\u0433\u043E \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 DeepSeek.",
+  profileName: "\u0418\u043C\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileReset: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u043A \u0434\u0430\u043D\u043D\u044B\u043C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 DeepSeek",
+  profileChooseImage: "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileSaving: "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435...",
+  profileRetry: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u0447\u0442\u0435\u043D\u0438\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F",
+  profileReadError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0447\u0442\u0435\u043D\u0438\u0435. \u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B.",
+  profileWriteError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0441\u0432\u043E\u0431\u043E\u0434\u043D\u043E\u0435 \u043C\u0435\u0441\u0442\u043E \u0432 \u0445\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430 \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u043F\u043E\u043F\u044B\u0442\u043A\u0443.",
+  profileInvalidData: "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u043D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u043E. \u0414\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B. \u0412\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0435 \u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u044B\u043C \u0447\u0442\u0435\u043D\u0438\u0435\u043C.",
+  profileUnsupportedVersion: "\u0412\u0435\u0440\u0441\u0438\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442\u0441\u044F. \u0414\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u0438\u043C\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E Tinker \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u044B\u043C \u0447\u0442\u0435\u043D\u0438\u0435\u043C.",
+  profileNameInvalid: "\u0418\u043C\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u0442\u0435\u043A\u0441\u0442\u043E\u043C \u0434\u043E 80 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432.",
+  profileImageInvalid: "\u042D\u0442\u043E \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u0430\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u0430\u044F PNG-\u043A\u043E\u043F\u0438\u044F. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.",
+  profileEnabledInvalid: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0447\u0442\u0435\u043D\u0438\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0444\u0438\u043B\u044F.",
+  profileSaveError: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F. \u0412\u0430\u0448\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C \u0432 \u044D\u0442\u043E\u043C \u043E\u043A\u043D\u0435.",
+  profileImageType: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 PNG, JPEG, WebP, GIF \u0438\u043B\u0438 AVIF.",
+  profileImageFileSize: "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 5 \u041C\u0411.",
+  profileImageDecode: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u0440\u0443\u0433\u043E\u0439 \u0444\u0430\u0439\u043B.",
+  profileImageOneFile: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043E\u0434\u043D\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0437\u0430 \u0440\u0430\u0437.",
+  profileImageDropFiles: "\u041F\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0444\u0430\u0439\u043B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F, \u043D\u0435 \u0441\u0441\u044B\u043B\u043A\u0443.",
+  profileImageSize: "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 (\u043C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 16 \u043C\u0438\u043B\u043B\u0438\u043E\u043D\u043E\u0432 \u043F\u0438\u043A\u0441\u0435\u043B\u0435\u0439).",
   on: "\u0412\u043A\u043B.",
   off: "\u0412\u044B\u043A\u043B.",
   editWorkspace: "\u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspace",
   chooseWorkspace: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 Workspace",
   adapterHint: "\u0421\u043E\u0432\u043C\u0435\u0441\u0442\u0438\u043C\u043E\u0441\u0442\u044C: DSH 0.2.0 RC.2. \u041A\u0430\u0436\u0434\u0430\u044F \u0444\u0443\u043D\u043A\u0446\u0438\u044F \u043E\u0442\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E. \u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0438\u043D\u0442\u0435\u0440\u0444\u0435\u0439\u0441\u0430 \u0432 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0445 \u0432\u0435\u0440\u0441\u0438\u044F\u0445 DSH \u043C\u043E\u0433\u0443\u0442 \u043F\u043E\u0442\u0440\u0435\u0431\u043E\u0432\u0430\u0442\u044C \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043F\u043B\u0430\u0433\u0438\u043D\u0430.",
-  recoveryHint: "\u0422\u043E\u043B\u044C\u043A\u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 \u0434\u0430\u043D\u043D\u044B\u0445, \u043D\u0435 \u043F\u0435\u0440\u0435\u043D\u043E\u0441 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u0438\u0441\u0445\u043E\u0434\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u043B\u0438 \u043A\u043E\u043F\u0438\u044E \u0434\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F.",
+  recoveryTitle: "\u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E: \u043A\u043E\u043F\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F",
+  recoveryHint: "\u041A\u043E\u043F\u0438\u044F \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F, \u043D\u0435 \u043F\u043E\u043B\u043D\u044B\u0439 \u0431\u044D\u043A\u0430\u043F",
+  recoveryScope: "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 Workspaces \u0438 \u043F\u044F\u0442\u044C \u0444\u043B\u0430\u0433\u043E\u0432 \u0444\u0443\u043D\u043A\u0446\u0438\u0439. \u041E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u0438 \u043C\u0435\u0442\u043A\u0438 \u043D\u0435\u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u043E\u0441\u0442\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E \u0438 \u0432 \u043A\u043E\u043F\u0438\u044E \u043D\u0435 \u0432\u0445\u043E\u0434\u044F\u0442.",
+  recoverySource: "\u041A\u043E\u043F\u0438\u044F \u043C\u043E\u0436\u0435\u0442 \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435, \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F. \u0418\u043C\u043F\u043E\u0440\u0442\u0430 \u043D\u0435\u0442.",
   backup: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043A\u043E\u043F\u0438\u044E \u0434\u043B\u044F \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F",
   retry: "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u0447\u0442\u0435\u043D\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A",
   resetAll: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u043B\u0430\u0433\u0438\u043D\u0430",
@@ -1021,8 +1339,8 @@ for (const icon of ICONS) {
 var dictionaries = { en, ru, zh: en };
 
 // src/appearance-dialog.jsx
-var import_react2 = __toESM(require("react"), 1);
-var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_react3 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/use-store.js
 var import_react = require("react");
@@ -4739,41 +5057,277 @@ async function imageData(file) {
   }
 }
 
+// src/color-picker.jsx
+var import_react2 = __toESM(require("react"), 1);
+var import_react_dom = require("react-dom");
+var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+
+// src/colors.js
+var clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+function normalizeHex(value) {
+  if (typeof value !== "string") return null;
+  let hex = value.trim().replace(/^#/, "");
+  if (/^[0-9a-f]{3}$/i.test(hex)) hex = [...hex].map((char) => char + char).join("");
+  return /^[0-9a-f]{6}$/i.test(hex) ? "#" + hex.toLowerCase() : null;
+}
+function hexToHsv(value) {
+  const hex = normalizeHex(value);
+  if (!hex) return null;
+  const [r, g, b] = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+  let hue = 0;
+  if (delta) {
+    if (max === r) hue = (g - b) / delta;
+    else if (max === g) hue = (b - r) / delta + 2;
+    else hue = (r - g) / delta + 4;
+    hue *= 60;
+  }
+  return { h: (hue + 360) % 360, s: max ? delta / max * 100 : 0, v: max * 100 };
+}
+function hsvToHex(value) {
+  if (!value || typeof value !== "object") return null;
+  let { h, s, v } = value;
+  if (![h, s, v].every((channel) => typeof channel === "number" && Number.isFinite(channel))) return null;
+  h = (h % 360 + 360) % 360;
+  s = clamp(s, 0, 100) / 100;
+  v = clamp(v, 0, 100) / 100;
+  const c = v * s, x = c * (1 - Math.abs(h / 60 % 2 - 1)), m = v - c;
+  const channels = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][Math.floor(h / 60)];
+  return "#" + channels.map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, "0")).join("");
+}
+
+// src/color-picker.jsx
+var clamp2 = (value, min, max) => Math.min(max, Math.max(min, value));
+function ColorPicker({ anchorRef, dialogRef, color, onChange, onApply, onCancel, onDismiss, t }) {
+  const [hsv, setHsv] = (0, import_react2.useState)(() => hexToHsv(color));
+  const [text, setText] = (0, import_react2.useState)(color), [invalid, setInvalid] = (0, import_react2.useState)(false);
+  const drag = (0, import_react2.useRef)(null), id = "wsp-color-" + (0, import_react2.useId)().replace(/[^a-zA-Z0-9_-]/g, "");
+  const position = (0, import_dsh_client_ui_primitives.useAnchoredPosition)({ open: true, anchorRef, panelRef: dialogRef, side: "bottom", align: "start", gap: 8, margin: 12 });
+  (0, import_dsh_client_ui_primitives.useModalLayer)(dialogRef, position !== null, onCancel);
+  (0, import_dsh_client_ui_primitives.useDismissOnOutsidePointer)(anchorRef, true, (next) => {
+    if (!next) onDismiss();
+  }, dialogRef);
+  (0, import_react2.useEffect)(() => () => {
+    const current = drag.current;
+    if (current?.element.hasPointerCapture(current.id)) current.element.releasePointerCapture(current.id);
+    drag.current = null;
+  }, []);
+  function update(next) {
+    const value = hsvToHex(next);
+    if (!value) return;
+    setHsv(next);
+    setText(value);
+    setInvalid(false);
+    onChange(value);
+  }
+  function commit() {
+    const value = normalizeHex(text);
+    if (!value) {
+      setInvalid(true);
+      return;
+    }
+    setText(value);
+    setInvalid(false);
+    onChange(value);
+    onApply();
+  }
+  function movePointer(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    update({ ...hsv, s: clamp2((event.clientX - rect.left) / rect.width * 100, 0, 100), v: clamp2((1 - (event.clientY - rect.top) / rect.height) * 100, 0, 100) });
+  }
+  function endDrag(event) {
+    const current = drag.current;
+    if (current?.id !== event.pointerId) return;
+    drag.current = null;
+    if (current.element.hasPointerCapture(current.id)) current.element.releasePointerCapture(current.id);
+  }
+  const saturationStart = hsvToHex({ ...hsv, s: 0 }), saturationEnd = hsvToHex({ ...hsv, s: 100 });
+  const brightnessEnd = hsvToHex({ ...hsv, v: 100 });
+  return (0, import_react_dom.createPortal)(/* @__PURE__ */ import_react2.default.createElement(
+    import_dsh_client_ui_primitives.MenuSurface,
+    {
+      ref: dialogRef,
+      className: "wsp-color-picker",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": id + "-title",
+      tabIndex: -1,
+      style: { position: "fixed", ...position, visibility: position ? "visible" : "hidden" }
+    },
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-picker-header" }, /* @__PURE__ */ import_react2.default.createElement("h3", { id: id + "-title" }, t("customColor")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { className: "wsp-color-close", size: "sm", "aria-label": t("close"), onClick: onCancel }, /* @__PURE__ */ import_react2.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 24 24", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement("path", { d: "m6 6 12 12M18 6 6 18", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" })))),
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-picker-content" }, /* @__PURE__ */ import_react2.default.createElement(
+      "div",
+      {
+        className: "wsp-color-plane",
+        role: "slider",
+        tabIndex: 0,
+        "aria-label": t("colorArea"),
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+        "aria-valuenow": Math.round(hsv.s),
+        "aria-valuetext": `${t("colorSaturation")}: ${Math.round(hsv.s)}%, ${t("colorBrightness")}: ${Math.round(hsv.v)}%`,
+        style: { "--wsp-hue": `hsl(${hsv.h} 100% 50%)` },
+        onPointerDown: (event) => {
+          if (event.button !== 0 || drag.current) return;
+          event.preventDefault();
+          event.currentTarget.focus({ preventScroll: true });
+          drag.current = { id: event.pointerId, element: event.currentTarget };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          movePointer(event);
+        },
+        onPointerMove: (event) => {
+          if (drag.current?.id === event.pointerId) movePointer(event);
+        },
+        onPointerUp: endDrag,
+        onPointerCancel: endDrag,
+        onLostPointerCapture: () => {
+          drag.current = null;
+        },
+        onKeyDown: (event) => {
+          if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          const step = event.shiftKey ? 10 : 1;
+          update({
+            ...hsv,
+            s: clamp2(hsv.s + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), 0, 100),
+            v: clamp2(hsv.v + (event.key === "ArrowUp" ? step : event.key === "ArrowDown" ? -step : 0), 0, 100)
+          });
+        }
+      },
+      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-color-handle", style: { left: hsv.s + "%", top: 100 - hsv.v + "%" } })
+    ), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-controls" }, [
+      { key: "h", label: "colorHue", max: 359, track: "linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)" },
+      { key: "s", label: "colorSaturation", max: 100, track: `linear-gradient(to right,${saturationStart},${saturationEnd})` },
+      { key: "v", label: "colorBrightness", max: 100, track: `linear-gradient(to right,#000,${brightnessEnd})` }
+    ].map((channel) => /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-color-channel", key: channel.key }, /* @__PURE__ */ import_react2.default.createElement("span", null, t(channel.label), /* @__PURE__ */ import_react2.default.createElement("output", null, Math.round(hsv[channel.key]), channel.key === "h" ? "\xB0" : "%")), /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        type: "range",
+        className: "wsp-color-range",
+        "aria-label": t(channel.label),
+        min: 0,
+        max: channel.max,
+        step: 1,
+        value: Math.round(hsv[channel.key]),
+        style: { backgroundImage: channel.track },
+        onChange: (event) => update({ ...hsv, [channel.key]: Number(event.target.value) })
+      }
+    ))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-hex-field" }, /* @__PURE__ */ import_react2.default.createElement("label", { htmlFor: id + "-hex" }, "HEX"), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-hex-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-color-current", "aria-hidden": "true", style: { backgroundColor: color } }), /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        id: id + "-hex",
+        className: "wsp-color-hex",
+        type: "text",
+        "aria-label": "HEX",
+        "data-modal-autofocus": true,
+        autoComplete: "off",
+        spellCheck: false,
+        value: text,
+        "aria-invalid": invalid,
+        "aria-describedby": invalid ? id + "-error" : void 0,
+        onChange: (event) => {
+          const raw = event.target.value, value = normalizeHex(raw);
+          setText(raw);
+          setInvalid(false);
+          if (value) {
+            setHsv(hexToHsv(value));
+            onChange(value);
+          }
+        },
+        onKeyDown: (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+            commit();
+          }
+        }
+      }
+    )), invalid && /* @__PURE__ */ import_react2.default.createElement("p", { id: id + "-error", className: "wsp-color-error", role: "status" }, t("colorHexError"))))),
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-picker-footer" }, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", onClick: onCancel }, t("cancel")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "primary", onClick: commit }, t("applyColor")))
+  ), document.body);
+}
+
 // src/appearance-dialog.jsx
 var DEFAULT_ICON = { kind: "icon", icon: "folder", color: PALETTE[0] };
 var PAGE_SIZE = 120;
 var hasFiles = (event) => [...event.dataTransfer?.types ?? []].includes("Files");
 function Artwork({ appearance }) {
-  const ref = (0, import_react2.useRef)(null);
-  (0, import_react2.useLayoutEffect)(() => {
+  const ref = (0, import_react3.useRef)(null);
+  (0, import_react3.useLayoutEffect)(() => {
     if (ref.current) fillAppearance(ref.current, appearance);
   }, [appearance]);
-  return /* @__PURE__ */ import_react2.default.createElement("span", { ref, className: "wsp-icon", "aria-hidden": "true" });
+  return /* @__PURE__ */ import_react3.default.createElement("span", { ref, className: "wsp-icon", "aria-hidden": "true" });
 }
 function Preview({ appearance }) {
-  return appearance ? /* @__PURE__ */ import_react2.default.createElement(Artwork, { appearance }) : /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-icon wsp-native-folder", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.IconFolderCloseRegular, { size: 16 }));
+  return appearance ? /* @__PURE__ */ import_react3.default.createElement(Artwork, { appearance }) : /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-icon wsp-native-folder", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }));
+}
+function KindGlyph({ kind }) {
+  return /* @__PURE__ */ import_react3.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", focusable: "false" }, kind === "icon" ? /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement("path", { d: "m7 3 4 7H3Z" }), /* @__PURE__ */ import_react3.default.createElement("rect", { x: "3", y: "14", width: "7", height: "7", rx: "1" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "17", cy: "17", r: "4" })) : kind === "emoji" ? /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ import_react3.default.createElement("path", { d: "M8 14a4.5 4.5 0 0 0 8 0" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "9", cy: "9", r: ".5" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "15", cy: "9", r: ".5" })) : /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement("rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "8", cy: "8", r: "1.5" }), /* @__PURE__ */ import_react3.default.createElement("path", { d: "m3 17 5-5 4 4 4-6 5 7" })));
 }
 function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
   const list = useStore(workspaces.list);
   const workspace = list.items.find((item) => item.workspaceId === target.id);
-  const saved = (0, import_react2.useRef)(prefs.appearance(target.id)).current;
+  const saved = (0, import_react3.useRef)(prefs.appearance(target.id)).current;
   const initial = saved ?? DEFAULT_ICON;
-  const [restoring, setRestoring] = (0, import_react2.useState)(!saved);
-  const [kind, setKind] = (0, import_react2.useState)(initial.kind);
-  const [drafts, setDrafts] = (0, import_react2.useState)(() => ({
+  const [restoring, setRestoring] = (0, import_react3.useState)(!saved);
+  const [kind, setKind] = (0, import_react3.useState)(initial.kind);
+  const [drafts, setDrafts] = (0, import_react3.useState)(() => ({
     icon: DEFAULT_ICON,
     emoji: { kind: "emoji", emoji: "\u{1F4BB}" },
     image: { kind: "image", data: "" },
     [initial.kind]: initial
   }));
   const appearance = drafts[kind];
-  const [error, setError] = (0, import_react2.useState)(""), [loading, setLoading] = (0, import_react2.useState)(false);
-  const [iconQuery, setIconQuery] = (0, import_react2.useState)(""), [emojiQuery, setEmojiQuery] = (0, import_react2.useState)("");
-  const [emojiGroup, setEmojiGroup] = (0, import_react2.useState)("all"), [emojiLimit, setEmojiLimit] = (0, import_react2.useState)(PAGE_SIZE);
-  const [dragging, setDragging] = (0, import_react2.useState)(false);
-  const uploadGeneration = (0, import_react2.useRef)(0), dragDepth = (0, import_react2.useRef)(0), uploadInput = (0, import_react2.useRef)(null), compositionObserver = (0, import_react2.useRef)(null);
-  const russian = String(lang ?? t("language")).startsWith("ru");
+  const [error, setError] = (0, import_react3.useState)(""), [loading, setLoading] = (0, import_react3.useState)(false);
+  const [iconQuery, setIconQuery] = (0, import_react3.useState)(""), [emojiQuery, setEmojiQuery] = (0, import_react3.useState)("");
+  const [emojiGroup, setEmojiGroup] = (0, import_react3.useState)("all"), [emojiLimit, setEmojiLimit] = (0, import_react3.useState)(PAGE_SIZE);
+  const [categoryOpen, setCategoryOpen] = (0, import_react3.useState)(false), categoryTrigger = (0, import_react3.useRef)(null);
+  const [categoryAutoFocus, setCategoryAutoFocus] = (0, import_react3.useState)(false), [categoryWidth, setCategoryWidth] = (0, import_react3.useState)(0);
+  const categorySizeClass = "wsp-category-size-" + (0, import_react3.useId)().replace(/[^a-zA-Z0-9_-]/g, "");
+  const categoryGeneration = (0, import_react3.useRef)(0), categoryState = (0, import_react3.useRef)(null);
+  const [colorPickerOpen, setColorPickerOpen] = (0, import_react3.useState)(false);
+  const colorTrigger = (0, import_react3.useRef)(null), colorDialog = (0, import_react3.useRef)(null), colorBaseline = (0, import_react3.useRef)(null);
+  const [dragging, setDragging] = (0, import_react3.useState)(false);
+  const uploadGeneration = (0, import_react3.useRef)(0), dragDepth = (0, import_react3.useRef)(0), uploadInput = (0, import_react3.useRef)(null), compositionObserver = (0, import_react3.useRef)(null);
+  const language = String(lang ?? t("language")), russian = language.startsWith("ru"), targetAvailable = Boolean(workspace);
+  categoryState.current = { open: categoryOpen, kind, language, targetId: target.id, available: targetAvailable };
+  const categoryItems = [{ id: "all", label: t("allEmoji") }, ...EMOJI_GROUPS.map((group) => ({ id: group.id, label: russian ? group.ru : group.en }))];
+  function measureCategoryWidth() {
+    const width = categoryTrigger.current?.getBoundingClientRect().width;
+    if (Number.isFinite(width) && width > 0) setCategoryWidth(width);
+  }
+  function openCategory() {
+    measureCategoryWidth();
+    categoryGeneration.current++;
+    setCategoryAutoFocus(false);
+    setCategoryOpen(true);
+  }
+  function closeCategory(restoreFocus = false) {
+    categoryGeneration.current++;
+    categoryState.current = { ...categoryState.current, open: false };
+    setCategoryAutoFocus(false);
+    setCategoryOpen(false);
+    if (restoreFocus) categoryTrigger.current?.focus({ preventScroll: true });
+  }
+  function openColorPicker() {
+    closeCategory();
+    colorBaseline.current = { icon: { ...drafts.icon }, restoring };
+    setColorPickerOpen(true);
+  }
+  function closeColorPicker(rollback = false) {
+    if (rollback && colorBaseline.current) {
+      const baseline = colorBaseline.current;
+      setDrafts((previous) => ({ ...previous, icon: baseline.icon }));
+      setRestoring(baseline.restoring);
+    }
+    colorBaseline.current = null;
+    setColorPickerOpen(false);
+  }
   const close = () => {
+    closeColorPicker();
+    closeCategory();
     uploadGeneration.current++;
     ui.set({ target: null });
   };
@@ -4783,6 +5337,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setDrafts((previous) => ({ ...previous, [next.kind]: next }));
   }
   function selectKind(next) {
+    closeColorPicker();
+    closeCategory();
     if (next === kind) return;
     uploadGeneration.current++;
     setLoading(false);
@@ -4793,6 +5349,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     setKind(next);
   }
   function restoreDefault() {
+    closeColorPicker();
+    closeCategory();
     uploadGeneration.current++;
     setLoading(false);
     setError("");
@@ -4800,15 +5358,15 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
     dragDepth.current = 0;
     setRestoring(true);
   }
-  (0, import_react2.useLayoutEffect)(() => {
-    const observer = (0, import_dsh_client_ui_primitives.observeComposition)(document);
+  (0, import_react3.useLayoutEffect)(() => {
+    const observer = (0, import_dsh_client_ui_primitives2.observeComposition)(document);
     compositionObserver.current = observer;
     return () => {
       observer.dispose();
       compositionObserver.current = null;
     };
   }, []);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     const ignoreOutsideDrop = (event) => {
       if (hasFiles(event) || Array.from(event.dataTransfer?.types ?? []).includes("text/uri-list")) {
         event.preventDefault();
@@ -4826,17 +5384,54 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       });
     };
   }, []);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     if (list.phase === "ready" && !workspace) close();
   }, [workspace, list.phase]);
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     setEmojiLimit(PAGE_SIZE);
   }, [emojiQuery, emojiGroup]);
-  const matchingIcons = (0, import_react2.useMemo)(() => {
+  (0, import_react3.useLayoutEffect)(() => {
+    const trigger = categoryTrigger.current;
+    if (kind !== "emoji" || !targetAvailable || !trigger) {
+      setCategoryWidth(0);
+      return;
+    }
+    let active = true;
+    const measure = () => {
+      if (active && trigger.isConnected) measureCategoryWidth();
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(trigger);
+    window.addEventListener("resize", measure);
+    return () => {
+      active = false;
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [kind, language, target.id, targetAvailable]);
+  (0, import_react3.useEffect)(() => {
+    closeColorPicker();
+    closeCategory(categoryOpen && Boolean(document.activeElement?.closest(".wsp-emoji-category-menu")));
+  }, [language]);
+  (0, import_react3.useEffect)(() => {
+    if (!categoryOpen || kind !== "emoji" || !targetAvailable || !categoryState.current.open) return;
+    const generation = categoryGeneration.current, trigger = categoryTrigger.current, targetId = target.id;
+    let active = true;
+    const frame = requestAnimationFrame(function enableCategoryAutoFocus() {
+      const current = categoryState.current;
+      if (active && generation === categoryGeneration.current && current.open && current.kind === "emoji" && current.language === language && current.targetId === targetId && current.available && trigger?.isConnected && categoryTrigger.current === trigger && document.activeElement === trigger) setCategoryAutoFocus(true);
+    });
+    return () => {
+      active = false;
+      cancelAnimationFrame(frame);
+    };
+  }, [categoryOpen, kind, language, target.id, targetAvailable]);
+  const matchingIcons = (0, import_react3.useMemo)(() => {
     const terms = normalizeSearch(iconQuery).split(" ").filter(Boolean);
     return ICONS.filter((icon) => terms.every((term) => normalizeSearch(`${icon.id} ${icon.en} ${icon.ru}`).includes(term)));
   }, [iconQuery]);
-  const matchingEmoji = (0, import_react2.useMemo)(() => searchEmoji(emojiQuery, emojiGroup), [emojiQuery, emojiGroup]);
+  const matchingEmoji = (0, import_react3.useMemo)(() => searchEmoji(emojiQuery, emojiGroup), [emojiQuery, emojiGroup]);
   let valid = true;
   if (!restoring) try {
     validateAppearance(appearance, ICON_IDS);
@@ -4877,8 +5472,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       if (generation === uploadGeneration.current) setLoading(false);
     }
   }
-  return /* @__PURE__ */ import_react2.default.createElement(
-    import_dsh_client_ui_primitives.Modal,
+  return /* @__PURE__ */ import_react3.default.createElement(
+    import_dsh_client_ui_primitives2.Modal,
     {
       open: true,
       title: t("changeAppearance"),
@@ -4887,17 +5482,35 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
       className: "wsp-appearance-dialog",
       contentClassName: "wsp-appearance-content",
       onKeyDownCapture: (event) => {
-        if (compositionObserver.current?.guards(event.nativeEvent)) return;
+        const composing = compositionObserver.current?.guards(event.nativeEvent);
+        const inColorPicker = colorDialog.current?.contains(event.target);
+        if (composing) {
+          if (inColorPicker) {
+            event.stopPropagation();
+            if (event.target.tagName !== "INPUT" || event.target.type !== "text") event.preventDefault();
+          }
+          if (event.key === "Enter" && event.target.tagName === "BUTTON") event.preventDefault();
+          return;
+        }
+        if (inColorPicker) return;
+        if (!categoryOpen && event.key === "ArrowDown" && event.target === categoryTrigger.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          openCategory();
+          return;
+        }
         if (event.key === "Enter" && event.target.tagName === "INPUT" && event.target.type === "text") {
           event.preventDefault();
           event.stopPropagation();
           save();
         }
       },
-      footer: /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { className: "wsp-reset-action", variant: "ghost", onClick: restoreDefault }, t("reset")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : t("save")))
+      footer: /* @__PURE__ */ import_react3.default.createElement(import_react3.default.Fragment, null, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { className: "wsp-reset-action", variant: "ghost", onClick: restoreDefault }, t("reset")), /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : t("save")))
     },
-    /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-body" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-preview-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { id: "wsp-preview-label", className: "wsp-field-label" }, t("previewLabel")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-list-preview", role: "group", "aria-labelledby": "wsp-preview-label" }, /* @__PURE__ */ import_react2.default.createElement(Preview, { appearance: restoring ? null : appearance }), /* @__PURE__ */ import_react2.default.createElement("span", null, workspace?.title))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-kind-tabs", role: "group", "aria-label": t("kind") }, ["icon", "emoji", "image"].map((value) => /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { key: value, size: "sm", "aria-pressed": kind === value, onClick: () => selectKind(value) }, t(value)))), kind === "icon" && /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-color-section" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-field-label" }, t("color")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-appearance-palette", role: "group", "aria-label": t("color") }, PALETTE.map((color) => /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Button,
+    /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-body" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-context" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-preview-section" }, /* @__PURE__ */ import_react3.default.createElement("span", { id: "wsp-preview-label", className: "wsp-field-label" }, t("previewLabel")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-list-preview", role: "group", "aria-labelledby": "wsp-preview-label" }, /* @__PURE__ */ import_react3.default.createElement(Preview, { appearance: restoring ? null : appearance }), /* @__PURE__ */ import_react3.default.createElement("span", { title: workspace?.title }, workspace?.title))), /* @__PURE__ */ import_react3.default.createElement("hr", { className: "wsp-preview-divider" }), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-kind-section" }, /* @__PURE__ */ import_react3.default.createElement("span", { id: "wsp-kind-label", className: "wsp-field-label" }, t("selectIconType")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-kind-tabs", role: "group", "aria-labelledby": "wsp-kind-label" }, ["icon", "emoji", "image"].map((value) => /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { key: value, className: "wsp-kind-choice", size: "sm", "aria-pressed": kind === value, onClick: () => selectKind(value) }, /* @__PURE__ */ import_react3.default.createElement(KindGlyph, { kind: value }), /* @__PURE__ */ import_react3.default.createElement("span", null, t(value))))))), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-editor", onScrollCapture: (event) => {
+      if (categoryOpen && event.currentTarget.contains(event.target)) closeCategory(Boolean(document.activeElement?.closest(".wsp-emoji-category-menu")));
+    } }, kind === "icon" && /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-color-section" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-field-label" }, t("selectIconColor")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-appearance-palette", role: "group", "aria-label": t("selectIconColor") }, PALETTE.map((color) => /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
       {
         key: color,
         className: "wsp-color-swatch",
@@ -4907,9 +5520,33 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         style: { "--wsp-art-color": color },
         onClick: () => setAppearance({ ...appearance, color })
       }
-    )), /* @__PURE__ */ import_react2.default.createElement("input", { className: "wsp-custom-color", type: "color", "aria-label": t("customColor"), title: t("customColor"), value: appearance.color, onChange: (event) => setAppearance({ ...appearance, color: event.target.value }) }))), /* @__PURE__ */ import_react2.default.createElement(
+    )), /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
+      {
+        ref: colorTrigger,
+        className: "wsp-custom-color",
+        "aria-label": t("customColor"),
+        title: t("customColor"),
+        "aria-haspopup": "dialog",
+        "aria-expanded": colorPickerOpen,
+        onClick: () => colorPickerOpen ? closeColorPicker() : openColorPicker()
+      }
+    ), colorPickerOpen && /* @__PURE__ */ import_react3.default.createElement(
+      ColorPicker,
+      {
+        anchorRef: colorTrigger,
+        dialogRef: colorDialog,
+        color: drafts.icon.color,
+        t,
+        onChange: (color) => setAppearance({ ...drafts.icon, color }),
+        onApply: () => closeColorPicker(),
+        onCancel: () => closeColorPicker(true),
+        onDismiss: () => closeColorPicker()
+      }
+    ))), /* @__PURE__ */ import_react3.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-icon-search" }, t("selectIcon")), /* @__PURE__ */ import_react3.default.createElement(
       "input",
       {
+        id: "wsp-icon-search",
         className: "wsp-appearance-input",
         type: "search",
         "data-modal-autofocus": true,
@@ -4918,8 +5555,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         value: iconQuery,
         onChange: (event) => setIconQuery(event.target.value)
       }
-    ), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-choice-grid", role: "group", "aria-label": t("icon") }, matchingIcons.map((icon) => /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Button,
+    ), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-choice-grid", role: "group", "aria-label": t("icon") }, matchingIcons.map((icon) => /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
       {
         key: icon.id,
         className: "wsp-choice",
@@ -4928,10 +5565,11 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         "aria-pressed": appearance.icon === icon.id,
         onClick: () => setAppearance({ ...appearance, icon: icon.id })
       },
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-icon", style: { color: appearance.color }, dangerouslySetInnerHTML: { __html: icon.svg } })
-    ))), matchingIcons.length === 0 && /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults"))), kind === "emoji" && /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-icon", style: { color: appearance.color }, dangerouslySetInnerHTML: { __html: icon.svg } })
+    ))), matchingIcons.length === 0 && /* @__PURE__ */ import_react3.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults"))), kind === "emoji" && /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react3.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji-search" }, t("selectEmoji")), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-search-category" }, /* @__PURE__ */ import_react3.default.createElement(
       "input",
       {
+        id: "wsp-emoji-search",
         className: "wsp-appearance-input",
         type: "search",
         "data-modal-autofocus": true,
@@ -4940,8 +5578,42 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         value: emojiQuery,
         onChange: (event) => setEmojiQuery(event.target.value)
       }
-    ), /* @__PURE__ */ import_react2.default.createElement("select", { className: "wsp-appearance-input", "aria-label": t("emojiCategory"), value: emojiGroup, onChange: (event) => setEmojiGroup(event.target.value) }, /* @__PURE__ */ import_react2.default.createElement("option", { value: "all" }, t("allEmoji")), EMOJI_GROUPS.map((group) => /* @__PURE__ */ import_react2.default.createElement("option", { key: group.id, value: group.id }, russian ? group.ru : group.en))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-choice-grid wsp-emoji-grid", role: "group", "aria-label": t("emojiCatalog") }, matchingEmoji.slice(0, emojiLimit).map((item) => /* @__PURE__ */ import_react2.default.createElement(
-      import_dsh_client_ui_primitives.Button,
+    ), categoryWidth > 0 && /* @__PURE__ */ import_react3.default.createElement("style", null, `.${categorySizeClass}{width:${categoryWidth}px}`), /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Menu,
+      {
+        open: categoryOpen,
+        portal: true,
+        align: "start",
+        side: "bottom",
+        autoFocus: categoryAutoFocus,
+        selection: "check",
+        className: "wsp-category-anchor",
+        listClassName: "wsp-emoji-category-menu " + categorySizeClass,
+        items: categoryItems,
+        selectedId: emojiGroup,
+        onSelect: (id) => {
+          setEmojiGroup(id);
+          closeCategory();
+        },
+        onClose: () => closeCategory(),
+        anchor: /* @__PURE__ */ import_react3.default.createElement(
+          import_dsh_client_ui_primitives2.Button,
+          {
+            ref: categoryTrigger,
+            className: "wsp-category-trigger",
+            variant: "outline",
+            "aria-label": t("emojiCategory"),
+            "aria-describedby": "wsp-category-value",
+            "aria-haspopup": "menu",
+            "aria-expanded": categoryOpen,
+            onClick: () => categoryOpen ? closeCategory() : openCategory()
+          },
+          /* @__PURE__ */ import_react3.default.createElement("span", { id: "wsp-category-value", className: "wsp-category-value" }, categoryItems.find((item) => item.id === emojiGroup)?.label),
+          /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.IconChevronDownOutlineRegular, { size: 16 })
+        )
+      }
+    )), /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-choice-grid wsp-emoji-grid", role: "group", "aria-label": t("emojiCatalog") }, matchingEmoji.slice(0, emojiLimit).map((item) => /* @__PURE__ */ import_react3.default.createElement(
+      import_dsh_client_ui_primitives2.Button,
       {
         key: item.emoji,
         className: "wsp-choice wsp-emoji-choice",
@@ -4951,7 +5623,7 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
         onClick: () => setAppearance({ kind: "emoji", emoji: item.emoji })
       },
       item.emoji
-    ))), matchingEmoji.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults")) : /* @__PURE__ */ import_react2.default.createElement("div", { className: "wsp-results-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, Math.min(emojiLimit, matchingEmoji.length), " / ", matchingEmoji.length), emojiLimit < matchingEmoji.length && /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { size: "sm", onClick: () => setEmojiLimit((value) => value + PAGE_SIZE) }, t("showMore"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji" }, t("customEmoji")), /* @__PURE__ */ import_react2.default.createElement("input", { id: "wsp-emoji", className: "wsp-appearance-input", type: "text", maxLength: 32, value: appearance.emoji, onChange: (event) => setAppearance({ kind: "emoji", emoji: event.target.value }) })), kind === "image" && /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement(
+    ))), matchingEmoji.length === 0 ? /* @__PURE__ */ import_react3.default.createElement("p", { className: "wsp-help", role: "status" }, t("noResults")) : /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-results-row" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-help" }, Math.min(emojiLimit, matchingEmoji.length), " / ", matchingEmoji.length), emojiLimit < matchingEmoji.length && /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { size: "sm", onClick: () => setEmojiLimit((value) => value + PAGE_SIZE) }, t("showMore"))), /* @__PURE__ */ import_react3.default.createElement("label", { className: "wsp-field-label", htmlFor: "wsp-emoji" }, t("customEmoji")), /* @__PURE__ */ import_react3.default.createElement("input", { id: "wsp-emoji", className: "wsp-appearance-input", type: "text", maxLength: 32, value: appearance.emoji, onChange: (event) => setAppearance({ kind: "emoji", emoji: event.target.value }) })), kind === "image" && /* @__PURE__ */ import_react3.default.createElement("div", { className: "wsp-mode-panel" }, /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-field-label" }, t("uploadImage")), /* @__PURE__ */ import_react3.default.createElement(
       "div",
       {
         className: "wsp-image-dropzone" + (dragging ? " wsp-is-dragging" : ""),
@@ -4986,10 +5658,10 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           }
         }
       },
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-drop-title" }, t("dropImage")),
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, t("orChooseImage")),
-      /* @__PURE__ */ import_react2.default.createElement(import_dsh_client_ui_primitives.Button, { variant: "outline", "data-modal-autofocus": true, onClick: () => uploadInput.current?.click() }, t("upload")),
-      /* @__PURE__ */ import_react2.default.createElement(
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-drop-title" }, t("dropImage")),
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-help" }, t("orChooseImage")),
+      /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Button, { variant: "outline", "data-modal-autofocus": true, onClick: () => uploadInput.current?.click() }, t("upload")),
+      /* @__PURE__ */ import_react3.default.createElement(
         "input",
         {
           ref: uploadInput,
@@ -5005,8 +5677,8 @@ function AppearanceDialog({ target, prefs, ui, workspaces, t, lang }) {
           }
         }
       ),
-      /* @__PURE__ */ import_react2.default.createElement("span", { className: "wsp-help" }, t("imageHint"))
-    )), error && /* @__PURE__ */ import_react2.default.createElement("div", { role: "alert", className: "wsp-error" }, error))
+      /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-help" }, t("imageHint"))
+    )), error && /* @__PURE__ */ import_react3.default.createElement("div", { role: "alert", className: "wsp-error" }, error)))
   );
 }
 
@@ -5129,8 +5801,8 @@ function observeSessionOpenings(sessions, reminders) {
 }
 
 // src/session-actions.jsx
-var import_react3 = __toESM(require("react"), 1);
-var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_react4 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/sidebar-branding.js
 var BRANDING_CSS = `
@@ -5168,32 +5840,115 @@ function attachSidebarBranding(marker) {
   };
 }
 
+// src/unread-shortcuts.js
+var UNREAD_COMMAND_ID = "workspace-plus.session.mark-unread";
+var binding = Object.freeze({ code: "KeyU", modifiers: Object.freeze(["control", "alt"]) });
+var UNREAD_DEFAULT_PROFILES = Object.freeze({
+  "desktop:windows": binding,
+  "desktop:linux": binding,
+  "desktop:macos": null,
+  "web:windows": binding,
+  "web:linux": null,
+  "web:macos": null
+});
+function createUnreadShortcut(ctx, { prefs, reminders, t }) {
+  return {
+    id: UNREAD_COMMAND_ID,
+    label: () => t("markUnread"),
+    aliases: ["mark session unread"],
+    defaults: Object.fromEntries(Object.entries(UNREAD_DEFAULT_PROFILES).filter(([, value]) => value !== null)),
+    regions: ["page", "editable"],
+    modals: ["sidebar"],
+    resolve(context) {
+      const settings = prefs.getSnapshot(), state = reminders.getSnapshot();
+      const current = Object.values(ctx.sessions.list.getSnapshot().byId ?? {}).find((row) => (row.retainedBy?.mainView ?? 0) > 0);
+      if (!settings.features.unread || settings.error || state.error || ctx.shortcuts.config.getSnapshot().status !== "ready" || !current || current.blank || typeof current.id !== "string" || !current.id || !["page", "editable"].includes(context.region) || context.modal !== null && context.modal !== "sidebar" || ctx.layout.panelInfo.getSnapshot().activePanelId !== null) return { status: "blocked", reason: "unavailable" };
+      const sessionId = current.id;
+      return { status: "handled", run() {
+        try {
+          void Promise.resolve(reminders.markUnread(sessionId)).catch((reason) => reminders.reportError(reason));
+        } catch (reason) {
+          reminders.reportError(reason);
+        }
+      } };
+    }
+  };
+}
+function registerUnreadShortcuts(ctx, options) {
+  const hint = createStore(void 0);
+  if (typeof ctx.inject !== "function") return hint;
+  ctx.inject(["shortcuts", "layout"], function unreadShortcuts(scope) {
+    scope.effect(() => {
+      const api = scope.shortcuts;
+      let remove;
+      const publish = () => {
+        const row = api.catalog.getSnapshot().find((entry) => entry.id === UNREAD_COMMAND_ID);
+        const active = remove && api.config.getSnapshot().status === "ready" && row?.binding && row.issue === null && row.conflicts.length === 0 && row.keys.length > 0;
+        hint.set(active ? row : void 0);
+      };
+      const sync = () => {
+        if (options.prefs.getSnapshot().features.unread) {
+          if (!remove) {
+            try {
+              remove = api.register(createUnreadShortcut(scope, options));
+            } catch (reason) {
+              hint.set(void 0);
+              console.warn("Unread shortcut registration unavailable:", reason);
+              return;
+            }
+          }
+        } else {
+          const off = remove;
+          remove = void 0;
+          off?.();
+        }
+        publish();
+      };
+      const offCatalog = api.catalog.subscribe(publish), offConfig = api.config.subscribe(publish);
+      const offPrefs = options.prefs.subscribe(sync);
+      sync();
+      return () => {
+        offPrefs();
+        offCatalog();
+        offConfig();
+        const off = remove;
+        remove = void 0;
+        off?.();
+        hint.set(void 0);
+      };
+    }, "workspace-plus: unread shortcut");
+  });
+  return hint;
+}
+
 // src/session-actions.jsx
 var SESSION_ACTION_CSS = `
-.wsp-session-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:16px;height:16px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:inherit}
+.wsp-session-action-root{display:contents}
+.wsp-session-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;margin:-4px;padding:0;border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font:inherit}
 .wsp-session-action:hover{color:var(--dsw-alias-label-primary)}
-.wsp-session-action:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:2px;border-radius:3px}
+.wsp-session-action:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px;border-radius:3px}
 .wsp-session-action:disabled{opacity:.5;cursor:default}
 .wsp-manual-unread{display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .wsp-unread-error{display:block;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;max-width:260px}
 `;
-function UnreadIcon() {
-  return /* @__PURE__ */ import_react3.default.createElement("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react3.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react3.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
+function UnreadIcon({ size = 16 }) {
+  return /* @__PURE__ */ import_react4.default.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "1", "aria-hidden": "true" }, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M12 3H2.5A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V7M1.5 4l6.5 5 4-3" }), /* @__PURE__ */ import_react4.default.createElement("circle", { cx: "13.5", cy: "3.5", r: "2", fill: "currentColor", stroke: "none" }));
 }
 function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
+  const unreadShortcut = registerUnreadShortcuts(ctx, { prefs, reminders, t: (key) => ctx.locale.bind(namespace)(key) });
   function MenuItem({ sessionId, useMenuOpenState, t }) {
-    const settings = useStore(prefs), state = useStore(reminders);
+    const settings = useStore(prefs), state = useStore(reminders), shortcut = useStore(unreadShortcut);
     const [, setOpen] = useMenuOpenState();
     if (!settings.features.unread) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("div", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.MenuItemButton, { icon: /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null), onSelect: () => {
+    return /* @__PURE__ */ import_react4.default.createElement("div", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.MenuItemButton, { icon: /* @__PURE__ */ import_react4.default.createElement(UnreadIcon, null), shortcut, onSelect: () => {
       setOpen(false);
       void reminders.markUnread(sessionId).catch((reason) => reminders.reportError(reason));
-    } }, t("markUnread")), state.error && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, state.error));
+    } }, t("markUnread")), state.error && /* @__PURE__ */ import_react4.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, state.error));
   }
   function RowAction({ sessionId, t }) {
-    const settings = useStore(prefs), state = useStore(reminders), [error, setError] = (0, import_react3.useState)("");
+    const settings = useStore(prefs), state = useStore(reminders), [error, setError] = (0, import_react4.useState)("");
     if (!settings.features.unread) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Tooltip, { label: t("markUnread"), side: "bottom", align: "end", delayMs: 500 }, /* @__PURE__ */ import_react3.default.createElement("button", { type: "button", className: "wsp-session-action", "aria-label": t("markUnread"), onClick: async (event) => {
+    return /* @__PURE__ */ import_react4.default.createElement("span", { "data-wsp-owned": "", className: "wsp-session-action-root" }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Tooltip, { label: t("markUnread"), side: "bottom", align: "end", delayMs: 500 }, /* @__PURE__ */ import_react4.default.createElement("button", { type: "button", className: "wsp-session-action", "aria-label": t("markUnread"), onClick: async (event) => {
       event.stopPropagation();
       try {
         await reminders.markUnread(sessionId);
@@ -5202,17 +5957,17 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
         setError(t("unreadFailed") + " " + reason.message);
         reminders.reportError(reason);
       }
-    } }, /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null))), (error || state.error) && /* @__PURE__ */ import_react3.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, error || state.error));
+    } }, /* @__PURE__ */ import_react4.default.createElement(UnreadIcon, { size: 14 }))), (error || state.error) && /* @__PURE__ */ import_react4.default.createElement("span", { role: "alert", className: "wsp-unread-error" }, error || state.error));
   }
   function Leading({ sessionId, t }) {
     const settings = useStore(prefs), state = useStore(reminders);
     if (!settings.features.unread || !Object.hasOwn(state.unread, sessionId)) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { className: "wsp-manual-unread", "data-wsp-owned": "", role: "img", "aria-label": t("unreadLabel"), title: t("unreadLabel") }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.StateDot, { state: "done" }));
+    return /* @__PURE__ */ import_react4.default.createElement("span", { className: "wsp-manual-unread", "data-wsp-owned": "", role: "img", "aria-label": t("unreadLabel"), title: t("unreadLabel") }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.StateDot, { state: "done" }));
   }
   function FailureNotice({ t }) {
-    const state = useStore(reminders), [dismissed, setDismissed] = (0, import_react3.useState)(0);
+    const state = useStore(reminders), [dismissed, setDismissed] = (0, import_react4.useState)(0);
     if (!state.lastError || state.errorSequence === dismissed) return null;
-    return /* @__PURE__ */ import_react3.default.createElement("span", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react3.default.createElement(import_dsh_client_ui_primitives2.Toast, { key: state.errorSequence, text: t("unreadFailed") + " " + state.lastError, icon: /* @__PURE__ */ import_react3.default.createElement(UnreadIcon, null), holdMs: 8e3, onDone: () => setDismissed(state.errorSequence) }));
+    return /* @__PURE__ */ import_react4.default.createElement("span", { "data-wsp-owned": "" }, /* @__PURE__ */ import_react4.default.createElement(import_dsh_client_ui_primitives3.Toast, { key: state.errorSequence, text: t("unreadFailed") + " " + state.lastError, icon: /* @__PURE__ */ import_react4.default.createElement(UnreadIcon, null), holdMs: 8e3, onDone: () => setDismissed(state.errorSequence) }));
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
@@ -5221,9 +5976,9 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
     locale: namespace
   }, FailureNotice));
   function BrandName() {
-    const marker = (0, import_react3.useRef)(null);
-    (0, import_react3.useLayoutEffect)(() => marker.current ? attachSidebarBranding(marker.current) : void 0, []);
-    return /* @__PURE__ */ import_react3.default.createElement("span", { ref: marker, "data-wsp-owned": "" }, "DeepSeek Harness");
+    const marker = (0, import_react4.useRef)(null);
+    (0, import_react4.useLayoutEffect)(() => marker.current ? attachSidebarBranding(marker.current) : void 0, []);
+    return /* @__PURE__ */ import_react4.default.createElement("span", { ref: marker, "data-wsp-owned": "" }, "DeepSeek Harness");
   }
   ctx.slots.inject("sidebar.workspaces.session.menu.item", () => ctx.slots.register({
     name: "sidebar.workspaces.session.menu.item",
@@ -5265,6 +6020,779 @@ function registerSidebarFeatures(ctx, { prefs, reminders, namespace }) {
   });
 }
 
+// src/profile-store.js
+var PROFILE_STORAGE_KEY = "dsh-tinker:profile-appearance:v1";
+var EMPTY = Object.freeze({ version: 1, enabled: true, name: null, image: null });
+var ENVELOPE_KEYS = ["version", "enabled", "name", "image"];
+var DRAFT_KEYS = ["name", "image"];
+var ERROR_CODES = /* @__PURE__ */ new Set(["profileInvalidData", "profileUnsupportedVersion", "profileReadError", "profileWriteError", "profileNameInvalid", "profileImageInvalid", "profileEnabledInvalid"]);
+function codeOf(reason) {
+  try {
+    if (ERROR_CODES.has(reason?.code)) return reason.code;
+  } catch {
+  }
+  return "profileInvalidData";
+}
+function fail(code) {
+  const error = new Error(code);
+  error.code = code;
+  throw error;
+}
+function record(value, keys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail("profileInvalidData");
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) fail("profileInvalidData");
+  const own = Reflect.ownKeys(value);
+  if (own.length !== keys.length || own.some((key) => !keys.includes(key))) fail("profileInvalidData");
+  for (const key of keys) if (!Object.hasOwn(value, key) || !Object.hasOwn(Object.getOwnPropertyDescriptor(value, key), "value")) fail("profileInvalidData");
+}
+function nameOf(value) {
+  if (value === null) return null;
+  if (typeof value !== "string" || value.trim().length > 80) fail("profileNameInvalid");
+  return value.trim() || null;
+}
+function imageOf(value) {
+  if (value === null || value === "") return null;
+  if (typeof value !== "string" || value.length > MAX_IMAGE_LENGTH || !/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(value)) fail("profileImageInvalid");
+  let bytes;
+  try {
+    const encoded = value.slice(22);
+    if (encoded.length % 4) fail("profileImageInvalid");
+    bytes = atob(encoded);
+    if (btoa(bytes) !== encoded) fail("profileImageInvalid");
+  } catch {
+    fail("profileImageInvalid");
+  }
+  if (bytes.length < 33 || ![137, 80, 78, 71, 13, 10, 26, 10].every((byte, i) => bytes.charCodeAt(i) === byte) || bytes.slice(12, 16) !== "IHDR") fail("profileImageInvalid");
+  return value;
+}
+function draftOf(input) {
+  record(input, DRAFT_KEYS);
+  return { name: nameOf(input.name), image: imageOf(input.image) };
+}
+function envelopeOf(input) {
+  if (input && typeof input === "object") {
+    const version = Object.getOwnPropertyDescriptor(input, "version");
+    if (version && Object.hasOwn(version, "value") && version.value !== 1) fail("profileUnsupportedVersion");
+  }
+  record(input, ENVELOPE_KEYS);
+  if (input.version !== 1) fail("profileUnsupportedVersion");
+  if (typeof input.enabled !== "boolean") fail("profileEnabledInvalid");
+  return { version: 1, enabled: input.enabled, name: nameOf(input.name), image: imageOf(input.image) };
+}
+function createProfilePreferences(storage) {
+  const listeners = /* @__PURE__ */ new Set();
+  let snapshot = Object.freeze({ ...EMPTY, error: null });
+  function publish(next, error = null) {
+    const value = { version: next.version, enabled: next.enabled, name: next.name, image: next.image, error };
+    if (Object.keys(value).every((key) => value[key] === snapshot[key])) return snapshot;
+    snapshot = Object.freeze(value);
+    for (const listener of [...listeners]) {
+      try {
+        listener();
+      } catch {
+      }
+    }
+    return snapshot;
+  }
+  function readLatest() {
+    let raw;
+    try {
+      raw = storage.getItem(PROFILE_STORAGE_KEY);
+    } catch {
+      fail("profileReadError");
+    }
+    if (raw === null) return EMPTY;
+    if (typeof raw !== "string" || raw.length > MAX_IMAGE_LENGTH + 2048) fail("profileInvalidData");
+    let input;
+    try {
+      input = JSON.parse(raw);
+    } catch {
+      fail("profileInvalidData");
+    }
+    return envelopeOf(input);
+  }
+  function refresh() {
+    try {
+      return publish(readLatest());
+    } catch (reason) {
+      return publish(snapshot, codeOf(reason));
+    }
+  }
+  function mutate(change) {
+    let next;
+    try {
+      next = envelopeOf(change(readLatest()));
+      try {
+        storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        fail("profileWriteError");
+      }
+    } catch (reason) {
+      const code = codeOf(reason);
+      publish(snapshot, code);
+      fail(code);
+    }
+    return publish(next);
+  }
+  refresh();
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    save(input) {
+      return mutate((latest) => ({ ...latest, ...draftOf(input) }));
+    },
+    reset() {
+      return mutate((latest) => ({ ...latest, name: null, image: null }));
+    },
+    toggle(enabled) {
+      return mutate((latest) => {
+        if (typeof enabled !== "boolean") fail("profileEnabledInvalid");
+        return { ...latest, enabled };
+      });
+    },
+    refresh,
+    retry: refresh
+  };
+}
+
+// src/profile-dialog.jsx
+var import_react5 = __toESM(require("react"), 1);
+var import_dsh_client_ui_primitives4 = require("@deepseek-ai/dsh-client-ui-primitives");
+var hasFiles2 = (event) => [...event.dataTransfer?.types ?? []].includes("Files") || Boolean(event.dataTransfer?.files?.length);
+var UPLOAD_ERRORS = { imageType: "profileImageType", imageFileSize: "profileImageFileSize", imageDecode: "profileImageDecode", imageSize: "profileImageSize" };
+var SAVE_ERRORS = /* @__PURE__ */ new Set(["profileReadError", "profileWriteError", "profileInvalidData", "profileUnsupportedVersion", "profileNameInvalid", "profileImageInvalid", "profileEnabledInvalid"]);
+var saveError = (reason) => SAVE_ERRORS.has(reason?.code ?? reason?.message) ? reason.code ?? reason.message : "profileSaveError";
+function ProfileIcon({ camera = false }) {
+  return /* @__PURE__ */ import_react5.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, camera ? /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("path", { d: "M3 7h5l1.5-3h5L16 7h5v13H3Z", stroke: "currentColor", strokeWidth: "1.7", strokeLinejoin: "round" }), /* @__PURE__ */ import_react5.default.createElement("circle", { cx: "12", cy: "13", r: "3.5", stroke: "currentColor", strokeWidth: "1.7" })) : /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement("circle", { cx: "12", cy: "8", r: "4", fill: "currentColor" }), /* @__PURE__ */ import_react5.default.createElement("path", { d: "M4 21v-2a8 8 0 0 1 16 0v2Z", fill: "currentColor" })));
+}
+function Avatar({ image }) {
+  const [failed, setFailed] = (0, import_react5.useState)(null);
+  return /* @__PURE__ */ import_react5.default.createElement("span", { className: "wsp-profile-avatar", "aria-hidden": "true" }, image && failed !== image ? /* @__PURE__ */ import_react5.default.createElement("img", { src: image, alt: "", referrerPolicy: "no-referrer", onError: () => setFailed(image) }) : /* @__PURE__ */ import_react5.default.createElement(ProfileIcon, null));
+}
+function ProfileDialog({ prefs, baseline = { name: null, image: null }, t, anchor, onClose }) {
+  const state = useStore(prefs), initial = (0, import_react5.useRef)(state).current;
+  const [draftName, setDraftName] = (0, import_react5.useState)(initial.name);
+  const [inputName, setInputName] = (0, import_react5.useState)(initial.name ?? baseline.name ?? "");
+  const [draftImage, setDraftImage] = (0, import_react5.useState)(initial.image);
+  const [error, setError] = (0, import_react5.useState)(""), [loading, setLoading] = (0, import_react5.useState)(false), [saving, setSaving] = (0, import_react5.useState)(false);
+  const [dragging, setDragging] = (0, import_react5.useState)(false);
+  const uploadInput = (0, import_react5.useRef)(null), portrait = (0, import_react5.useRef)(null), generation = (0, import_react5.useRef)(0), dragDepth = (0, import_react5.useRef)(0);
+  const active = (0, import_react5.useRef)(true), dirty = (0, import_react5.useRef)({ name: false, image: false }), savingNow = (0, import_react5.useRef)(false), uploadingNow = (0, import_react5.useRef)(false), composition = (0, import_react5.useRef)(null);
+  const errorId = (0, import_react5.useId)(), language = t("language");
+  const errorCode = error || state.error;
+  const validName = draftName === null || draftName.trim().length <= 80;
+  const canSave = !loading && !saving && !state.error && validName;
+  const customDraft = Boolean(draftName?.trim() || draftImage);
+  function cancelUpload() {
+    generation.current++;
+    uploadingNow.current = false;
+    dragDepth.current = 0;
+    setLoading(false);
+    setDragging(false);
+  }
+  function close() {
+    if (!active.current) return;
+    active.current = false;
+    generation.current++;
+    onClose();
+  }
+  function restore() {
+    if (savingNow.current) return;
+    cancelUpload();
+    dirty.current = { name: true, image: true };
+    setDraftName(null);
+    setInputName(baseline.name ?? "");
+    setDraftImage(null);
+    setError("");
+  }
+  function syncUntouched(next) {
+    if (next.error) return;
+    if (!dirty.current.name) {
+      setDraftName(next.name);
+      setInputName(next.name ?? baseline.name ?? "");
+    }
+    if (!dirty.current.image) setDraftImage(next.image);
+  }
+  function retry() {
+    if (loading || savingNow.current) return;
+    setError("");
+    try {
+      syncUntouched(prefs.retry());
+    } catch (reason) {
+      setError(saveError(reason));
+    }
+  }
+  function save() {
+    if (!active.current || savingNow.current || uploadingNow.current || !canSave) return;
+    savingNow.current = true;
+    setSaving(true);
+    setError("");
+    try {
+      const latest = prefs.refresh();
+      if (latest.error) throw new Error(latest.error);
+      prefs.save({ name: dirty.current.name ? draftName : latest.name, image: dirty.current.image ? draftImage : latest.image });
+      close();
+    } catch (reason) {
+      if (active.current) {
+        setError(saveError(reason));
+        setSaving(false);
+        savingNow.current = false;
+      }
+    }
+  }
+  async function upload(files) {
+    if (!active.current || savingNow.current || !files?.length) return;
+    const current = ++generation.current;
+    dragDepth.current = 0;
+    setDragging(false);
+    setError("");
+    if (files.length !== 1) {
+      uploadingNow.current = false;
+      setLoading(false);
+      setError("profileImageOneFile");
+      return;
+    }
+    uploadingNow.current = true;
+    setLoading(true);
+    try {
+      const image = await imageData(files[0]);
+      if (!active.current || current !== generation.current) return;
+      if (!image.startsWith("data:image/png;base64,") || image.length > MAX_IMAGE_LENGTH) {
+        setError("profileImageInvalid");
+        return;
+      }
+      dirty.current.image = true;
+      setDraftImage(image);
+    } catch (reason) {
+      if (active.current && current === generation.current) setError(UPLOAD_ERRORS[reason?.message] ?? "profileImageDecode");
+    } finally {
+      if (active.current && current === generation.current) {
+        uploadingNow.current = false;
+        setLoading(false);
+      }
+    }
+  }
+  (0, import_react5.useLayoutEffect)(() => {
+    const observer = (0, import_dsh_client_ui_primitives4.observeComposition)(document);
+    composition.current = observer;
+    return () => {
+      observer.dispose();
+      composition.current = null;
+    };
+  }, []);
+  (0, import_react5.useEffect)(() => {
+    active.current = true;
+    const ignoreDrop = (event) => {
+      if (hasFiles2(event) || [...event.dataTransfer?.types ?? []].includes("text/uri-list")) {
+        event.preventDefault();
+        if (!portrait.current?.contains(event.target)) event.stopPropagation();
+        if (event.type === "dragover") event.dataTransfer.dropEffect = "none";
+      }
+      if (event.type === "drop") {
+        dragDepth.current = 0;
+        setDragging(false);
+      }
+    };
+    document.addEventListener("dragover", ignoreDrop, true);
+    document.addEventListener("drop", ignoreDrop, true);
+    return () => {
+      active.current = false;
+      generation.current++;
+      document.removeEventListener("dragover", ignoreDrop, true);
+      document.removeEventListener("drop", ignoreDrop, true);
+      queueMicrotask(() => {
+        if (document.activeElement === document.body && anchor?.isConnected) anchor.focus();
+      });
+    };
+  }, []);
+  (0, import_react5.useLayoutEffect)(() => {
+    cancelUpload();
+  }, [language]);
+  (0, import_react5.useEffect)(() => {
+    syncUntouched(state);
+  }, [state, baseline.name]);
+  return /* @__PURE__ */ import_react5.default.createElement(
+    import_dsh_client_ui_primitives4.Modal,
+    {
+      open: true,
+      title: t("profileDialogTitle"),
+      description: t("profileDescription"),
+      closeLabel: t("close"),
+      onClose: close,
+      className: "wsp-profile-dialog",
+      contentClassName: "wsp-profile-content",
+      onKeyDownCapture: (event) => {
+        if (composition.current?.guards(event.nativeEvent)) return;
+        if (event.key === "Enter" && event.target.tagName === "INPUT" && event.target.type === "text") {
+          event.preventDefault();
+          event.stopPropagation();
+          save();
+        }
+      },
+      footer: /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { variant: "outline", onClick: close }, t("cancel")), /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { variant: "primary", disabled: !canSave, onClick: save }, loading ? t("loading") : saving ? t("profileSaving") : t("save")))
+    },
+    /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-profile-body", "aria-busy": loading || saving }, /* @__PURE__ */ import_react5.default.createElement(
+      import_dsh_client_ui_primitives4.Button,
+      {
+        ref: portrait,
+        className: "wsp-profile-portrait" + (dragging ? " wsp-profile-dragging" : ""),
+        variant: "ghost",
+        "aria-label": t("profileChooseImage"),
+        title: t("profileChooseImage"),
+        disabled: saving,
+        onClick: () => uploadInput.current?.click(),
+        onDragEnter: (event) => {
+          if (hasFiles2(event) && !savingNow.current) {
+            event.preventDefault();
+            dragDepth.current++;
+            setDragging(true);
+          }
+        },
+        onDragOver: (event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = hasFiles2(event) && !savingNow.current ? "copy" : "none";
+        },
+        onDragLeave: () => {
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (!dragDepth.current) setDragging(false);
+        },
+        onDrop: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDragging(false);
+          dragDepth.current = 0;
+          if (event.dataTransfer.files.length) upload(event.dataTransfer.files);
+          else {
+            cancelUpload();
+            setError("profileImageDropFiles");
+          }
+        }
+      },
+      /* @__PURE__ */ import_react5.default.createElement(Avatar, { image: draftImage ?? baseline.image }),
+      /* @__PURE__ */ import_react5.default.createElement("span", { className: "wsp-profile-camera", "aria-hidden": "true" }, /* @__PURE__ */ import_react5.default.createElement(ProfileIcon, { camera: true }))
+    ), /* @__PURE__ */ import_react5.default.createElement(
+      "input",
+      {
+        ref: uploadInput,
+        className: "wsp-profile-file",
+        type: "file",
+        tabIndex: -1,
+        accept: IMAGE_ACCEPT,
+        "aria-label": t("profileChooseImage"),
+        onChange: (event) => {
+          upload(event.target.files);
+          event.target.value = "";
+        }
+      }
+    ), /* @__PURE__ */ import_react5.default.createElement(
+      "input",
+      {
+        className: "wsp-profile-name",
+        type: "text",
+        maxLength: 80,
+        autoComplete: "off",
+        "data-modal-autofocus": true,
+        "aria-label": t("profileName"),
+        placeholder: t("profileName"),
+        value: inputName,
+        disabled: saving,
+        "aria-invalid": !validName || errorCode === "profileNameInvalid",
+        "aria-describedby": errorCode ? errorId : void 0,
+        onChange: (event) => {
+          const value = event.target.value;
+          dirty.current.name = true;
+          setInputName(value);
+          setDraftName(value.trim() === (baseline.name ?? "").trim() ? null : value);
+          setError("");
+        }
+      }
+    ), customDraft && /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { className: "wsp-profile-reset", variant: "ghost", size: "sm", disabled: saving, onClick: restore }, /* @__PURE__ */ import_react5.default.createElement("svg", { viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false" }, /* @__PURE__ */ import_react5.default.createElement("path", { d: "M4 10a8 8 0 1 1 1.5 7M4 4v6h6", stroke: "currentColor", strokeWidth: "1.6", strokeLinejoin: "round", strokeLinecap: "round" })), /* @__PURE__ */ import_react5.default.createElement("span", null, t("profileReset"))), errorCode && /* @__PURE__ */ import_react5.default.createElement("div", { className: "wsp-profile-error" }, /* @__PURE__ */ import_react5.default.createElement("div", { id: errorId, role: "alert" }, t(errorCode)), state.error && /* @__PURE__ */ import_react5.default.createElement(import_dsh_client_ui_primitives4.Button, { variant: "outline", size: "sm", disabled: loading || saving, onClick: retry }, t("profileRetry"))))
+  );
+}
+
+// src/profile-adapter.js
+var PROFILE_ADAPTER_CSS = `
+[data-slot="settings.launcher"] [data-wsp-profile-native-hidden]{display:none!important}
+[data-slot="settings.launcher"] [data-wsp-profile-name]{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-slot="settings.launcher"] img[data-wsp-profile-avatar]{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;pointer-events:none}
+[data-wsp-profile-menu] [data-wsp-profile-icon]{display:inline-flex;align-items:center;justify-content:center}
+[data-wsp-profile-menu] [data-wsp-profile-icon] svg{width:16px;height:16px}
+`;
+var COPY = [
+  ["Account menu", "Settings", "Feedback", "Sign out", "Signed in to DeepSeek"],
+  ["\u8D26\u53F7\u83DC\u5355", "\u8BBE\u7F6E", "\u610F\u89C1\u53CD\u9988", "\u9000\u51FA\u767B\u5F55", "\u5DF2\u767B\u5F55 DeepSeek"],
+  ["\u30A2\u30AB\u30A6\u30F3\u30C8\u30E1\u30CB\u30E5\u30FC", "\u8A2D\u5B9A", "\u30D5\u30A3\u30FC\u30C9\u30D0\u30C3\u30AF", "\u30ED\u30B0\u30A2\u30A6\u30C8", "DeepSeek \u306B\u30ED\u30B0\u30A4\u30F3\u6E08\u307F"],
+  ["Men\xFA de cuenta", "Configuraci\xF3n", "Comentarios", "Cerrar sesi\xF3n", "Iniciado sesi\xF3n en DeepSeek"],
+  ["Menu du compte", "Param\xE8tres", "Commentaires", "Se d\xE9connecter", "Connect\xE9 \xE0 DeepSeek"],
+  ["Kontomen\xFC", "Einstellungen", "R\xFCckmeldung", "Abmelden", "Angemeldet bei DeepSeek"],
+  ["\u041C\u0435\u043D\u044E \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438", "\u041E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C", "\u0412\u044B\u0439\u0442\u0438", "\u0412\u043E\u0448\u0451\u043B \u0432 DeepSeek"],
+  ["Menu da conta", "Configura\xE7\xF5es", "Coment\xE1rios", "Sair", "Conectado em DeepSeek"]
+];
+var CLASSES = { trigger: "_5Qcc8a_trigger", anchor: "_5Qcc8a_anchor", root: "_5Qcc8a_root", avatar: "_5Qcc8a_avatar", label: "_5Qcc8a_label" };
+var SLOT2 = '[data-slot="settings.launcher"]';
+var nextOwner = 0;
+function createProfileAdapter({ document: doc, preferences, translate, onEdit, onUnavailable = () => {
+} }) {
+  const win = doc.defaultView, owner = String(++nextOwner), ownedSelector = `[data-wsp-profile-owned="${owner}"]`;
+  let disposed = false, frame = 0, timer = 0, generation = 0;
+  let current = null, opening = null, menuRecord = null, blocked = null, pendingEdit = null, closing = false;
+  let nameNode = null, imageNode = null, failedImage = null, unavailableNotified = false;
+  const hidden = /* @__PURE__ */ new Map();
+  const ours = (node) => node instanceof win.Element && node.getAttribute("data-wsp-profile-owned") === owner;
+  const nativeChildren = (element) => [...element.children].filter((node) => !ours(node));
+  const mark = (element) => {
+    element.setAttribute("data-wsp-owned", "");
+    element.setAttribute("data-wsp-profile-owned", owner);
+    return element;
+  };
+  const text = (element) => element?.textContent?.trim() ?? "";
+  const visible = (element) => element.isConnected && !element.closest('[hidden], [inert], [aria-hidden="true"]') && win.getComputedStyle(element).visibility !== "hidden" && element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0;
+  function readPreferences() {
+    const state = preferences.getSnapshot();
+    if (!state || state.version !== 1 || typeof state.enabled !== "boolean" || !(state.name === null || typeof state.name === "string" && state.name.trim() && state.name.length <= 80) || !(state.image === null || typeof state.image === "string" && /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(state.image))) return null;
+    return state;
+  }
+  function discover() {
+    const slots = [...doc.querySelectorAll(SLOT2)];
+    if (slots.length !== 1 || slots[0].querySelector("[data-slot-error]")) return null;
+    const slot = slots[0], triggers = slot.querySelectorAll('button[aria-haspopup="menu"][data-signed-out][data-collapsed]');
+    if (triggers.length !== 1) return null;
+    const trigger = triggers[0], anchor = trigger.parentElement, root = anchor?.parentElement;
+    const copy = COPY.find((row) => row[0] === trigger.getAttribute("aria-label"));
+    if (!copy || trigger.type !== "button" || !trigger.classList.contains(CLASSES.trigger) || !anchor?.classList.contains(CLASSES.anchor) || !root?.classList.contains(CLASSES.root) || root.parentElement !== slot || !["true", "false"].includes(trigger.getAttribute("aria-expanded")) || !["true", "false"].includes(trigger.getAttribute("data-collapsed")) || !["true", "false"].includes(trigger.getAttribute("data-signed-out"))) return null;
+    const signedIn = trigger.getAttribute("data-signed-out") === "false", collapsed = trigger.getAttribute("data-collapsed") === "true";
+    const children = nativeChildren(trigger), label = collapsed ? null : children[1];
+    if (children.length !== (collapsed ? 1 : 2) || label && (label.tagName !== "SPAN" || !label.classList.contains(CLASSES.label))) return null;
+    if (!signedIn) return { trigger, signedIn, collapsed, copy };
+    const avatar = children[0];
+    if (avatar?.tagName !== "SPAN" || !avatar.classList.contains(CLASSES.avatar) || ![null, "loading", "ready", "failed"].includes(avatar.getAttribute("data-avatar-status"))) return null;
+    const pictures = nativeChildren(avatar);
+    if (pictures.length !== 1 || !["svg", "img"].includes(pictures[0].tagName.toLowerCase())) return null;
+    const picture = pictures[0];
+    if (picture.tagName === "IMG" && (picture.getAttribute("alt") !== "" || !picture.classList.contains("zSpNNG_image"))) return null;
+    return { trigger, signedIn, collapsed, copy, label, avatar, picture };
+  }
+  function baseline(target) {
+    const value = text(target.label);
+    return { name: !value || value === target.copy[4] ? null : value, image: target.picture.tagName === "IMG" ? target.picture.getAttribute("src") || null : null };
+  }
+  function restoreHidden(element, previous) {
+    if (element.getAttribute("data-wsp-profile-native-hidden") !== owner) return;
+    if (previous === null) element.removeAttribute("data-wsp-profile-native-hidden");
+    else element.setAttribute("data-wsp-profile-native-hidden", previous);
+  }
+  function restoreProjection() {
+    nameNode?.remove();
+    imageNode?.remove();
+    nameNode = imageNode = null;
+    for (const [element, previous] of hidden) restoreHidden(element, previous);
+    hidden.clear();
+  }
+  function project(target, state) {
+    if (failedImage !== state.image) failedImage = null;
+    const showImage = state.image !== null && failedImage !== state.image;
+    const wanted = /* @__PURE__ */ new Set();
+    if (state.name !== null && !target.collapsed) wanted.add(target.label);
+    if (showImage) wanted.add(target.picture);
+    for (const [element, previous] of hidden) if (!wanted.has(element)) {
+      restoreHidden(element, previous);
+      hidden.delete(element);
+    }
+    for (const element of wanted) {
+      if (!hidden.has(element)) hidden.set(element, element.getAttribute("data-wsp-profile-native-hidden"));
+      element.setAttribute("data-wsp-profile-native-hidden", owner);
+    }
+    if (state.name !== null && !target.collapsed) {
+      if (nameNode?.parentElement !== target.trigger) {
+        nameNode?.remove();
+        nameNode = mark(doc.createElement("span"));
+        nameNode.setAttribute("data-wsp-profile-name", "");
+        target.trigger.append(nameNode);
+      }
+      if (nameNode.className !== target.label.className) nameNode.className = target.label.className;
+      if (nameNode.textContent !== state.name) nameNode.textContent = state.name;
+    } else {
+      nameNode?.remove();
+      nameNode = null;
+    }
+    if (showImage) {
+      if (imageNode?.parentElement !== target.avatar) {
+        imageNode?.remove();
+        imageNode = mark(doc.createElement("img"));
+        imageNode.setAttribute("data-wsp-profile-avatar", "");
+        imageNode.alt = "";
+        imageNode.draggable = false;
+        const node = imageNode;
+        node.addEventListener("error", () => {
+          if (disposed || imageNode !== node) return;
+          const latest = discover(), picture = latest?.avatar === node.parentElement ? latest.picture : null;
+          failedImage = node.getAttribute("src");
+          node.remove();
+          imageNode = null;
+          if (picture && hidden.has(picture)) {
+            restoreHidden(picture, hidden.get(picture));
+            hidden.delete(picture);
+          }
+          schedule();
+        });
+        target.avatar.append(imageNode);
+      }
+      if (imageNode.getAttribute("src") !== state.image) imageNode.src = state.image;
+    } else {
+      imageNode?.remove();
+      imageNode = null;
+    }
+  }
+  function removeMenu() {
+    if (menuRecord?.wrapper.contains(doc.activeElement) && menuRecord.trigger.isConnected) menuRecord.trigger.focus({ preventScroll: true });
+    menuRecord?.wrapper.remove();
+    menuRecord = null;
+  }
+  function clearTimer() {
+    win.clearTimeout(timer);
+    timer = 0;
+  }
+  function unavailable() {
+    generation++;
+    pendingEdit = null;
+    opening = null;
+    clearTimer();
+    removeMenu();
+    restoreProjection();
+    current = null;
+    if (!unavailableNotified) {
+      unavailableNotified = true;
+      onUnavailable();
+    }
+  }
+  function stopOpening() {
+    generation++;
+    opening = null;
+    pendingEdit = null;
+    clearTimer();
+    removeMenu();
+  }
+  function denyPopup(trigger) {
+    blocked = trigger;
+    unavailable();
+  }
+  function menuShape(menu, target) {
+    if (menu.querySelector('[role="menu"]')) return null;
+    const buttons = [...menu.querySelectorAll('button[role="menuitem"]')].filter((button) => !ours(button) && button.closest('[role="menu"]') === menu);
+    if (buttons.length !== 3) return null;
+    const viewport = buttons[0].parentElement?.parentElement;
+    if (viewport?.parentElement !== menu || viewport.getAttribute("role") !== "presentation" || nativeChildren(viewport).length !== 3) return null;
+    const labels = target.copy.slice(1, 4);
+    for (let index2 = 0; index2 < buttons.length; index2++) {
+      const button = buttons[index2], wrapper = button.parentElement, children = nativeChildren(button);
+      if (button.type !== "button" || button.hasAttribute("aria-haspopup") || wrapper?.tagName !== "DIV" || wrapper.parentElement !== viewport || nativeChildren(wrapper).length !== 1 || wrapper.firstElementChild !== button || !wrapper.className || !button.className || wrapper.className !== buttons[0].parentElement.className || button.className !== buttons[0].className || children.length < 2 || children.length > (index2 === 0 ? 3 : 2) || children[0].tagName !== "SPAN" || children[0].querySelectorAll("svg").length !== 1 || children[1].tagName !== "SPAN" || text(children[1]) !== labels[index2] || index2 < 2 && button.disabled) return null;
+    }
+    return { buttons, viewport };
+  }
+  function finishEdit(token) {
+    if (disposed || pendingEdit?.token !== token) return;
+    const state = readPreferences(), target = discover(), pending = pendingEdit;
+    if (!state?.enabled || !target?.signedIn || target.trigger !== pending.trigger || blocked === target.trigger) {
+      unavailable();
+      return;
+    }
+    if (target.trigger.getAttribute("aria-expanded") !== "false" || pending.menu.isConnected) return;
+    pendingEdit = null;
+    clearTimer();
+    opening = null;
+    removeMenu();
+    target.trigger.focus({ preventScroll: true });
+    onEdit({ anchor: target.trigger, baseline: baseline(target) });
+  }
+  function insert(menu, target, shape) {
+    const [settings, feedback, auth] = shape.buttons;
+    const wrapper = mark(doc.createElement("div"));
+    wrapper.className = settings.parentElement.className;
+    wrapper.setAttribute("data-wsp-profile-menu", "");
+    const button = mark(doc.createElement("button"));
+    button.type = "button";
+    button.className = settings.className;
+    button.setAttribute("role", "menuitem");
+    button.disabled = auth.disabled;
+    const icon = mark(doc.createElement("span"));
+    icon.className = settings.children[0].className;
+    icon.setAttribute("data-wsp-profile-icon", "");
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = APPEARANCE_BRUSH_SVG;
+    const label = mark(doc.createElement("span"));
+    label.className = settings.children[1].className;
+    label.textContent = translate("profileCustomize");
+    button.append(icon, label);
+    wrapper.append(button);
+    feedback.parentElement.before(wrapper);
+    const record2 = { menu, wrapper, button, label, trigger: target.trigger };
+    menuRecord = record2;
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const state = readPreferences(), fresh = discover(), freshShape = fresh?.signedIn ? menuShape(menu, fresh) : null;
+      if (disposed || menuRecord !== record2 || !state?.enabled || !fresh?.signedIn || fresh.trigger !== target.trigger || !freshShape || freshShape.buttons[2].disabled || fresh.trigger.getAttribute("aria-expanded") !== "true") return;
+      const candidates = [...doc.querySelectorAll('[role="menu"]')].filter(visible);
+      if (candidates.length !== 1 || candidates[0] !== menu) {
+        denyPopup(fresh.trigger);
+        return;
+      }
+      const token = ++generation;
+      pendingEdit = { token, trigger: fresh.trigger, menu };
+      opening = null;
+      clearTimer();
+      closing = true;
+      try {
+        fresh.trigger.click();
+        fresh.trigger.focus({ preventScroll: true });
+      } finally {
+        closing = false;
+      }
+      timer = win.setTimeout(() => {
+        if (pendingEdit?.token === token) unavailable();
+      }, 1e3);
+      win.queueMicrotask(() => finishEdit(token));
+      schedule();
+    });
+  }
+  function scanMenu(target) {
+    if (pendingEdit) {
+      finishEdit(pendingEdit.token);
+      return;
+    }
+    if (target.trigger.getAttribute("aria-expanded") !== "true") {
+      opening = null;
+      blocked = null;
+      clearTimer();
+      removeMenu();
+      return;
+    }
+    if (!opening || opening.trigger !== target.trigger) {
+      removeMenu();
+      return;
+    }
+    const menus = [...doc.querySelectorAll('[role="menu"]')].filter(visible);
+    const fresh = menus.filter((menu2) => !opening.existing.has(menu2));
+    if (menus.length > 1 || fresh.length > 1) {
+      denyPopup(target.trigger);
+      return;
+    }
+    if (fresh.length !== 1) {
+      if (menuRecord) denyPopup(target.trigger);
+      return;
+    }
+    const menu = fresh[0], shape = menuShape(menu, target);
+    if (!shape) {
+      denyPopup(target.trigger);
+      return;
+    }
+    clearTimer();
+    if (menuRecord && (menuRecord.menu !== menu || menuRecord.wrapper.parentElement !== shape.viewport || !menuRecord.button.isConnected)) removeMenu();
+    if (!menuRecord) insert(menu, target, shape);
+    menuRecord.button.disabled = shape.buttons[2].disabled;
+    const label = translate("profileCustomize");
+    if (menuRecord.label.textContent !== label) menuRecord.label.textContent = label;
+  }
+  function scan() {
+    if (disposed) return;
+    const state = readPreferences(), target = discover();
+    if (blocked && (!blocked.isConnected || blocked.getAttribute("aria-expanded") !== "true")) blocked = null;
+    if (!state?.enabled || !target?.signedIn || blocked === target.trigger) {
+      unavailable();
+      return;
+    }
+    if (current && current.trigger !== target.trigger) unavailable();
+    current = target;
+    unavailableNotified = false;
+    project(target, state);
+    scanMenu(target);
+  }
+  function schedule() {
+    if (!disposed && !frame) frame = win.requestAnimationFrame(() => {
+      frame = 0;
+      scan();
+    });
+  }
+  function onClick(event) {
+    const button = event.target instanceof win.Element ? event.target.closest("button") : null;
+    if (closing || !button?.matches('button[aria-haspopup="menu"][data-signed-out][data-collapsed]') || !button.closest(SLOT2)) return;
+    const state = readPreferences(), target = discover();
+    stopOpening();
+    blocked = null;
+    if (!state?.enabled || !target?.signedIn || target.trigger !== button) {
+      unavailable();
+      return;
+    }
+    if (button.getAttribute("aria-expanded") === "false") {
+      const token = generation;
+      opening = { trigger: button, existing: new Set(doc.querySelectorAll('[role="menu"]')) };
+      timer = win.setTimeout(() => {
+        if (opening && generation === token) denyPopup(button);
+      }, 1e3);
+    }
+    schedule();
+  }
+  const observer = new win.MutationObserver((records) => {
+    if (records.some((record2) => {
+      const element = record2.target.nodeType === 1 ? record2.target : record2.target.parentElement;
+      if (element?.closest(ownedSelector)) return false;
+      if (record2.type !== "childList") return true;
+      return [...record2.addedNodes, ...record2.removedNodes].some((node) => !ours(node));
+    })) schedule();
+  });
+  observer.observe(doc.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ["data-slot", "data-signed-out", "data-collapsed", "data-avatar-status", "aria-expanded", "aria-label", "src", "class", "style", "disabled", "hidden", "inert", "aria-hidden"]
+  });
+  const unsubscribe = preferences.subscribe(schedule);
+  doc.addEventListener("click", onClick, true);
+  scan();
+  return {
+    refresh: schedule,
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      observer.disconnect();
+      win.cancelAnimationFrame(frame);
+      clearTimer();
+      unsubscribe();
+      doc.removeEventListener("click", onClick, true);
+      unavailable();
+      blocked = null;
+    }
+  };
+}
+
+// src/settings-icon.jsx
+var import_react6 = __toESM(require("react"), 1);
+function SettingsSectionIcon({ size = 16 }) {
+  return /* @__PURE__ */ import_react6.default.createElement(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: size,
+      height: size,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.57830973",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": "true",
+      focusable: "false",
+      "data-framing": "centered-22-of-24"
+    },
+    /* @__PURE__ */ import_react6.default.createElement("g", { transform: "translate(12 12) scale(1.077101642) translate(-11.539062500 -12.460937500)" }, /* @__PURE__ */ import_react6.default.createElement("g", { transform: "translate(12 12) rotate(45)" }, /* @__PURE__ */ import_react6.default.createElement("path", { d: "M-2.48 -10.015968V-7.279999999999999A2.48 2.48 0 0 0 2.48 -7.279999999999999V-10.015968A4.72 4.72 0 0 1 2.1 -1.772897V11A2.1 2.1 0 0 1-2.1 11V-1.772897A4.72 4.72 0 0 1 -2.48 -10.015968Z" })))
+  );
+}
+
 // src/client.jsx
 var inject = ["slots", "locale", "sessions", "workspaces", "modelDirectories", "remote", "remote.session"];
 var NS = "workspacePlus";
@@ -5276,42 +6804,86 @@ function download(text, name) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1e3);
 }
-function Settings({ prefs, reminders, workspaces, ui, t, close }) {
-  const state = useStore(prefs), unreadState = useStore(reminders), list = useStore(workspaces.list), [error, setError] = (0, import_react4.useState)("");
+function SettingsFeature({ label, description, checked, onChange, disabled = false }) {
+  return /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature-copy" }, /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature-label" }, label), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-feature-description" }, description)), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Switch, { label, checked, onChange, disabled }));
+}
+function Settings({ prefs, profilePrefs, reminders, t }) {
+  const state = useStore(prefs), profileState = useStore(profilePrefs), unreadState = useStore(reminders), [error, setError] = (0, import_react7.useState)("");
+  const [activeTab, setActiveTab] = (0, import_react7.useState)("features"), tabsId = (0, import_react7.useId)(), tabRefs = (0, import_react7.useRef)([]);
+  const tabs = ["features", "recovery"];
+  function onTabKeyDown(event, index2) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing || event.nativeEvent?.isComposing) return;
+    let next;
+    switch (event.key) {
+      case "ArrowLeft":
+        next = (index2 + tabs.length - 1) % tabs.length;
+        break;
+      case "ArrowRight":
+        next = (index2 + 1) % tabs.length;
+        break;
+      case "Home":
+        next = 0;
+        break;
+      case "End":
+        next = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    setActiveTab(tabs[next]);
+    tabRefs.current[next]?.focus();
+  }
   async function safe(fn) {
     try {
       await fn();
       setError("");
     } catch (e) {
-      setError(e.message);
+      setError(String(e.code ?? "").startsWith("profile") ? t(e.code) : e.message);
     }
   }
-  return /* @__PURE__ */ import_react4.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react4.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react4.default.createElement("p", null, t("adapterHint")), ["workspaces", "composer", "sessions", "unread", "branding"].map((key) => /* @__PURE__ */ import_react4.default.createElement("div", { key, className: "wsp-toggle" }, /* @__PURE__ */ import_react4.default.createElement("span", null, t(key)), /* @__PURE__ */ import_react4.default.createElement("button", { role: "switch", "aria-label": t(key), "aria-checked": state.features[key], onClick: () => safe(() => prefs.toggle(key, !state.features[key])) }, t(state.features[key] ? "on" : "off")))), /* @__PURE__ */ import_react4.default.createElement("label", { htmlFor: "wsp-workspace" }, t("editWorkspace")), /* @__PURE__ */ import_react4.default.createElement("select", { id: "wsp-workspace", value: "", onChange: (e) => {
-    if (e.target.value) {
-      const id = e.target.value;
-      close?.();
-      queueMicrotask(() => ui.set({ target: { id } }));
-    }
-  } }, /* @__PURE__ */ import_react4.default.createElement("option", { value: "" }, t("chooseWorkspace")), list.items.map((w) => /* @__PURE__ */ import_react4.default.createElement("option", { key: w.workspaceId, value: w.workspaceId }, w.title))), (state.error || error) && /* @__PURE__ */ import_react4.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (state.error || state.recoveryAvailable) && /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => {
+  const feature = (key) => /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { key, label: t(key), description: t(key + "Description"), checked: state.features[key], onChange: (next) => safe(() => prefs.toggle(key, next)) });
+  return /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-panel" }, /* @__PURE__ */ import_react7.default.createElement("h2", null, "Tinker"), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-tabs", role: "tablist", "aria-label": t("settingsTabsLabel") }, tabs.map((tab, index2) => /* @__PURE__ */ import_react7.default.createElement(
+    "button",
+    {
+      key: tab,
+      ref: (node) => {
+        tabRefs.current[index2] = node;
+      },
+      type: "button",
+      className: "wsp-settings-tab",
+      role: "tab",
+      id: `${tabsId}-${tab}-tab`,
+      "aria-controls": `${tabsId}-${tab}-panel`,
+      "aria-selected": activeTab === tab,
+      tabIndex: activeTab === tab ? 0 : -1,
+      onClick: () => setActiveTab(tab),
+      onKeyDown: (event) => onTabKeyDown(event, index2)
+    },
+    t(tab + "Tab")
+  ))), (state.error || error) && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, error || state.error), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-tabpanel", role: "tabpanel", id: `${tabsId}-features-panel`, "aria-labelledby": `${tabsId}-features-tab`, hidden: activeTab !== "features", tabIndex: 0 }, /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsAppearance")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("workspaces"), /* @__PURE__ */ import_react7.default.createElement(SettingsFeature, { label: t("profileFeature"), description: t("profileFeatureDescription"), checked: profileState.enabled, disabled: Boolean(profileState.error), onChange: (next) => safe(() => profilePrefs.toggle(next)) }), feature("branding")), profileState.error && /* @__PURE__ */ import_react7.default.createElement("div", { role: "alert", className: "wsp-error" }, t(profileState.error), " ", /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => profilePrefs.retry()) }, t("retry")))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsModelLogos")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("composer"), feature("sessions"))), /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-group" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("settingsChats")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-card" }, feature("unread")))), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-settings-tabpanel", role: "tabpanel", id: `${tabsId}-recovery-panel`, "aria-labelledby": `${tabsId}-recovery-tab`, hidden: activeTab !== "recovery", tabIndex: 0 }, /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-recovery" }, /* @__PURE__ */ import_react7.default.createElement("h3", null, t("recoveryTitle")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryHint")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryScope")), /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoverySource")), state.error || state.recoveryAvailable ? /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(prefs.backup(), "tinker-recovery.json")) }, t("backup")), state.error && /* @__PURE__ */ import_react7.default.createElement(import_react7.default.Fragment, null, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => prefs.retry()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("resetConfirm"))) prefs.resetAll();
-  }) }, t("resetAll"))))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react4.default.createElement(import_react4.default.Fragment, null, /* @__PURE__ */ import_react4.default.createElement("div", { role: "alert", className: "wsp-error" }, t("unreadRecovery"), " ", unreadState.error || unreadState.lastError), /* @__PURE__ */ import_react4.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react4.default.createElement("button", { onClick: () => safe(() => {
+  }) }, t("resetAll")))) : /* @__PURE__ */ import_react7.default.createElement("p", null, t("recoveryEmpty"))), (unreadState.error || unreadState.lastError) && /* @__PURE__ */ import_react7.default.createElement("section", { className: "wsp-settings-unread-recovery", "aria-labelledby": `${tabsId}-unread-recovery-title` }, /* @__PURE__ */ import_react7.default.createElement("h3", { id: `${tabsId}-unread-recovery-title` }, t("unreadRecoveryTitle")), /* @__PURE__ */ import_react7.default.createElement("div", { className: "wsp-row" }, /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", variant: "outline", onClick: () => safe(() => download(reminders.backup(), "tinker-unread-recovery.json")) }, t("backup")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => reminders.refresh()) }, t("retry")), /* @__PURE__ */ import_react7.default.createElement(import_dsh_client_ui_primitives5.Button, { size: "sm", onClick: () => safe(() => {
     if (window.confirm(t("unreadResetConfirm"))) return reminders.resetAll();
-  }) }, t("resetAll")))));
+  }) }, t("resetAll"))))));
 }
 function apply(ctx) {
   const locale = ctx.locale, prefs = createPreferences(window.localStorage, ICON_IDS), ui = createStore({ target: null }), currentModels = createStore({});
-  const reminders = createUnreadStore(window.localStorage);
+  const reminders = createUnreadStore(window.localStorage), profilePrefs = createProfilePreferences(window.localStorage);
+  const closeProfile = () => {
+    if (ui.getSnapshot().profileTarget) ui.set({ target: null });
+  };
   ctx.effect(() => locale.register(NS, dictionaries));
   const t = locale.bind(NS);
   ctx.effect(() => {
     const style = document.createElement("style");
     style.dataset.wspOwned = "";
-    style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS;
+    style.textContent = CSS + SESSION_ACTION_CSS + BRANDING_CSS + PROFILE_ADAPTER_CSS;
     document.head.append(style);
     return () => style.remove();
   });
   ctx.effect(() => {
-    const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t });
+    const adapter = createDOMAdapter({ document, preferences: prefs, sessions: ctx.sessions, workspaces: ctx.workspaces, currentModels, onEdit: (id, anchor) => ui.set({ target: { id, anchor } }), translate: t, workspaceMenuLabels: () => nativeWorkspaceMenuLabels(locale) });
     const unsubscribe = ctx.on("connection/reset", () => adapter.reconnect());
     return () => {
       unsubscribe();
@@ -5321,8 +6893,34 @@ function apply(ctx) {
   ctx.effect(() => createWorkspacePickerAdapter({ document, preferences: prefs, workspaces: ctx.workspaces, defaultName: () => locale.bind("workspace")("workspace.defaultName") }).dispose);
   ctx.effect(() => observeSessionOpenings(ctx.sessions, reminders));
   ctx.effect(() => {
+    const adapter = createProfileAdapter({
+      document,
+      preferences: profilePrefs,
+      translate: t,
+      onEdit: (profileTarget) => {
+        if (profilePrefs.getSnapshot().enabled) ui.set({ target: null, profileTarget });
+      },
+      onUnavailable: closeProfile
+    });
+    const unsubscribe = profilePrefs.subscribe(() => {
+      if (!profilePrefs.getSnapshot().enabled) closeProfile();
+    });
+    const disconnect = ctx.on("connection/reset", () => {
+      closeProfile();
+      adapter.refresh();
+    });
+    return () => {
+      disconnect();
+      unsubscribe();
+      adapter.dispose();
+      closeProfile();
+    };
+  });
+  ctx.effect(() => {
     const onStorage = (event) => {
-      if (event.storageArea === window.localStorage && (event.key === UNREAD_STORAGE_KEY || event.key === null)) reminders.refresh();
+      if (event.storageArea !== window.localStorage) return;
+      if (event.key === UNREAD_STORAGE_KEY || event.key === null) reminders.refresh();
+      if (event.key === PROFILE_STORAGE_KEY || event.key === null) profilePrefs.refresh();
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener(UNREAD_CHANGE_EVENT, reminders.onChange);
@@ -5333,12 +6931,13 @@ function apply(ctx) {
   });
   registerSidebarFeatures(ctx, { prefs, reminders, namespace: NS });
   function Overlay(props) {
-    const { target } = useStore(ui);
-    return target ? /* @__PURE__ */ import_react4.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
+    const { target, profileTarget } = useStore(ui), profileState = useStore(profilePrefs);
+    if (profileTarget && profileState.enabled) return /* @__PURE__ */ import_react7.default.createElement(ProfileDialog, { prefs: profilePrefs, baseline: profileTarget.baseline, anchor: profileTarget.anchor, t: props.t, onClose: closeProfile });
+    return target ? /* @__PURE__ */ import_react7.default.createElement(AppearanceDialog, { key: target.id, target, prefs, ui, workspaces: ctx.workspaces, t: props.t, lang: props.lang }) : null;
   }
   function Composer({ directory, sessionId }) {
-    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react4.useRef)(null);
-    (0, import_react4.useEffect)(() => {
+    const state = useStore(directory), settings = useStore(prefs), marker = (0, import_react7.useRef)(null);
+    (0, import_react7.useEffect)(() => {
       currentModels.set((s) => ({ ...s, [sessionId]: state.pending ?? state.current }));
       return () => currentModels.set((s) => {
         const next = { ...s };
@@ -5346,18 +6945,19 @@ function apply(ctx) {
         return next;
       });
     }, [sessionId, state.current, state.pending]);
-    (0, import_react4.useLayoutEffect)(() => {
+    (0, import_react7.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachComposerIcon(marker.current, state.pending ?? state.current);
     }, [state.current, state.pending, settings.features.composer]);
-    (0, import_react4.useLayoutEffect)(() => {
+    (0, import_react7.useLayoutEffect)(() => {
       if (!marker.current || !settings.features.composer) return;
       return attachModelMenuIcons(marker.current, directory);
     }, [directory, settings.features.composer]);
-    return /* @__PURE__ */ import_react4.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
+    return /* @__PURE__ */ import_react7.default.createElement("span", { ref: marker, "data-wsp-owned": "", style: { display: "none" } });
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "workspace-plus-dialog", order: 90, locale: NS }, Overlay));
-  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react4.default.createElement(Settings, { prefs, reminders, ui, workspaces: ctx.workspaces, t: props.t, close: props.close })));
+  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-plus", order: 80, label: "Tinker", locale: NS }, (props) => /* @__PURE__ */ import_react7.default.createElement(Settings, { prefs, profilePrefs, reminders, t: props.t })));
+  ctx.slots.inject("settings.section.icon", () => ctx.slots.register({ name: "settings.section.icon", id: "workspace-plus" }, SettingsSectionIcon));
   ctx.slots.inject("conversation.input.right", () => ctx.slots.register({
     name: "conversation.input.right",
     id: "workspace-plus-model",

@@ -1,0 +1,28 @@
+{
+  "items": [
+    "Rename",
+    "Show in folder",
+    "Appearance",
+    "Delete workspace"
+  ],
+  "appearance": 1,
+  "labels": {
+    "rename": "Rename",
+    "remove": "Delete workspace",
+    "reveal": [
+      "Show in folder",
+      "Show in Finder"
+    ]
+  },
+  "parts": false,
+  "calls": {
+    "rename": 0,
+    "delete": 0,
+    "reveal": 0,
+    "newSession": 0
+  },
+  "edits": [],
+  "row": "<div class=\"wnFoaW_projectRow wnFoaW_menuOpen\" data-row-key=\"workspace:w1\" role=\"treeitem\" aria-expanded=\"true\" tabindex=\"0\" draggable=\"false\"><span class=\"wnFoaW_slot wnFoaW_folder\"><svg width=\"16\" height=\"16\" data-icon=\"dsw-icon-folder-open-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-folder-open-regular\"></use></svg></span><span class=\"wnFoaW_slot wnFoaW_chevron\"><svg width=\"14\" height=\"14\" class=\"wnFoaW_arrow wnFoaW_arrowOpen\" data-icon=\"dsw-icon-triangle-right-fill-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-triangle-right-fill-regular\"></use></svg></span><span class=\"wnFoaW_projectText\"><span class=\"wnFoaW_title\">Fixture Workspace</span></span><span class=\"wnFoaW_rowActions\"><button type=\"button\" class=\"wnFoaW_iconButton\" data-context-menu-trigger=\"true\" aria-label=\"Workspace actions for Fixture Workspace\" aria-haspopup=\"menu\" aria-expanded=\"true\" aria-controls=\":r2:\"><svg width=\"16\" height=\"16\" data-icon=\"dsw-icon-ellipsis-outline-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-ellipsis-outline-regular\"></use></svg></button><button type=\"button\" class=\"wnFoaW_iconButton\" aria-label=\"New session in Fixture Workspace\"><svg width=\"14\" height=\"14\" data-icon=\"dsw-icon-new-chat-outline-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-new-chat-outline-regular\"></use></svg></button></span></div>",
+  "menu": "<div id=\":r2:\" role=\"menu\" data-context-menu=\"\" data-menu-material=\"translucent\" data-menu-phase=\"enter\" class=\"_surface_1w4el_1 _list_1p5el_7 _scrollable_1p5el_19 _portal_1p5el_46\" style=\"left: 643px; top: 33px; --dsh-menu-anchor: --dsh-menu-r3; --dsh-menu-enter: 40ms; --dsh-menu-dismiss: 80ms; --dsh-menu-replace: 10ms; --dsh-anchored-max-width: 776px; --dsh-anchored-max-height: 576px;\"><div aria-hidden=\"true\" class=\"_material_1w4el_21\"></div><div class=\"_viewport_1p5el_19\" role=\"presentation\"><div class=\"_itemWrap_1p5el_105\"><button type=\"button\" role=\"menuitem\" class=\"_item_1p5el_105\" data-dsh-automatic-focus=\"\"><span aria-hidden=\"true\" class=\"_itemIcon_1p5el_165\"><span data-slot=\"contextMenu.icon\" style=\"display: contents;\"><svg width=\"16\" height=\"16\" data-icon=\"dsw-icon-edit-outline-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-edit-outline-regular\"></use></svg></span></span><span class=\"_itemLabel_1p5el_208\">Rename</span></button></div><div class=\"_itemWrap_1p5el_105\"><button type=\"button\" role=\"menuitem\" class=\"_item_1p5el_105\"><span aria-hidden=\"true\" class=\"_itemIcon_1p5el_165\"><span data-slot=\"contextMenu.icon\" style=\"display: contents;\"><svg width=\"16\" height=\"16\" data-icon=\"dsw-icon-folder-open-outline-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-folder-open-outline-regular\"></use></svg></span></span><span class=\"_itemLabel_1p5el_208\">Show in folder</span></button></div><div class=\"_separator_1p5el_89\" role=\"separator\"></div><div class=\"_itemWrap_1p5el_105\" data-wsp-owned=\"\" data-wsp-menu-wrapper=\"w1\"><button type=\"button\" role=\"menuitem\" data-wsp-owned=\"\" data-wsp-menu=\"w1\" class=\"_item_1p5el_105\"><span class=\"_itemIcon_1p5el_165\" aria-hidden=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42\"></path></svg></span><span class=\"_itemLabel_1p5el_208\">Appearance</span></button></div><div class=\"_itemWrap_1p5el_105\"><button type=\"button\" role=\"menuitem\" class=\"_item_1p5el_105 _danger_1p5el_250\"><span aria-hidden=\"true\" class=\"_itemIcon_1p5el_165\"><span data-slot=\"contextMenu.icon\" style=\"display: contents;\"><svg width=\"16\" height=\"16\" data-icon=\"dsw-icon-trash-outline-regular\" aria-hidden=\"true\"><use href=\"#dsw-icon-trash-outline-regular\"></use></svg></span></span><span class=\"_itemLabel_1p5el_208\">Delete workspace</span></button></div><div data-slot=\"contextMenu.content\" style=\"display: contents;\"></div></div></div>",
+  "errors": []
+}
