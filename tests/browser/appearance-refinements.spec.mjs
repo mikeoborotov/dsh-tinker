@@ -95,7 +95,7 @@ test('same accepted Workspace brush artwork renders in Profile at 16px without c
     await other.evaluate(()=>window.profileFixture.update({name:'Fresh native name'}));await expect(trigger.locator('._5Qcc8a_label')).toHaveText('Fresh native name');
     expect(await other.evaluate(()=>window.profileFixture.sameNodes())).toBe(true);
     expect(await other.evaluate(()=>window.refineProfileIcons.every((svg,index)=>svg.isConnected&&document.querySelectorAll('[role="menu"] button:not([data-wsp-owned]) > span:first-child > svg')[index]===svg))).toBe(true);
-    await other.keyboard.press('End');await other.keyboard.press('ArrowUp');await expect(other.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();await other.keyboard.press('Enter');await expect(other.getByRole('dialog')).toBeVisible();await other.keyboard.press('Escape');await expect(trigger).toBeFocused();
+    await other.keyboard.press('End');await other.keyboard.press('ArrowUp');await expect(other.getByRole('menuitem',{name:'Feedback',exact:true})).toBeFocused();await other.keyboard.press('ArrowUp');await expect(other.getByRole('menuitem',{name:'Appearance',exact:true})).toBeFocused();await other.keyboard.press('Enter');await expect(other.getByRole('dialog')).toBeVisible();await other.keyboard.press('Escape');await expect(trigger).toBeFocused();
     await trigger.click();await other.getByRole('menuitem',{name:'Feedback',exact:true}).click();expect(await other.evaluate(()=>window.profileFixture.counters())).toEqual({settings:0,feedback:1,signout:0,signin:0});
     expect(otherErrors).toEqual([]);
   }finally{await other.close();}
